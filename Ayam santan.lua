@@ -290,9 +290,9 @@ local function runSyaaHub()
     UserInputService.InputChanged:Connect(function(input) if isFreecamActive and not lockTarget and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then targetYaw = targetYaw - (input.Delta.X * 0.3); targetPitch = math.clamp(targetPitch - (input.Delta.Y * 0.3), -88, 88) end end)
 
     task.spawn(function()
-        task.wait(0.5); showNotify("scrip ini hanya khusus game yang tidak mendukung mode potrait", "on")
-        task.wait(0.4); showNotify("Selamat menikmati su🗿👍🏻", "on")
-        task.wait(0.4); showNotify("kalo bug hubungi wa: 087792945563", "on")
+        task.wait(0.5); showNotify("skrip akan terus di kembangkan secepat mungkin,jadi mohon tunggu✊🏻", "on")
+        task.wait(0.4); showNotify("selamat menikmati su😜", "on")
+        task.wait(0.4); showNotify("Bug?,hub whatsaap:087792945563", "on")
     end)
 end
 
