@@ -1,4 +1,4 @@
--- [[ SYAAA HUB V7.6 - PURPLE THEME + INFO UPDATE (AUTO 4s) & NOTIFICATION ]] --
+-- [[ SYAAA HUB V7.6 - PURPLE THEME + AUTO PLAYER INFO & NOTIFICATION ]] --
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -61,7 +61,7 @@ local function runSyaaHub()
     openIcon.BackgroundTransparency = 1
     openIcon.Image = "rbxassetid://87411882585742"
     openIcon.ImageColor3 = Color3.fromRGB(0, 150, 255)
-    openIcon.Visible = false -- Disembunyikan dulu sampai Info Update di-close
+    openIcon.Visible = false 
     openIcon.Parent = screenGui
 
     local rainbowColor = Color3.fromRGB(150,40,255)
@@ -151,7 +151,6 @@ local function runSyaaHub()
         twOutInfo.Completed:Wait()
         updateFrame:Destroy()
 
-        -- Munculin Icon Utama Syaa pake Animasi
         openIcon.Visible = true
         openIcon.Size = UDim2.new(0, 0, 0, 0)
         TweenService:Create(openIcon, TweenInfo.new(0.5, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), {Size = UDim2.new(0, 65, 0, 65)}):Play()
@@ -161,8 +160,8 @@ local function runSyaaHub()
         -- ==========================================
         task.spawn(function()
             local notifFrame = Instance.new("Frame")
-            notifFrame.Size = UDim2.new(0, 260, 0, 75)
-            notifFrame.Position = UDim2.new(1, 20, 1, -90) -- Offscreen right
+            notifFrame.Size = UDim2.new(0, 280, 0, 75)
+            notifFrame.Position = UDim2.new(1, 20, 1, -90) 
             notifFrame.BackgroundColor3 = Color3.fromRGB(15, 10, 20)
             notifFrame.BackgroundTransparency = 0.15
             notifFrame.Parent = screenGui
@@ -176,7 +175,7 @@ local function runSyaaHub()
             ava.Parent = notifFrame
             Instance.new("UICorner", ava).CornerRadius = UDim.new(1, 0)
             
-            -- Fetch Avatar 'tepresakkriminal'
+            -- Ava Developer (tepresakkriminal)
             task.spawn(function()
                 pcall(function()
                     local userId = Players:GetUserIdFromNameAsync("tepresakkriminal")
@@ -207,7 +206,8 @@ local function runSyaaHub()
             titleLbl.Parent = notifFrame
 
             local descLbl = Instance.new("TextLabel")
-            descLbl.Text = "Syaaa Hub V7.6 Aktif broo!"
+            -- NOTIFIKASI BARU: Sapaan Username Player
+            descLbl.Text = "Hallo " .. localPlayer.DisplayName .. ", selamat datang di syaa hub"
             descLbl.Size = UDim2.new(1, -85, 0, 20)
             descLbl.Position = UDim2.new(0, 75, 0, 48)
             descLbl.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -217,10 +217,9 @@ local function runSyaaHub()
             descLbl.TextXAlignment = Enum.TextXAlignment.Left
             descLbl.Parent = notifFrame
 
-            -- Animation Play
-            local twIn = TweenService:Create(notifFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(1, -280, 1, -90)})
+            local twIn = TweenService:Create(notifFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(1, -300, 1, -90)})
             twIn:Play()
-            task.wait(5) -- Muncul 5 detik
+            task.wait(5) 
             local twOut = TweenService:Create(notifFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(1, 20, 1, -90)})
             twOut:Play()
             twOut.Completed:Wait()
@@ -228,13 +227,9 @@ local function runSyaaHub()
         end)
     end
 
-    -- Tombol tetep bisa di klik manual
     upBtn.MouseButton1Click:Connect(closeInfoGui)
-    
-    -- Auto close dalam 4 detik
     task.delay(4, closeInfoGui)
 
-    -- Variable & Engine Utama
     local isFreecamActive = false
     local lockTarget = nil
     local isLockOn = false
@@ -258,7 +253,7 @@ local function runSyaaHub()
     local PlayerModule = require(localPlayer.PlayerScripts:WaitForChild("PlayerModule")):GetControls()
 
     -- ==========================================
-    -- MAIN FRAME (FIXED NO DRAG, 360x240)
+    -- MAIN FRAME
     -- ==========================================
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0,360,0,240) 
@@ -282,17 +277,35 @@ local function runSyaaHub()
         end
     end)
 
+    -- ==========================================
+    -- TITLE BAR BARU (AUTO AVA & NAMA PLAYER)
+    -- ==========================================
+    local playerIcon = Instance.new("ImageLabel")
+    playerIcon.Size = UDim2.new(0, 24, 0, 24)
+    playerIcon.Position = UDim2.new(0, 15, 0, 8)
+    playerIcon.BackgroundTransparency = 1
+    playerIcon.Parent = mainFrame
+    Instance.new("UICorner", playerIcon).CornerRadius = UDim.new(1, 0)
+    
+    -- Ambil Foto Profil Player Secara Otomatis
+    task.spawn(function()
+        pcall(function()
+            playerIcon.Image = Players:GetUserThumbnailAsync(localPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+        end)
+    end)
+
     local title = Instance.new("TextLabel")
-    title.Text = "SYAA HUB 🗿"
-    title.Size = UDim2.new(1,0,0,30)
-    title.Position = UDim2.new(0,15,0,5)
+    title.Text = localPlayer.DisplayName .. " - Syaa Hub" -- Nama Player Otomatis
+    title.Size = UDim2.new(1, -60, 0, 30)
+    title.Position = UDim2.new(0, 48, 0, 5)
     title.TextColor3 = Color3.fromRGB(255,255,255)
     title.Font = Enum.Font.GothamBold
-    title.TextSize = 14 
+    title.TextSize = 13 
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.BackgroundTransparency = 1
     title.Parent = mainFrame
 
+    -- TOMBOL MINIMIZE & CLOSE
     local closeBtn = Instance.new("TextButton")
     closeBtn.Size = UDim2.new(0,26,0,26)
     closeBtn.Position = UDim2.new(1,-34,0,8)
@@ -352,7 +365,7 @@ local function runSyaaHub()
     openIcon.MouseButton1Click:Connect(function() toggleMainFrame(true) end)
 
     -- ==========================================
-    -- SIDEBAR (KECILIN UKURANNYA)
+    -- SIDEBAR 
     -- ==========================================
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, 42, 0, 100) 
@@ -388,7 +401,7 @@ local function runSyaaHub()
     makeSidebarIcon("116019702436521", 52, "Orientation", UDim2.new(0, 34, 0, 34))
 
     -- ==========================================
-    -- PANELS (SCROLLING FRAME SEMUA)
+    -- PANELS 
     -- ==========================================
     local function createPanel(name)
         local panel = Instance.new("ScrollingFrame")
@@ -411,7 +424,7 @@ local function runSyaaHub()
     local pFC = createPanel("Freecam")
     local pOR = createPanel("Orientation")
 
-    -- HELPERS (THEME: PURPLE TRANSPARENT)
+    -- HELPERS
     local function makeIosRow(labelTxt, yOff, parent)
         local onColor = Color3.fromRGB(150,40,255)
         local row = Instance.new("TextButton"); row.Size = UDim2.new(1,-8,0,30); row.Position = UDim2.new(0,4,0,yOff); row.BackgroundColor3 = Color3.fromRGB(130,40,255); row.BackgroundTransparency = 0.6; row.Text = ""; row.AutoButtonColor = false; row.Parent = parent
@@ -582,7 +595,7 @@ local function runSyaaHub()
     end)
 
     -- ==========================================
-    -- PANEL ORIENTATION (SCROLLABLE & TOGGLE STYLE)
+    -- PANEL ORIENTATION
     -- ==========================================
     local oY = 2
     makeSepHdr("SCREEN ORIENTATION", oY, pOR); oY = oY+22
@@ -665,7 +678,7 @@ local function runSyaaHub()
     end)
 
     -- ==========================================
-    -- RENDER ENGINE - HYBRID UNLIMITED ZOOM (NO TOUCH!)
+    -- RENDER ENGINE
     -- ==========================================
     RunService:BindToRenderStep("SyaaaEngine", Enum.RenderPriority.Camera.Value+1, function(dt)
         if not isFreecamActive then return end
