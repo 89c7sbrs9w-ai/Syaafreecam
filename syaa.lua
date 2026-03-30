@@ -458,6 +458,27 @@ local function runSyaaHub()
     -- ==========================================
     local tY = 2
     makeSepHdr("PLAYER MODS", tY, pTools); tY = tY+22
+    
+    -- TOMBOL LOAD FLY (SIMPLE)
+    local flyBtn = Instance.new("TextButton")
+    flyBtn.Text = "🚀 Load Fly"
+    flyBtn.Size = UDim2.new(0.92,0,0,30)
+    flyBtn.Position = UDim2.new(0.04,0,0,tY)
+    flyBtn.BackgroundColor3 = Color3.fromRGB(130,40,255)
+    flyBtn.BackgroundTransparency = 0.5
+    flyBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    flyBtn.Font = Enum.Font.GothamBold
+    flyBtn.TextSize = 10
+    flyBtn.Parent = pTools
+    Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0,6)
+    tY = tY + 36
+
+    flyBtn.MouseButton1Click:Connect(function()
+        pcall(function()
+            loadstring(game:HttpGet("https://rawscripts.net/raw/Brookhaven-RP-Fly-v1-27423"))()
+        end)
+    end)
+    
     local infJumpRow, setInfJump = makeIosRow("Unlimited Jump", tY, pTools); tY = tY+36
     local isInfJump = false
     infJumpRow.MouseButton1Click:Connect(function() isInfJump = not isInfJump; setInfJump(isInfJump) end)
