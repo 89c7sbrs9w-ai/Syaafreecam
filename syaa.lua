@@ -6,13 +6,28 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
 local HttpService = game:GetService("HttpService") -- Buat AI
+
+-- FIX 1: Nungguin LocalPlayer beneran ke-load biar nggak error 'attempt to index nil'
 local localPlayer = Players.LocalPlayer
+while not localPlayer do
+    task.wait(0.1)
+    localPlayer = Players.LocalPlayer
+end
+
 local Camera = workspace.CurrentCamera
+while not Camera do
+    task.wait(0.1)
+    Camera = workspace.CurrentCamera
+end
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "SyaaaHub_V7_Final"
 screenGui.ResetOnSpawn = false
-screenGui.Parent = (gethui and gethui()) or game:GetService("CoreGui")
+
+-- FIX 2: Panggil gethui() pakai pcall biar aman dari error executor
+local coreGui
+pcall(function() coreGui = gethui and gethui() end)
+screenGui.Parent = coreGui or game:GetService("CoreGui")
 
 -- ASSETS REQUESTED BY SYAA
 local ICON_SIDEBAR_AI = "rbxassetid://116237838142641" -- ICON AI BARU
@@ -22,10 +37,13 @@ local ICON_SEND_MESSAGE = "rbxassetid://138977642527887"
 local devAvaUrl = "rbxthumb://type=AvatarHeadShot&id=0&w=150&h=150" -- Default
 local playerAvaUrl = "rbxthumb://type=AvatarHeadShot&id="..localPlayer.UserId.."&w=150&h=150"
 
-pcall(function()
-    -- Ambil UserId Syaa 'tepresakkriminal'
-    local userIdSyaa = Players:GetUserIdFromNameAsync("tepresakkriminal")
-    devAvaUrl = "rbxthumb://type=AvatarHeadShot&id="..userIdSyaa.."&w=150&h=150"
+-- FIX 3: Asynchronous Fetch pake task.spawn biar nggak nge-block loading GUI lu (Non-Blocking)
+task.spawn(function()
+    pcall(function()
+        -- Ambil UserId Syaa 'tepresakkriminal'
+        local userIdSyaa = Players:GetUserIdFromNameAsync("tepresakkriminal")
+        devAvaUrl = "rbxthumb://type=AvatarHeadShot&id="..userIdSyaa.."&w=150&h=150"
+    end)
 end)
 
 -- ==========================================
@@ -252,6 +270,77 @@ local function runSyaaHub()
     local PlayerModule = require(localPlayer.PlayerScripts:WaitForChild("PlayerModule")):GetControls()
 
     -- ==========================================
+    -- SHIFTLOCK (ICON & LOGIC)
+    -- ==========================================
+    local shiftlockBtn = Instance.new("ImageButton")
+    shiftlockBtn.Size = UDim2.new(0, 85, 0, 85) 
+    shiftlockBtn.AnchorPoint = Vector2.new(0.5, 0.5) -- Biar slider X/Y posisinya presisi di tengah
+    shiftlockBtn.Position = UDim2.new(0.9, 0, 0.5, 0)
+    shiftlockBtn.BackgroundTransparency = 1
+    shiftlockBtn.Image = "rbxassetid://117791842859124"
+    shiftlockBtn.ImageColor3 = Color3.fromRGB(255,255,255)
+    shiftlockBtn.ScaleType = Enum.ScaleType.Fit
+    shiftlockBtn.Visible = false -- Default mati, dinyalain dari Tab Freecam
+    shiftlockBtn.Parent = screenGui
+    Instance.new("UICorner", shiftlockBtn).CornerRadius = UDim.new(1, 0)
+
+    local isShiftlockActive = false
+    local shiftlockConn = nil
+
+    local function applyShiftlock()
+        local char = localPlayer.Character
+        if not char then return end
+        local humanoid = char:FindFirstChild("Humanoid")
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if humanoid then humanoid.AutoRotate = false end
+        
+        if shiftlockConn then shiftlockConn:Disconnect() end
+        shiftlockConn = RunService.RenderStepped:Connect(function()
+            if isShiftlockActive and root then
+                local camLook = Camera.CFrame.LookVector
+                local direction = Vector3.new(camLook.X, 0, camLook.Z)
+                if direction.Magnitude > 0 then
+                    root.CFrame = CFrame.new(root.Position, root.Position + direction)
+                end
+            end
+        end)
+    end
+
+    local function disableShiftlock()
+        local char = localPlayer.Character
+        if not char then return end
+        local humanoid = char:FindFirstChild("Humanoid")
+        local root = char:FindFirstChild("HumanoidRootPart")
+        
+        if humanoid then humanoid.AutoRotate = true end
+        if shiftlockConn then shiftlockConn:Disconnect(); shiftlockConn = nil end
+        if root then
+            local look = Camera.CFrame.LookVector
+            root.CFrame = CFrame.new(root.Position, root.Position + Vector3.new(look.X,0,look.Z))
+        end
+    end
+
+    shiftlockBtn.MouseButton1Click:Connect(function()
+        isShiftlockActive = not isShiftlockActive
+        if isShiftlockActive then
+            shiftlockBtn.ImageColor3 = Color3.fromRGB(0,170,255)
+            applyShiftlock()
+        else
+            shiftlockBtn.ImageColor3 = Color3.fromRGB(255,255,255)
+            disableShiftlock()
+        end
+    end)
+
+    localPlayer.CharacterAdded:Connect(function(char)
+        if isShiftlockActive then
+            char:WaitForChild("Humanoid")
+            char:WaitForChild("HumanoidRootPart")
+            task.wait(0.2)
+            applyShiftlock()
+        end
+    end)
+
+    -- ==========================================
     -- MAIN FRAME
     -- ==========================================
     local mainFrame = Instance.new("Frame")
@@ -387,7 +476,7 @@ local function runSyaaHub()
     makeSidebarIcon("rbxassetid://76171785807172", 12, "Freecam", UDim2.new(0, 26, 0, 26))
     makeSidebarIcon("rbxassetid://116019702436521", 52, "Orientation", UDim2.new(0, 34, 0, 34))
     makeSidebarIcon("rbxassetid://112703342701931", 96, "Tools", UDim2.new(0, 30, 0, 30))
-    makeSidebarIcon(ICON_SIDEBAR_AI, 138, "AI", UDim2.new(0, 30, 0, 30)) -- UKURAN DISESUAIKAN
+    makeSidebarIcon(ICON_SIDEBAR_AI, 138, "AI", UDim2.new(0, 30, 0, 30)) 
 
     -- ==========================================
     -- PANELS CREATION
@@ -594,6 +683,41 @@ local function runSyaaHub()
     local function hasFocused() for _,v in pairs(focusedPlayers) do if v then return true end end return false end
     local function startCinematicLoop() if cinematicConn then return end; cinematicConn = RunService.RenderStepped:Connect(function() if not cinematicActive then return end; if hasFocused() then local targetChar, targetDist = nil, math.huge; for pName, isFocused in pairs(focusedPlayers) do if isFocused then local p=Players:FindFirstChild(pName); if p and p.Character then local hrp=p.Character:FindFirstChild("HumanoidRootPart"); if hrp then local dist=(hrp.Position-Camera.CFrame.Position).Magnitude; if dist<targetDist then targetDist, targetChar = dist, p.Character end end end end end; if targetChar and depthOfField then local hrp=targetChar:FindFirstChild("HumanoidRootPart"); if hrp then depthOfField.FocusDistance, depthOfField.InFocusRadius, depthOfField.FarIntensity, depthOfField.NearIntensity = (hrp.Position-Camera.CFrame.Position).Magnitude, 4, 1, 1 end end; if blurEffect then blurEffect.Size=0 end else if blurEffect then blurEffect.Size=blurAmount end; if depthOfField then depthOfField.FarIntensity, depthOfField.NearIntensity, depthOfField.InFocusRadius = 0, 0, 999 end end end) end
     cinRow.MouseButton1Click:Connect(function() cinematicActive = not cinematicActive; setCinState(cinematicActive); if cinematicActive then if blurEffect then blurEffect:Destroy() end; if depthOfField then depthOfField:Destroy() end; blurEffect, depthOfField = Instance.new("BlurEffect"), Instance.new("DepthOfFieldEffect"); blurEffect.Size, blurEffect.Parent = blurAmount, Lighting; depthOfField.FarIntensity, depthOfField.NearIntensity, depthOfField.InFocusRadius, depthOfField.FocusDistance, depthOfField.Parent = 1, 1, 5, 50, Lighting; startCinematicLoop() else if cinematicConn then cinematicConn:Disconnect(); cinematicConn=nil end; if blurEffect then blurEffect:Destroy(); blurEffect=nil end; if depthOfField then depthOfField:Destroy(); depthOfField=nil end end end)
+
+    -- INJECT SHIFTLOCK SETTINGS KE PANEL FREECAM
+    makeSepHdr("SHIFTLOCK SETTINGS", Y, pFC); Y = Y+22
+    local slRow, setSlState, getSlState = makeIosRow("Show Shiftlock", Y, pFC); Y = Y+36
+    slRow.MouseButton1Click:Connect(function() local s = not getSlState(); setSlState(s); shiftlockBtn.Visible = s end)
+    
+    local slSzLab = makeLbl("Icon Size: 85", Y, pFC, 14); Y = Y+16
+    local slSzBg = Instance.new("Frame"); slSzBg.Size = UDim2.new(0.88,0,0,4); slSzBg.Position = UDim2.new(0.06,0,0,Y); slSzBg.BackgroundColor3 = Color3.fromRGB(30,20,40); slSzBg.Parent = pFC; Instance.new("UICorner",slSzBg)
+    local slSzFill = Instance.new("Frame"); slSzFill.Size = UDim2.new((85-30)/120,0,1,0); slSzFill.BackgroundColor3 = Color3.fromRGB(150,40,255); slSzFill.BorderSizePixel = 0; slSzFill.Parent = slSzBg; Instance.new("UICorner",slSzFill)
+    local slSzBtn = Instance.new("TextButton"); slSzBtn.Size = UDim2.new(0,14,0,14); slSzBtn.Position = UDim2.new((85-30)/120,-7,0.5,-7); slSzBtn.Text = ""; slSzBtn.BackgroundColor3 = Color3.fromRGB(255,255,255); slSzBtn.Parent = slSzBg; Instance.new("UICorner",slSzBtn).CornerRadius = UDim.new(1,0)
+    Y = Y+18; local slSzSld = false
+    slSzBtn.MouseButton1Down:Connect(function() slSzSld=true end)
+    UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then slSzSld=false end end)
+    UserInputService.InputChanged:Connect(function(i) if slSzSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X-slSzBg.AbsolutePosition.X)/slSzBg.AbsoluteSize.X,0,1); slSzFill.Size = UDim2.new(pos,0,1,0); slSzBtn.Position = UDim2.new(pos,-7,0.5,-7); local s = math.floor(30+(pos*120)); slSzLab.Text = "Icon Size: "..s; shiftlockBtn.Size = UDim2.new(0,s,0,s) end end)
+
+    local slXLab = makeLbl("Posisi X: 0.90", Y, pFC, 14); Y = Y+16
+    local slXBg = Instance.new("Frame"); slXBg.Size = UDim2.new(0.88,0,0,4); slXBg.Position = UDim2.new(0.06,0,0,Y); slXBg.BackgroundColor3 = Color3.fromRGB(30,20,40); slXBg.Parent = pFC; Instance.new("UICorner",slXBg)
+    local slXFill = Instance.new("Frame"); slXFill.Size = UDim2.new(0.9,0,1,0); slXFill.BackgroundColor3 = Color3.fromRGB(150,40,255); slXFill.BorderSizePixel = 0; slXFill.Parent = slXBg; Instance.new("UICorner",slXFill)
+    local slXBtn = Instance.new("TextButton"); slXBtn.Size = UDim2.new(0,14,0,14); slXBtn.Position = UDim2.new(0.9,-7,0.5,-7); slXBtn.Text = ""; slXBtn.BackgroundColor3 = Color3.fromRGB(255,255,255); slXBtn.Parent = slXBg; Instance.new("UICorner",slXBtn).CornerRadius = UDim.new(1,0)
+    Y = Y+18; local slXSld = false
+    slXBtn.MouseButton1Down:Connect(function() slXSld=true end)
+    UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then slXSld=false end end)
+    UserInputService.InputChanged:Connect(function(i) if slXSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X-slXBg.AbsolutePosition.X)/slXBg.AbsoluteSize.X,0,1); slXFill.Size = UDim2.new(pos,0,1,0); slXBtn.Position = UDim2.new(pos,-7,0.5,-7); slXLab.Text = string.format("Posisi X: %.2f",pos); shiftlockBtn.Position = UDim2.new(pos,0,shiftlockBtn.Position.Y.Scale,0) end end)
+
+    local slYLab = makeLbl("Posisi Y: 0.50", Y, pFC, 14); Y = Y+16
+    local slYBg = Instance.new("Frame"); slYBg.Size = UDim2.new(0.88,0,0,4); slYBg.Position = UDim2.new(0.06,0,0,Y); slYBg.BackgroundColor3 = Color3.fromRGB(30,20,40); slYBg.Parent = pFC; Instance.new("UICorner",slYBg)
+    local slYFill = Instance.new("Frame"); slYFill.Size = UDim2.new(0.5,0,1,0); slYFill.BackgroundColor3 = Color3.fromRGB(150,40,255); slYFill.BorderSizePixel = 0; slYFill.Parent = slYBg; Instance.new("UICorner",slYFill)
+    local slYBtn = Instance.new("TextButton"); slYBtn.Size = UDim2.new(0,14,0,14); slYBtn.Position = UDim2.new(0.5,-7,0.5,-7); slYBtn.Text = ""; slYBtn.BackgroundColor3 = Color3.fromRGB(255,255,255); slYBtn.Parent = slYBg; Instance.new("UICorner",slYBtn).CornerRadius = UDim.new(1,0)
+    Y = Y+18; local slYSld = false
+    slYBtn.MouseButton1Down:Connect(function() slYSld=true end)
+    UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then slYSld=false end end)
+    UserInputService.InputChanged:Connect(function(i) if slYSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X-slYBg.AbsolutePosition.X)/slYBg.AbsoluteSize.X,0,1); slYFill.Size = UDim2.new(pos,0,1,0); slYBtn.Position = UDim2.new(pos,-7,0.5,-7); slYLab.Text = string.format("Posisi Y: %.2f",pos); shiftlockBtn.Position = UDim2.new(shiftlockBtn.Position.X.Scale,0,pos,0) end end)
+
+    local bPadFC = Instance.new("Frame"); bPadFC.Size = UDim2.new(1,0,0,20); bPadFC.Position = UDim2.new(0,0,0,Y); bPadFC.BackgroundTransparency = 1; bPadFC.Parent = pFC
+
 
     -- ==========================================
     -- PANEL ORIENTATION
