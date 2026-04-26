@@ -81,7 +81,7 @@ local function startLoading(callback)
             local updStroke = Instance.new("UIStroke", updFrame); updStroke.Color = Color3.fromRGB(0, 120, 255); updStroke.Thickness = 1.5
 
             local iconLbl = Instance.new("TextLabel")
-            iconLbl.Text = "ð"; iconLbl.Size = UDim2.new(0, 40, 0, 40)
+            iconLbl.Text = "🔔"; iconLbl.Size = UDim2.new(0, 40, 0, 40)
             iconLbl.Position = UDim2.new(0, 10, 0.5, -20)
             iconLbl.BackgroundTransparency = 1; iconLbl.TextSize = 22
             iconLbl.Font = Enum.Font.GothamBold; iconLbl.Parent = updFrame
@@ -94,16 +94,14 @@ local function startLoading(callback)
             updTitle.TextXAlignment = Enum.TextXAlignment.Left; updTitle.Parent = updFrame
 
             local updDesc = Instance.new("TextLabel")
-            updDesc.Text = "Blue Theme + Spy Cam sudah aktif ð"; updDesc.Size = UDim2.new(1, -60, 0, 28)
+            updDesc.Text = "Blue Theme + Spy Cam terintegrasi di Tools 🚀"; updDesc.Size = UDim2.new(1, -60, 0, 28)
             updDesc.Position = UDim2.new(0, 55, 0, 34)
             updDesc.BackgroundTransparency = 1; updDesc.TextColor3 = Color3.fromRGB(200, 200, 200)
             updDesc.Font = Enum.Font.Gotham; updDesc.TextSize = 10
             updDesc.TextWrapped = true; updDesc.TextXAlignment = Enum.TextXAlignment.Left; updDesc.Parent = updFrame
 
-            -- Slide masuk dari kanan ke kiri, persis kayak notif developer
             TweenService:Create(updFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(1, -300, 1, -175)}):Play()
             task.wait(5)
-            -- Slide keluar ke kanan lagi
             local twOut = TweenService:Create(updFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(1, 20, 1, -175)})
             twOut:Play(); twOut.Completed:Wait(); updFrame:Destroy()
         end)
@@ -231,12 +229,6 @@ local function runSyaaHub()
     local autoWalkActive = false
     local autoWalkDirection = 0
     local autoWalkSpeed = 10
-    local cinematicActive = false
-    local blurAmount = 20
-    local focusedPlayers = {}
-    local blurEffect = nil
-    local depthOfField = nil
-    local cinematicConn = nil
     local PlayerModule = require(localPlayer.PlayerScripts:WaitForChild("PlayerModule")):GetControls()
 
     -- SHIFTLOCK (ICON & LOGIC)
@@ -397,10 +389,10 @@ local function runSyaaHub()
     minBtn.MouseButton1Click:Connect(function() toggleMainFrame(false) end)
     openIcon.MouseButton1Click:Connect(function() toggleMainFrame(true) end)
 
-    -- SIDEBAR
+    -- SIDEBAR (Kini hanya 3 Icon agar pas dan rapi)
     local sidebar = Instance.new("Frame")
-    sidebar.Size = UDim2.new(0, 42, 0, 230) 
-    sidebar.Position = UDim2.new(0, -52, 0.5, -115)
+    sidebar.Size = UDim2.new(0, 42, 0, 140) 
+    sidebar.Position = UDim2.new(0, -52, 0.5, -70)
     sidebar.BackgroundColor3 = Color3.fromRGB(5,10,25)
     sidebar.BackgroundTransparency = 0.2
     sidebar.Parent = mainFrame
@@ -421,10 +413,9 @@ local function runSyaaHub()
         btn.MouseButton1Click:Connect(function() setTab(tabName) end)
     end
     
-    makeSidebarIcon("rbxassetid://76171785807172", 22, "Freecam", UDim2.new(0, 26, 0, 26))
-    makeSidebarIcon("rbxassetid://116019702436521", 72, "Orientation", UDim2.new(0, 34, 0, 34))
-    makeSidebarIcon("rbxassetid://112703342701931", 122, "Tools", UDim2.new(0, 30, 0, 30))
-    makeSidebarIcon("rbxassetid://120109559944464", 172, "Spy", UDim2.new(0, 28, 0, 28))
+    makeSidebarIcon("rbxassetid://76171785807172", 18, "Freecam", UDim2.new(0, 26, 0, 26))
+    makeSidebarIcon("rbxassetid://116019702436521", 58, "Orientation", UDim2.new(0, 34, 0, 34))
+    makeSidebarIcon("rbxassetid://112703342701931", 98, "Tools", UDim2.new(0, 30, 0, 30))
 
     -- PANELS CREATION
     local function createPanel(name)
@@ -441,7 +432,6 @@ local function runSyaaHub()
     local pFC = createPanel("Freecam")
     local pOR = createPanel("Orientation")
     local pTools = createPanel("Tools")
-    local pSpy = createPanel("Spy")
 
     -- HELPERS
     local function makeIosRow(labelTxt, yOff, parent)
@@ -551,7 +541,7 @@ local function runSyaaHub()
 
 
     -- ==========================================
-    -- SCOPE 1: PANEL TOOLS
+    -- SCOPE 1: PANEL TOOLS (+ SPY CAM MERGE)
     -- ==========================================
     local function buildToolsPanel()
         local tY = 2
@@ -614,7 +604,7 @@ local function runSyaaHub()
         local flyBtn = Instance.new("TextButton"); flyBtn.Text = "🚀 Load Fly"; flyBtn.Size = UDim2.new(0.92,0,0,30); flyBtn.Position = UDim2.new(0.04,0,0,tY); flyBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); flyBtn.BackgroundTransparency = 0.5; flyBtn.TextColor3 = Color3.fromRGB(255,255,255); flyBtn.Font = Enum.Font.GothamBold; flyBtn.TextSize = 10; flyBtn.Parent = pTools; Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0,6); tY = tY + 36
         flyBtn.MouseButton1Click:Connect(function() pcall(function() loadstring(game:HttpGet("https://rawscripts.net/raw/Brookhaven-RP-Fly-v1-27423"))() end) end)
 
-        local emoteBtn = Instance.new("TextButton"); emoteBtn.Text = "🕺 Load Emote"; emoteBtn.Size = UDim2.new(0.92,0,0,30); emoteBtn.Position = UDim2.new(0.04,0,0,tY); emoteBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); emoteBtn.BackgroundTransparency = 0.5; emoteBtn.TextColor3 = Color3.fromRGB(255,255,255); emoteBtn.Font = Enum.Font.GothamBold; emoteBtn.TextSize = 10; emoteBtn.Parent = pTools; Instance.new("UICorner", emoteBtn).CornerRadius = UDim.new(0,6); tY = tY + 36
+        local emoteBtn = Instance.new("TextButton"); emoteBtn.Text = "🕺 Load Emote"; emoteBtn.Size = UDim2.new(0.92,0,0,30); emoteBtn.Position = UDim2.new(0.04,0,0,tY); emoteBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); emoteBtn.BackgroundTransparency = 0.5; emoteBtn.TextColor3 = Color3.fromRGB(255,255,255); flyBtn.Font = Enum.Font.GothamBold; emoteBtn.TextSize = 10; emoteBtn.Parent = pTools; Instance.new("UICorner", emoteBtn).CornerRadius = UDim.new(0,6); tY = tY + 36
         emoteBtn.MouseButton1Click:Connect(function() task.spawn(function() pcall(function() local src = ""; local StarterGui = game:GetService("StarterGui"); pcall(function() src = game:HttpGet("https://yarhm.mhi.im/scr?channel=afemmax", false) end); if src == "" then StarterGui:SetCore("SendNotification", {Title = "YARHM Outage"; Text = "Using YARHM Offline."; Duration = 5;}); src = game:HttpGet("https://raw.githubusercontent.com/Joystickplays/AFEM/refs/heads/main/max/afemmax.lua", false) end; if src ~= "" then loadstring(src)() end end) end) end)
         
         local infJumpRow, setInfJump = makeIosRow("Unlimited Jump", tY, pTools); tY = tY+36
@@ -673,6 +663,344 @@ local function runSyaaHub()
         local function mod3D(cf) if activeImage then activeImage.CFrame = activeImage.CFrame * cf end end
         btnLeft.MouseButton1Click:Connect(function() mod3D(CFrame.new(0.5, 0, 0)) end); btnRight.MouseButton1Click:Connect(function() mod3D(CFrame.new(-0.5, 0, 0)) end); btnUp.MouseButton1Click:Connect(function() mod3D(CFrame.new(0, 0.5, 0)) end); btnDown.MouseButton1Click:Connect(function() mod3D(CFrame.new(0, -0.5, 0)) end); btnFwd.MouseButton1Click:Connect(function() mod3D(CFrame.new(0, 0, 0.5)) end); btnBack.MouseButton1Click:Connect(function() mod3D(CFrame.new(0, 0, -0.5)) end); btnRotL.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0, math.rad(15), 0)) end); btnRotR.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0, math.rad(-15), 0)) end); btnTiltL.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0, 0, math.rad(15))) end); btnTiltR.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0, 0, math.rad(-15))) end); btnRotUp.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(math.rad(15), 0, 0)) end); btnRotDown.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(math.rad(-15), 0, 0)) end)
         
+
+        -- ==========================================
+        -- BAGIAN SPY CAM (Sekarang gabung di Tools)
+        -- ==========================================
+        local spyActive = false
+        local spyTarget = nil
+        local spyConn = nil
+        local spyCamOffset = Vector3.new(0, 2, 5) -- offset kamera dari belakang player
+
+        makeSepHdr("SPY CAM", tY, pTools); tY = tY + 22
+
+        -- Toggle SPY
+        local spyRow, setSpyState, getSpyState = makeIosRow("Aktifkan Spy Cam", tY, pTools); tY = tY + 36
+
+        -- Info label
+        local infoLbl = makeLbl("▸ Pilih player yang mau dipantau:", tY, pTools, 14, Color3.fromRGB(50, 150, 255)); tY = tY + 18
+
+        -- Target display
+        local targetLbl = makeLbl("Target: Belum dipilih", tY, pTools, 14, Color3.fromRGB(200, 200, 200)); tY = tY + 16
+
+        -- Refresh button
+        local refreshSpyBtn = Instance.new("TextButton")
+        refreshSpyBtn.Text = "↺ Refresh Player List"
+        refreshSpyBtn.Size = UDim2.new(0.92, 0, 0, 26)
+        refreshSpyBtn.Position = UDim2.new(0.04, 0, 0, tY)
+        refreshSpyBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 230)
+        refreshSpyBtn.BackgroundTransparency = 0.5
+        refreshSpyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        refreshSpyBtn.Font = Enum.Font.GothamBold
+        refreshSpyBtn.TextSize = 10
+        refreshSpyBtn.Parent = pTools
+        Instance.new("UICorner", refreshSpyBtn).CornerRadius = UDim.new(0, 6)
+        tY = tY + 32
+
+        -- Player list scrollframe
+        local spyListFrame = Instance.new("ScrollingFrame")
+        spyListFrame.Size = UDim2.new(0.92, 0, 0, 110)
+        spyListFrame.Position = UDim2.new(0.04, 0, 0, tY)
+        spyListFrame.BackgroundColor3 = Color3.fromRGB(5, 10, 25)
+        spyListFrame.BackgroundTransparency = 0.4
+        spyListFrame.Parent = pTools
+        spyListFrame.ScrollBarThickness = 2
+        spyListFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 120, 255)
+        spyListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        spyListFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+        Instance.new("UICorner", spyListFrame)
+        Instance.new("UIStroke", spyListFrame).Color = Color3.fromRGB(0, 100, 230)
+        local spyLayout = Instance.new("UIListLayout", spyListFrame)
+        spyLayout.Padding = UDim.new(0, 3)
+        spyLayout.SortOrder = Enum.SortOrder.Name
+        tY = tY + 120
+
+        makeSepHdr("KAMERA OFFSET", tY, pTools); tY = tY + 22
+
+        -- Offset Y slider
+        local offYLab = makeLbl("Tinggi (Y): 2", tY, pTools, 14); tY = tY + 16
+        local offYBg = Instance.new("Frame"); offYBg.Size = UDim2.new(0.88, 0, 0, 4); offYBg.Position = UDim2.new(0.06, 0, 0, tY); offYBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); offYBg.Parent = pTools; Instance.new("UICorner", offYBg)
+        local offYFill = Instance.new("Frame"); offYFill.Size = UDim2.new(2/10, 0, 1, 0); offYFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); offYFill.BorderSizePixel = 0; offYFill.Parent = offYBg; Instance.new("UICorner", offYFill)
+        local offYKnob = Instance.new("TextButton"); offYKnob.Size = UDim2.new(0, 14, 0, 14); offYKnob.Position = UDim2.new(2/10, -7, 0.5, -7); offYKnob.Text = ""; offYKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); offYKnob.Parent = offYBg; Instance.new("UICorner", offYKnob).CornerRadius = UDim.new(1, 0)
+        tY = tY + 18; local offYSld = false
+        offYKnob.MouseButton1Down:Connect(function() offYSld = true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then offYSld = false end end)
+        UserInputService.InputChanged:Connect(function(i) if offYSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X - offYBg.AbsolutePosition.X) / offYBg.AbsoluteSize.X, 0, 1); offYFill.Size = UDim2.new(pos, 0, 1, 0); offYKnob.Position = UDim2.new(pos, -7, 0.5, -7); local v = math.floor(pos * 20) - 5; offYLab.Text = "Tinggi (Y): " .. v; spyCamOffset = Vector3.new(spyCamOffset.X, v, spyCamOffset.Z) end end)
+
+        -- Offset Z slider
+        local offZLab = makeLbl("Jarak (Z): 5", tY, pTools, 14); tY = tY + 16
+        local offZBg = Instance.new("Frame"); offZBg.Size = UDim2.new(0.88, 0, 0, 4); offZBg.Position = UDim2.new(0.06, 0, 0, tY); offZBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); offZBg.Parent = pTools; Instance.new("UICorner", offZBg)
+        local offZFill = Instance.new("Frame"); offZFill.Size = UDim2.new(5/25, 0, 1, 0); offZFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); offZFill.BorderSizePixel = 0; offZFill.Parent = offZBg; Instance.new("UICorner", offZFill)
+        local offZKnob = Instance.new("TextButton"); offZKnob.Size = UDim2.new(0, 14, 0, 14); offZKnob.Position = UDim2.new(5/25, -7, 0.5, -7); offZKnob.Text = ""; offZKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); offZKnob.Parent = offZBg; Instance.new("UICorner", offZKnob).CornerRadius = UDim.new(1, 0)
+        tY = tY + 18; local offZSld = false
+        offZKnob.MouseButton1Down:Connect(function() offZSld = true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then offZSld = false end end)
+        UserInputService.InputChanged:Connect(function(i) if offZSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X - offZBg.AbsolutePosition.X) / offZBg.AbsoluteSize.X, 0, 1); offZFill.Size = UDim2.new(pos, 0, 1, 0); offZKnob.Position = UDim2.new(pos, -7, 0.5, -7); local v = math.floor(pos * 25) + 1; offZLab.Text = "Jarak (Z): " .. v; spyCamOffset = Vector3.new(spyCamOffset.X, spyCamOffset.Y, v) end end)
+
+        -- Stop spy button
+        local stopSpyBtn = Instance.new("TextButton")
+        stopSpyBtn.Text = "■ Stop Spy"
+        stopSpyBtn.Size = UDim2.new(0.92, 0, 0, 28)
+        stopSpyBtn.Position = UDim2.new(0.04, 0, 0, tY)
+        stopSpyBtn.BackgroundColor3 = Color3.fromRGB(200, 30, 50)
+        stopSpyBtn.BackgroundTransparency = 0.4
+        stopSpyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        stopSpyBtn.Font = Enum.Font.GothamBold
+        stopSpyBtn.TextSize = 11
+        stopSpyBtn.Parent = pTools
+        Instance.new("UICorner", stopSpyBtn).CornerRadius = UDim.new(0, 6)
+        tY = tY + 36
+
+        -- Zoom buttons (buat mobile, PC bisa scroll)
+        makeSepHdr("ZOOM (Mobile)", tY, pTools); tY = tY + 20
+        local zoomInBtn, zoomOutBtn = makeBtn2("🔍 Zoom In", "🔍 Zoom Out", tY, pTools); tY = tY + 32
+        -- Hold to zoom continuously
+        local zoomInHeld, zoomOutHeld = false, false
+        zoomInBtn.MouseButton1Down:Connect(function() zoomInHeld = true end)
+        zoomInBtn.MouseButton1Up:Connect(function() zoomInHeld = false end)
+        zoomInBtn.InputEnded:Connect(function() zoomInHeld = false end)
+        zoomOutBtn.MouseButton1Down:Connect(function() zoomOutHeld = true end)
+        zoomOutBtn.MouseButton1Up:Connect(function() zoomOutHeld = false end)
+        zoomOutBtn.InputEnded:Connect(function() zoomOutHeld = false end)
+        RunService.Heartbeat:Connect(function()
+            if spyActive then
+                if zoomInHeld then spyZoomDist = math.clamp(spyZoomDist - 0.15, 2, 80) end
+                if zoomOutHeld then spyZoomDist = math.clamp(spyZoomDist + 0.15, 2, 80) end
+            end
+        end)
+
+        -- Spy logic functions
+        local spyRows = {}
+
+        local spyOrbitYaw = 180   -- derajat, 180 = posisi belakang target
+        local spyOrbitPitch = 15  -- derajat ke atas
+        local spyZoomDist = 7     -- jarak dari target
+        local spyDragging = false
+        local spyLastInput = nil
+        local spyInputConn1, spyInputConn2, spyInputConn3
+
+        local function disconnectSpyInput()
+            if spyInputConn1 then spyInputConn1:Disconnect(); spyInputConn1 = nil end
+            if spyInputConn2 then spyInputConn2:Disconnect(); spyInputConn2 = nil end
+            if spyInputConn3 then spyInputConn3:Disconnect(); spyInputConn3 = nil end
+            spyDragging = false
+        end
+
+        local function stopSpy()
+            spyActive = false
+            spyTarget = nil
+            setSpyState(false)
+            targetLbl.Text = "Target: Belum dipilih"
+            if spyConn then spyConn:Disconnect(); spyConn = nil end
+            disconnectSpyInput()
+            
+            -- Animasi mulus kembali ke player Syaa
+            if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = localPlayer.Character.HumanoidRootPart
+                local backPos = hrp.Position + (hrp.CFrame.LookVector * -10) + Vector3.new(0, 5, 0)
+                local goalCF = CFrame.lookAt(backPos, hrp.Position)
+                
+                local tw = TweenService:Create(Camera, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = goalCF})
+                tw:Play()
+                tw.Completed:Wait()
+                
+                Camera.CameraType = Enum.CameraType.Custom
+                local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
+                if hum then Camera.CameraSubject = hum end
+            else
+                Camera.CameraType = Enum.CameraType.Custom
+            end
+            
+            pcall(function() PlayerModule:Enable() end)
+        end
+
+        local function connectSpyInput()
+            disconnectSpyInput()
+            -- Drag untuk rotate orbit
+            spyInputConn1 = UserInputService.InputBegan:Connect(function(inp, gpe)
+                if gpe then return end
+                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                    spyDragging = true; spyLastInput = inp.Position
+                end
+            end)
+            spyInputConn2 = UserInputService.InputEnded:Connect(function(inp)
+                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                    spyDragging = false
+                end
+            end)
+            spyInputConn3 = UserInputService.InputChanged:Connect(function(inp)
+                if spyActive then
+                    -- Drag rotate
+                    if spyDragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+                        local delta = inp.Position - (spyLastInput or inp.Position)
+                        spyLastInput = inp.Position
+                        spyOrbitYaw = spyOrbitYaw - delta.X * 0.4
+                        spyOrbitPitch = math.clamp(spyOrbitPitch + delta.Y * 0.3, -60, 75)
+                    end
+                    -- Scroll zoom (PC)
+                    if inp.UserInputType == Enum.UserInputType.MouseWheel then
+                        spyZoomDist = math.clamp(spyZoomDist - inp.Position.Z * 2, 2, 80)
+                    end
+                end
+            end)
+        end
+
+        local function startSpy(player)
+            if spyConn then spyConn:Disconnect(); spyConn = nil end
+            spyTarget = player
+            spyActive = true
+            spyOrbitYaw = 180
+            spyOrbitPitch = 15
+            spyZoomDist = spyCamOffset.Z + 2
+            setSpyState(true)
+            targetLbl.Text = "Target: " .. player.DisplayName .. " (@" .. player.Name .. ")"
+
+            pcall(function() PlayerModule:Disable() end)
+            Camera.CameraType = Enum.CameraType.Scriptable
+            connectSpyInput()
+
+            -- Animasi mulus nyamperin target
+            if spyTarget.Character and spyTarget.Character:FindFirstChild("HumanoidRootPart") then
+                local tHrp = spyTarget.Character.HumanoidRootPart
+                local targetPos = tHrp.Position + Vector3.new(0, spyCamOffset.Y, 0)
+                local dist = spyZoomDist
+                local yawRad = math.rad(spyOrbitYaw)
+                local pitchRad = math.rad(spyOrbitPitch)
+                local camOffset = Vector3.new(
+                    dist * math.sin(yawRad) * math.cos(pitchRad),
+                    dist * math.sin(pitchRad),
+                    dist * math.cos(yawRad) * math.cos(pitchRad)
+                )
+                local goalCF = CFrame.lookAt(targetPos + camOffset, targetPos + Vector3.new(0, 0.5, 0))
+                
+                local tw = TweenService:Create(Camera, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = goalCF})
+                tw:Play()
+                tw.Completed:Wait()
+            end
+
+            -- Mulai loop spy setelah animasi selesai (jika belum di-stop)
+            if not spyActive then return end
+
+            spyConn = RunService.RenderStepped:Connect(function()
+                if not spyActive then return end
+                if not spyTarget or not spyTarget.Parent then stopSpy(); return end
+                local char = spyTarget.Character
+                if not char then return end
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+
+                local targetPos = hrp.Position + Vector3.new(0, spyCamOffset.Y, 0)
+                local yawRad = math.rad(spyOrbitYaw)
+                local pitchRad = math.rad(spyOrbitPitch)
+                local dist = spyZoomDist
+                local camOffset = Vector3.new(
+                    dist * math.sin(yawRad) * math.cos(pitchRad),
+                    dist * math.sin(pitchRad),
+                    dist * math.cos(yawRad) * math.cos(pitchRad)
+                )
+                local desiredPos = targetPos + camOffset
+                local lookAt = targetPos + Vector3.new(0, 0.5, 0)
+                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(desiredPos, lookAt), 0.12)
+            end)
+        end
+
+        local function refreshSpyList()
+            for _, r in pairs(spyRows) do pcall(function() r:Destroy() end) end
+            spyRows = {}
+            local list = Players:GetPlayers()
+            local others = {}
+            for _, p in ipairs(list) do
+                if p ~= localPlayer then table.insert(others, p) end
+            end
+            if #others == 0 then
+                local el = Instance.new("TextLabel")
+                el.Size = UDim2.new(1, 0, 0, 28)
+                el.BackgroundTransparency = 1
+                el.Text = "Cuma lu doang di server 🗿"
+                el.TextColor3 = Color3.fromRGB(100, 100, 100)
+                el.Font = Enum.Font.Gotham
+                el.TextSize = 10
+                el.Parent = spyListFrame
+                table.insert(spyRows, el)
+                return
+            end
+            for _, p in ipairs(others) do
+                local isSelected = (spyTarget == p)
+                local row = Instance.new("TextButton")
+                row.Size = UDim2.new(1, 0, 0, 34)
+                row.BackgroundColor3 = isSelected and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(0, 60, 140)
+                row.BackgroundTransparency = 0.4
+                row.Text = ""
+                row.AutoButtonColor = false
+                row.Parent = spyListFrame
+                Instance.new("UICorner", row)
+
+                local ava = Instance.new("ImageLabel")
+                ava.Size = UDim2.new(0, 26, 0, 26)
+                ava.Position = UDim2.new(0, 4, 0.5, -13)
+                ava.BackgroundTransparency = 1
+                ava.Parent = row
+                Instance.new("UICorner", ava).CornerRadius = UDim.new(1, 0)
+                task.spawn(function()
+                    pcall(function()
+                        ava.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
+                    end)
+                end)
+
+                local nl = Instance.new("TextLabel")
+                nl.Size = UDim2.new(1, -40, 0, 16)
+                nl.Position = UDim2.new(0, 36, 0, 4)
+                nl.BackgroundTransparency = 1
+                nl.Text = (isSelected and "▶ " or "") .. p.DisplayName
+                nl.TextColor3 = isSelected and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)
+                nl.Font = Enum.Font.GothamBold
+                nl.TextSize = 10
+                nl.TextXAlignment = Enum.TextXAlignment.Left
+                nl.Parent = row
+
+                local un = Instance.new("TextLabel")
+                un.Size = UDim2.new(1, -40, 0, 13)
+                un.Position = UDim2.new(0, 36, 0, 18)
+                un.BackgroundTransparency = 1
+                un.Text = "@" .. p.Name
+                un.TextColor3 = Color3.fromRGB(100, 160, 255)
+                un.Font = Enum.Font.Gotham
+                un.TextSize = 9
+                un.TextXAlignment = Enum.TextXAlignment.Left
+                un.Parent = row
+
+                row.MouseButton1Click:Connect(function()
+                    startSpy(p)
+                    refreshSpyList()
+                end)
+                table.insert(spyRows, row)
+            end
+        end
+
+        refreshSpyBtn.MouseButton1Click:Connect(refreshSpyList)
+        stopSpyBtn.MouseButton1Click:Connect(function()
+            stopSpy()
+            refreshSpyList()
+        end)
+        spyRow.MouseButton1Click:Connect(function()
+            if getSpyState() then
+                stopSpy()
+                refreshSpyList()
+            else
+                targetLbl.Text = "Target: Pilih player dulu!"
+                setSpyState(false)
+            end
+        end)
+
+        Players.PlayerAdded:Connect(function() task.wait(0.5); refreshSpyList() end)
+        Players.PlayerRemoving:Connect(function(p)
+            if spyTarget == p then stopSpy() end
+            task.wait(0.1); refreshSpyList()
+        end)
+
+        task.spawn(function() task.wait(0.8); refreshSpyList() end)
+
+        -- Padding bawah Tools
         local tPad = Instance.new("Frame"); tPad.Size = UDim2.new(1,0,0,40); tPad.Position = UDim2.new(0,0,0,tY); tPad.BackgroundTransparency = 1; tPad.Parent = pTools
     end
 
@@ -734,29 +1062,6 @@ local function runSyaaHub()
         awSpdD.MouseButton1Click:Connect(function() autoWalkSpeed=math.max(autoWalkSpeed-5,1); awSpdLab.Text="AW Speed: "..autoWalkSpeed end)
         awSpdU.MouseButton1Click:Connect(function() autoWalkSpeed=math.min(autoWalkSpeed+5,200); awSpdLab.Text="AW Speed: "..autoWalkSpeed end)
         RunService.Heartbeat:Connect(function() if autoWalkActive and autoWalkDirection~=0 then moveInputs.F, moveInputs.B = math.max(0,autoWalkDirection), math.max(0,-autoWalkDirection) end end)
-        makeSepHdr("CINEMATIC MODE", Y, pFC); Y = Y+18
-        local cinRow, setCinState, getCinState = makeIosRow("Cinematic ON/OFF", Y, pFC); Y = Y+36
-        local blurLab = makeLbl("Blur Intensity: 20", Y, pFC, 14); Y = Y+16
-        local blBg = Instance.new("Frame"); blBg.Size = UDim2.new(0.88,0,0,4); blBg.Position = UDim2.new(0.06,0,0,Y); blBg.BackgroundColor3 = Color3.fromRGB(15,25,50); blBg.Parent = pFC; Instance.new("UICorner",blBg)
-        local blFill = Instance.new("Frame"); blFill.Size = UDim2.new(blurAmount/56,0,1,0); blFill.BackgroundColor3 = Color3.fromRGB(0,120,255); blFill.BorderSizePixel = 0; blFill.Parent = blBg; Instance.new("UICorner",blFill)
-        local blKnob = Instance.new("TextButton"); blKnob.Size = UDim2.new(0,14,0,14); blKnob.Position = UDim2.new(blurAmount/56,-7,0.5,-7); blKnob.Text = ""; blKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); blKnob.Parent = blBg; Instance.new("UICorner",blKnob)
-        Y = Y+18; local blurSld = false
-        blKnob.MouseButton1Down:Connect(function() blurSld=true end)
-        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then blurSld=false end end)
-        UserInputService.InputChanged:Connect(function(i) if blurSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X-blBg.AbsolutePosition.X)/blBg.AbsoluteSize.X,0,1); blFill.Size = UDim2.new(pos,0,1,0); blKnob.Position = UDim2.new(pos,-7,0.5,-7); blurAmount = math.floor(pos*56); blurLab.Text = "Blur Intensity: "..blurAmount; if cinematicActive and blurEffect then blurEffect.Size = blurAmount end end end)
-        local refreshBtn, clearBtn = makeBtn2("↺ Refresh","✕ Clear All",Y,pFC); Y = Y+32
-        makeLbl("🎯 Pilih siapa yang di-focus", Y, pFC, 14); Y = Y+16
-        local plFrame = Instance.new("ScrollingFrame"); plFrame.Size = UDim2.new(0.92,0,0,80); plFrame.Position = UDim2.new(0.04,0,0,Y); plFrame.BackgroundColor3, plFrame.BackgroundTransparency = Color3.fromRGB(5,10,25), 0.5; plFrame.Parent = pFC; plFrame.ScrollBarThickness, plFrame.ScrollBarImageColor3 = 2, Color3.fromRGB(0,120,255); plFrame.AutomaticCanvasSize, plFrame.ScrollingDirection = Enum.AutomaticSize.Y, Enum.ScrollingDirection.Y; Instance.new("UICorner",plFrame); Instance.new("UIStroke",plFrame).Color = Color3.fromRGB(20,60,140)
-        local plLayout = Instance.new("UIListLayout",plFrame); plLayout.Padding = UDim.new(0,2); plLayout.SortOrder = Enum.SortOrder.Name
-        Y = Y+90
-        local bPad = Instance.new("Frame"); bPad.Size = UDim2.new(1,0,0,20); bPad.Position = UDim2.new(0,0,0,Y); bPad.BackgroundTransparency, bPad.Parent = 1, pFC
-        local playerRows = {}
-        local function refreshPlayerList() for _,r in pairs(playerRows) do pcall(function() r:Destroy() end) end; playerRows = {}; local list = Players:GetPlayers(); if #list==0 then local el = Instance.new("TextLabel"); el.Size = UDim2.new(1,0,0,24); el.BackgroundTransparency, el.Text, el.TextColor3, el.Font, el.TextSize, el.Parent = 1, "Tidak ada player lain", Color3.fromRGB(100,100,100), Enum.Font.Gotham, 10, plFrame; table.insert(playerRows,el); return end
-            for _,p in ipairs(list) do local focused = focusedPlayers[p.Name]==true; local row = Instance.new("TextButton"); row.Size, row.BackgroundColor3, row.BackgroundTransparency, row.Text, row.AutoButtonColor, row.Parent = UDim2.new(1,0,0,26), (focused and Color3.fromRGB(30,140,255) or Color3.fromRGB(0,100,230)), 0.6, "", false, plFrame; Instance.new("UICorner",row); local nl = Instance.new("TextLabel"); nl.Size, nl.Position, nl.BackgroundTransparency, nl.Text, nl.TextColor3, nl.Font, nl.TextSize, nl.TextXAlignment, nl.Parent = UDim2.new(1,-10,1,0), UDim2.new(0,10,0,0), 1, ((focused and "◉ " or "○ ")..p.DisplayName.."  @"..p.Name), (focused and Color3.fromRGB(255,255,255) or Color3.fromRGB(180,180,180)), Enum.Font.GothamBold, 10, Enum.TextXAlignment.Left, row; row.MouseButton1Click:Connect(function() focusedPlayers[p.Name] = not focusedPlayers[p.Name]; refreshPlayerList() end); table.insert(playerRows,row) end end
-        refreshBtn.MouseButton1Click:Connect(refreshPlayerList); clearBtn.MouseButton1Click:Connect(function() focusedPlayers={}; refreshPlayerList() end); task.spawn(function() task.wait(0.6); refreshPlayerList() end)
-        local function hasFocused() for _,v in pairs(focusedPlayers) do if v then return true end end return false end
-        local function startCinematicLoop() if cinematicConn then return end; cinematicConn = RunService.RenderStepped:Connect(function() if not cinematicActive then return end; if hasFocused() then local targetChar, targetDist = nil, math.huge; for pName, isFocused in pairs(focusedPlayers) do if isFocused then local p=Players:FindFirstChild(pName); if p and p.Character then local hrp=p.Character:FindFirstChild("HumanoidRootPart"); if hrp then local dist=(hrp.Position-Camera.CFrame.Position).Magnitude; if dist<targetDist then targetDist, targetChar = dist, p.Character end end end end end; if targetChar and depthOfField then local hrp=targetChar:FindFirstChild("HumanoidRootPart"); if hrp then depthOfField.FocusDistance, depthOfField.InFocusRadius, depthOfField.FarIntensity, depthOfField.NearIntensity = (hrp.Position-Camera.CFrame.Position).Magnitude, 4, 1, 1 end end; if blurEffect then blurEffect.Size=0 end else if blurEffect then blurEffect.Size=blurAmount end; if depthOfField then depthOfField.FarIntensity, depthOfField.NearIntensity, depthOfField.InFocusRadius = 0, 0, 999 end end end) end
-        cinRow.MouseButton1Click:Connect(function() cinematicActive = not cinematicActive; setCinState(cinematicActive); if cinematicActive then if blurEffect then blurEffect:Destroy() end; if depthOfField then depthOfField:Destroy() end; blurEffect, depthOfField = Instance.new("BlurEffect"), Instance.new("DepthOfFieldEffect"); blurEffect.Size, blurEffect.Parent = blurAmount, Lighting; depthOfField.FarIntensity, depthOfField.NearIntensity, depthOfField.InFocusRadius, depthOfField.FocusDistance, depthOfField.Parent = 1, 1, 5, 50, Lighting; startCinematicLoop() else if cinematicConn then cinematicConn:Disconnect(); cinematicConn=nil end; if blurEffect then blurEffect:Destroy(); blurEffect=nil end; if depthOfField then depthOfField:Destroy(); depthOfField=nil end end end)
 
         makeSepHdr("SHIFTLOCK SETTINGS", Y, pFC); Y = Y+22
         local slRow, setSlState, getSlState = makeIosRow("Show Shiftlock", Y, pFC); Y = Y+36
@@ -813,319 +1118,10 @@ local function runSyaaHub()
         UserInputService.InputChanged:Connect(function(input) if isFreecamActive and not lockTarget and (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseMovement) then targetYaw = targetYaw-(input.Delta.X*0.3); targetPitch = math.clamp(targetPitch-(input.Delta.Y*0.3),-88,88) end end)
     end
 
-    -- ==========================================
-    -- SCOPE 4: PANEL SPY CAM
-    -- ==========================================
-    local function buildSpyPanel()
-        local sY = 2
-        local spyActive = false
-        local spyTarget = nil
-        local spyConn = nil
-        local spyCamOffset = Vector3.new(0, 2, 5) -- offset kamera dari belakang player
-
-        makeSepHdr("SPY CAM", sY, pSpy); sY = sY + 22
-
-        -- Toggle SPY
-        local spyRow, setSpyState, getSpyState = makeIosRow("Aktifkan Spy Cam", sY, pSpy); sY = sY + 36
-
-        -- Info label
-        local infoLbl = makeLbl("▸ Pilih player yang mau dipantau:", sY, pSpy, 14, Color3.fromRGB(50, 150, 255)); sY = sY + 18
-
-        -- Target display
-        local targetLbl = makeLbl("Target: Belum dipilih", sY, pSpy, 14, Color3.fromRGB(200, 200, 200)); sY = sY + 16
-
-        -- Refresh button
-        local refreshSpyBtn = Instance.new("TextButton")
-        refreshSpyBtn.Text = "↺ Refresh Player List"
-        refreshSpyBtn.Size = UDim2.new(0.92, 0, 0, 26)
-        refreshSpyBtn.Position = UDim2.new(0.04, 0, 0, sY)
-        refreshSpyBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 230)
-        refreshSpyBtn.BackgroundTransparency = 0.5
-        refreshSpyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        refreshSpyBtn.Font = Enum.Font.GothamBold
-        refreshSpyBtn.TextSize = 10
-        refreshSpyBtn.Parent = pSpy
-        Instance.new("UICorner", refreshSpyBtn).CornerRadius = UDim.new(0, 6)
-        sY = sY + 32
-
-        -- Player list scrollframe
-        local spyListFrame = Instance.new("ScrollingFrame")
-        spyListFrame.Size = UDim2.new(0.92, 0, 0, 110)
-        spyListFrame.Position = UDim2.new(0.04, 0, 0, sY)
-        spyListFrame.BackgroundColor3 = Color3.fromRGB(5, 10, 25)
-        spyListFrame.BackgroundTransparency = 0.4
-        spyListFrame.Parent = pSpy
-        spyListFrame.ScrollBarThickness = 2
-        spyListFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 120, 255)
-        spyListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        spyListFrame.ScrollingDirection = Enum.ScrollingDirection.Y
-        Instance.new("UICorner", spyListFrame)
-        Instance.new("UIStroke", spyListFrame).Color = Color3.fromRGB(0, 100, 230)
-        local spyLayout = Instance.new("UIListLayout", spyListFrame)
-        spyLayout.Padding = UDim.new(0, 3)
-        spyLayout.SortOrder = Enum.SortOrder.Name
-        sY = sY + 120
-
-        makeSepHdr("KAMERA OFFSET", sY, pSpy); sY = sY + 22
-
-        -- Offset Y slider
-        local offYLab = makeLbl("Tinggi (Y): 2", sY, pSpy, 14); sY = sY + 16
-        local offYBg = Instance.new("Frame"); offYBg.Size = UDim2.new(0.88, 0, 0, 4); offYBg.Position = UDim2.new(0.06, 0, 0, sY); offYBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); offYBg.Parent = pSpy; Instance.new("UICorner", offYBg)
-        local offYFill = Instance.new("Frame"); offYFill.Size = UDim2.new(2/10, 0, 1, 0); offYFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); offYFill.BorderSizePixel = 0; offYFill.Parent = offYBg; Instance.new("UICorner", offYFill)
-        local offYKnob = Instance.new("TextButton"); offYKnob.Size = UDim2.new(0, 14, 0, 14); offYKnob.Position = UDim2.new(2/10, -7, 0.5, -7); offYKnob.Text = ""; offYKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); offYKnob.Parent = offYBg; Instance.new("UICorner", offYKnob).CornerRadius = UDim.new(1, 0)
-        sY = sY + 18; local offYSld = false
-        offYKnob.MouseButton1Down:Connect(function() offYSld = true end)
-        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then offYSld = false end end)
-        UserInputService.InputChanged:Connect(function(i) if offYSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X - offYBg.AbsolutePosition.X) / offYBg.AbsoluteSize.X, 0, 1); offYFill.Size = UDim2.new(pos, 0, 1, 0); offYKnob.Position = UDim2.new(pos, -7, 0.5, -7); local v = math.floor(pos * 20) - 5; offYLab.Text = "Tinggi (Y): " .. v; spyCamOffset = Vector3.new(spyCamOffset.X, v, spyCamOffset.Z) end end)
-
-        -- Offset Z slider
-        local offZLab = makeLbl("Jarak (Z): 5", sY, pSpy, 14); sY = sY + 16
-        local offZBg = Instance.new("Frame"); offZBg.Size = UDim2.new(0.88, 0, 0, 4); offZBg.Position = UDim2.new(0.06, 0, 0, sY); offZBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); offZBg.Parent = pSpy; Instance.new("UICorner", offZBg)
-        local offZFill = Instance.new("Frame"); offZFill.Size = UDim2.new(5/25, 0, 1, 0); offZFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); offZFill.BorderSizePixel = 0; offZFill.Parent = offZBg; Instance.new("UICorner", offZFill)
-        local offZKnob = Instance.new("TextButton"); offZKnob.Size = UDim2.new(0, 14, 0, 14); offZKnob.Position = UDim2.new(5/25, -7, 0.5, -7); offZKnob.Text = ""; offZKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); offZKnob.Parent = offZBg; Instance.new("UICorner", offZKnob).CornerRadius = UDim.new(1, 0)
-        sY = sY + 18; local offZSld = false
-        offZKnob.MouseButton1Down:Connect(function() offZSld = true end)
-        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then offZSld = false end end)
-        UserInputService.InputChanged:Connect(function(i) if offZSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X - offZBg.AbsolutePosition.X) / offZBg.AbsoluteSize.X, 0, 1); offZFill.Size = UDim2.new(pos, 0, 1, 0); offZKnob.Position = UDim2.new(pos, -7, 0.5, -7); local v = math.floor(pos * 25) + 1; offZLab.Text = "Jarak (Z): " .. v; spyCamOffset = Vector3.new(spyCamOffset.X, spyCamOffset.Y, v) end end)
-
-        -- Stop spy button
-        local stopSpyBtn = Instance.new("TextButton")
-        stopSpyBtn.Text = "■ Stop Spy"
-        stopSpyBtn.Size = UDim2.new(0.92, 0, 0, 28)
-        stopSpyBtn.Position = UDim2.new(0.04, 0, 0, sY)
-        stopSpyBtn.BackgroundColor3 = Color3.fromRGB(200, 30, 50)
-        stopSpyBtn.BackgroundTransparency = 0.4
-        stopSpyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        stopSpyBtn.Font = Enum.Font.GothamBold
-        stopSpyBtn.TextSize = 11
-        stopSpyBtn.Parent = pSpy
-        Instance.new("UICorner", stopSpyBtn).CornerRadius = UDim.new(0, 6)
-        sY = sY + 36
-
-        -- Zoom buttons (buat mobile, PC bisa scroll)
-        makeSepHdr("ZOOM (Mobile)", sY, pSpy); sY = sY + 20
-        local zoomInBtn, zoomOutBtn = makeBtn2("🔍 Zoom In", "🔍 Zoom Out", sY, pSpy); sY = sY + 32
-        -- Hold to zoom continuously
-        local zoomInHeld, zoomOutHeld = false, false
-        zoomInBtn.MouseButton1Down:Connect(function() zoomInHeld = true end)
-        zoomInBtn.MouseButton1Up:Connect(function() zoomInHeld = false end)
-        zoomInBtn.InputEnded:Connect(function() zoomInHeld = false end)
-        zoomOutBtn.MouseButton1Down:Connect(function() zoomOutHeld = true end)
-        zoomOutBtn.MouseButton1Up:Connect(function() zoomOutHeld = false end)
-        zoomOutBtn.InputEnded:Connect(function() zoomOutHeld = false end)
-        RunService.Heartbeat:Connect(function()
-            if spyActive then
-                if zoomInHeld then spyZoomDist = math.clamp(spyZoomDist - 0.15, 2, 80) end
-                if zoomOutHeld then spyZoomDist = math.clamp(spyZoomDist + 0.15, 2, 80) end
-            end
-        end)
-
-        local bPadSpy = Instance.new("Frame"); bPadSpy.Size = UDim2.new(1, 0, 0, 20); bPadSpy.Position = UDim2.new(0, 0, 0, sY); bPadSpy.BackgroundTransparency = 1; bPadSpy.Parent = pSpy
-
-        -- Spy logic functions
-        local spyRows = {}
-
-        local function stopSpy()
-            spyActive = false
-            spyTarget = nil
-            setSpyState(false)
-            targetLbl.Text = "Target: Belum dipilih"
-            if spyConn then spyConn:Disconnect(); spyConn = nil end
-            disconnectSpyInput()
-            Camera.CameraType = Enum.CameraType.Custom
-            pcall(function() PlayerModule:Enable() end)
-        end
-
-        -- Spy orbit state (bisa digeser & zoom tapi tetap ngikutin target)
-        local spyOrbitYaw = 180   -- derajat, 180 = posisi belakang target
-        local spyOrbitPitch = 15  -- derajat ke atas
-        local spyZoomDist = 7     -- jarak dari target
-        local spyDragging = false
-        local spyLastInput = nil
-        local spyInputConn1, spyInputConn2, spyInputConn3
-
-        local function disconnectSpyInput()
-            if spyInputConn1 then spyInputConn1:Disconnect(); spyInputConn1 = nil end
-            if spyInputConn2 then spyInputConn2:Disconnect(); spyInputConn2 = nil end
-            if spyInputConn3 then spyInputConn3:Disconnect(); spyInputConn3 = nil end
-            spyDragging = false
-        end
-
-        local function connectSpyInput()
-            disconnectSpyInput()
-            -- Drag untuk rotate orbit
-            spyInputConn1 = UserInputService.InputBegan:Connect(function(inp, gpe)
-                if gpe then return end
-                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                    spyDragging = true; spyLastInput = inp.Position
-                end
-            end)
-            spyInputConn2 = UserInputService.InputEnded:Connect(function(inp)
-                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                    spyDragging = false
-                end
-            end)
-            spyInputConn3 = UserInputService.InputChanged:Connect(function(inp)
-                if spyActive then
-                    -- Drag rotate
-                    if spyDragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
-                        local delta = inp.Position - (spyLastInput or inp.Position)
-                        spyLastInput = inp.Position
-                        spyOrbitYaw = spyOrbitYaw - delta.X * 0.4
-                        spyOrbitPitch = math.clamp(spyOrbitPitch + delta.Y * 0.3, -60, 75)
-                    end
-                    -- Scroll zoom (PC)
-                    if inp.UserInputType == Enum.UserInputType.MouseWheel then
-                        spyZoomDist = math.clamp(spyZoomDist - inp.Position.Z * 2, 2, 80)
-                    end
-                end
-            end)
-        end
-
-        local function startSpy(player)
-            if spyConn then spyConn:Disconnect(); spyConn = nil end
-            spyTarget = player
-            spyActive = true
-            spyOrbitYaw = 180
-            spyOrbitPitch = 15
-            spyZoomDist = spyCamOffset.Z + 2
-            setSpyState(true)
-            targetLbl.Text = "Target: " .. player.DisplayName .. " (@" .. player.Name .. ")"
-
-            pcall(function() PlayerModule:Disable() end)
-            Camera.CameraType = Enum.CameraType.Scriptable
-            connectSpyInput()
-
-            spyConn = RunService.RenderStepped:Connect(function()
-                if not spyActive then return end
-                if not spyTarget or not spyTarget.Parent then stopSpy(); return end
-                local char = spyTarget.Character
-                if not char then return end
-                local hrp = char:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
-
-                -- Hitung posisi kamera pakai orbit spherical di sekitar target
-                local targetPos = hrp.Position + Vector3.new(0, spyCamOffset.Y, 0)
-                local yawRad = math.rad(spyOrbitYaw)
-                local pitchRad = math.rad(spyOrbitPitch)
-                local dist = spyZoomDist
-                local camOffset = Vector3.new(
-                    dist * math.sin(yawRad) * math.cos(pitchRad),
-                    dist * math.sin(pitchRad),
-                    dist * math.cos(yawRad) * math.cos(pitchRad)
-                )
-                local desiredPos = targetPos + camOffset
-                local lookAt = targetPos + Vector3.new(0, 0.5, 0)
-                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(desiredPos, lookAt), 0.12)
-            end)
-        end
-
-        local function refreshSpyList()
-            for _, r in pairs(spyRows) do pcall(function() r:Destroy() end) end
-            spyRows = {}
-            local list = Players:GetPlayers()
-            local others = {}
-            for _, p in ipairs(list) do
-                if p ~= localPlayer then table.insert(others, p) end
-            end
-            if #others == 0 then
-                local el = Instance.new("TextLabel")
-                el.Size = UDim2.new(1, 0, 0, 28)
-                el.BackgroundTransparency = 1
-                el.Text = "Cuma lu doang di server 🗿"
-                el.TextColor3 = Color3.fromRGB(100, 100, 100)
-                el.Font = Enum.Font.Gotham
-                el.TextSize = 10
-                el.Parent = spyListFrame
-                table.insert(spyRows, el)
-                return
-            end
-            for _, p in ipairs(others) do
-                local isSelected = (spyTarget == p)
-                local row = Instance.new("TextButton")
-                row.Size = UDim2.new(1, 0, 0, 34)
-                row.BackgroundColor3 = isSelected and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(0, 60, 140)
-                row.BackgroundTransparency = 0.4
-                row.Text = ""
-                row.AutoButtonColor = false
-                row.Parent = spyListFrame
-                Instance.new("UICorner", row)
-
-                -- Avatar
-                local ava = Instance.new("ImageLabel")
-                ava.Size = UDim2.new(0, 26, 0, 26)
-                ava.Position = UDim2.new(0, 4, 0.5, -13)
-                ava.BackgroundTransparency = 1
-                ava.Parent = row
-                Instance.new("UICorner", ava).CornerRadius = UDim.new(1, 0)
-                task.spawn(function()
-                    pcall(function()
-                        ava.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
-                    end)
-                end)
-
-                -- Name label
-                local nl = Instance.new("TextLabel")
-                nl.Size = UDim2.new(1, -40, 0, 16)
-                nl.Position = UDim2.new(0, 36, 0, 4)
-                nl.BackgroundTransparency = 1
-                nl.Text = (isSelected and "▶ " or "") .. p.DisplayName
-                nl.TextColor3 = isSelected and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)
-                nl.Font = Enum.Font.GothamBold
-                nl.TextSize = 10
-                nl.TextXAlignment = Enum.TextXAlignment.Left
-                nl.Parent = row
-
-                local un = Instance.new("TextLabel")
-                un.Size = UDim2.new(1, -40, 0, 13)
-                un.Position = UDim2.new(0, 36, 0, 18)
-                un.BackgroundTransparency = 1
-                un.Text = "@" .. p.Name
-                un.TextColor3 = Color3.fromRGB(100, 160, 255)
-                un.Font = Enum.Font.Gotham
-                un.TextSize = 9
-                un.TextXAlignment = Enum.TextXAlignment.Left
-                un.Parent = row
-
-                row.MouseButton1Click:Connect(function()
-                    startSpy(p)
-                    refreshSpyList()
-                end)
-                table.insert(spyRows, row)
-            end
-        end
-
-        refreshSpyBtn.MouseButton1Click:Connect(refreshSpyList)
-        stopSpyBtn.MouseButton1Click:Connect(function()
-            stopSpy()
-            refreshSpyList()
-        end)
-        spyRow.MouseButton1Click:Connect(function()
-            if getSpyState() then
-                stopSpy()
-                refreshSpyList()
-            else
-                -- kalau belum ada target, minta pilih dulu
-                targetLbl.Text = "Target: Pilih player dulu!"
-                setSpyState(false)
-            end
-        end)
-
-        -- Players joining/leaving update list
-        Players.PlayerAdded:Connect(function() task.wait(0.5); refreshSpyList() end)
-        Players.PlayerRemoving:Connect(function(p)
-            if spyTarget == p then stopSpy() end
-            task.wait(0.1); refreshSpyList()
-        end)
-
-        task.spawn(function() task.wait(0.8); refreshSpyList() end)
-    end
-
-    -- EXECUTE PANELS (Ini yg nyelesein errornya)
+    -- EXECUTE PANELS
     buildToolsPanel()
     buildOrientationPanel()
     buildFreecamPanel()
-    buildSpyPanel()
 
     setTab("Freecam") 
 end
