@@ -69,7 +69,7 @@ local function startLoading(callback)
         TweenService:Create(barOutline,TweenInfo.new(0.3),{BackgroundTransparency=1}):Play()
         closeTween:Play(); closeTween.Completed:Wait(); loadBG:Destroy()
 
-        -- Notifikasi update (slide dari kanan, di atas notif developer)
+        -- Notifikasi update
         task.spawn(function()
             local updFrame = Instance.new("Frame")
             updFrame.Size = UDim2.new(0, 280, 0, 70)
@@ -94,15 +94,15 @@ local function startLoading(callback)
             updTitle.TextXAlignment = Enum.TextXAlignment.Left; updTitle.Parent = updFrame
 
             local updDesc = Instance.new("TextLabel")
-            updDesc.Text = "Blue Theme + Spy Cam terintegrasi di Tools 🚀"; updDesc.Size = UDim2.new(1, -60, 0, 28)
+            updDesc.Text = "Smooth UI Animations Active 🚀"; updDesc.Size = UDim2.new(1, -60, 0, 28)
             updDesc.Position = UDim2.new(0, 55, 0, 34)
             updDesc.BackgroundTransparency = 1; updDesc.TextColor3 = Color3.fromRGB(200, 200, 200)
             updDesc.Font = Enum.Font.Gotham; updDesc.TextSize = 10
             updDesc.TextWrapped = true; updDesc.TextXAlignment = Enum.TextXAlignment.Left; updDesc.Parent = updFrame
 
-            TweenService:Create(updFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(1, -300, 1, -175)}):Play()
+            TweenService:Create(updFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(1, -300, 1, -175)}):Play()
             task.wait(5)
-            local twOut = TweenService:Create(updFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(1, 20, 1, -175)})
+            local twOut = TweenService:Create(updFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(1, 20, 1, -175)})
             twOut:Play(); twOut.Completed:Wait(); updFrame:Destroy()
         end)
 
@@ -206,10 +206,10 @@ local function runSyaaHub()
         descLbl.TextXAlignment = Enum.TextXAlignment.Left
         descLbl.Parent = notifFrame
 
-        local twIn = TweenService:Create(notifFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(1, -300, 1, -90)})
+        local twIn = TweenService:Create(notifFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(1, -300, 1, -90)})
         twIn:Play()
         task.wait(5) 
-        local twOut = TweenService:Create(notifFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(1, 20, 1, -90)})
+        local twOut = TweenService:Create(notifFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(1, 20, 1, -90)})
         twOut:Play()
         twOut.Completed:Wait()
         notifFrame:Destroy()
@@ -363,10 +363,41 @@ local function runSyaaHub()
     minBtn.Parent = mainFrame
     Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0,6)
 
+    -- STATE UNTUK TAB & ANIMASI ICON
     local tabPanels = {}; local activeTab = nil
+    local sidebarIconsData = {}
+
     local function setTab(name)
         activeTab = name
-        for n, panel in pairs(tabPanels) do panel.Visible = (n == name) end
+        
+        -- Animasi ganti panel menu (Slide Up halus)
+        for n, panel in pairs(tabPanels) do 
+            if n == name then
+                panel.Visible = true
+                panel.Position = UDim2.new(0, 10, 0, 60) -- Posisi awal sebelum naik
+                TweenService:Create(panel, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(0, 10, 0, 40)}):Play()
+            else
+                panel.Visible = false
+            end
+        end
+        
+        -- Efek Animasi Zoom In/Out Icon Sidebar (Pakai Quart biar super halus)
+        for tName, data in pairs(sidebarIconsData) do
+            local btn = data.btn
+            local bSize = data.baseSize
+            local yPos = data.yPos
+            
+            if tName == name then
+                -- Icon aktif membesar (tambah 8 pixel biar proposional)
+                local actSize = UDim2.new(0, bSize.X.Offset + 8, 0, bSize.Y.Offset + 8)
+                local actPos = UDim2.new(0.5, -(actSize.X.Offset/2), 0, yPos - 4) 
+                TweenService:Create(btn, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = actSize, Position = actPos}):Play()
+            else
+                -- Icon yang ga dipilih kembali ke ukuran normal
+                local normPos = UDim2.new(0.5, -(bSize.X.Offset/2), 0, yPos)
+                TweenService:Create(btn, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = bSize, Position = normPos}):Play()
+            end
+        end
     end
 
     local function toggleMainFrame(state)
@@ -374,10 +405,10 @@ local function runSyaaHub()
             local tweenOutIcon = TweenService:Create(openIcon, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
             tweenOutIcon:Play(); tweenOutIcon.Completed:Wait(); openIcon.Visible = false
             mainFrame.Visible = true; mainFrame.Size = UDim2.new(0, 180, 0, 120)
-            TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 360, 0, 240)}):Play()
+            TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, 360, 0, 240)}):Play()
             if activeTab==nil then setTab("Freecam") end
         else
-            local tw = TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 90, 0, 50)})
+            local tw = TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0, 90, 0, 50)})
             tw:Play()
             tw.Completed:Connect(function()
                 mainFrame.Visible = false; openIcon.Visible = true; openIcon.Size = UDim2.new(0, 0, 0, 0)
@@ -389,7 +420,7 @@ local function runSyaaHub()
     minBtn.MouseButton1Click:Connect(function() toggleMainFrame(false) end)
     openIcon.MouseButton1Click:Connect(function() toggleMainFrame(true) end)
 
-    -- SIDEBAR (Kini hanya 3 Icon agar pas dan rapi)
+    -- SIDEBAR 
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, 42, 0, 140) 
     sidebar.Position = UDim2.new(0, -52, 0.5, -70)
@@ -404,6 +435,10 @@ local function runSyaaHub()
         btn.Size = customSize; btn.Position = UDim2.new(0.5, -(btn.Size.X.Offset/2), 0, yPos)
         btn.BackgroundTransparency = 1; btn.Image = assetId; btn.ImageColor3 = Color3.fromRGB(0, 120, 255)
         btn.Parent = sidebar
+        
+        -- Simpan data buat dipanggil di animasi pas diklik
+        sidebarIconsData[tabName] = {btn = btn, baseSize = customSize, yPos = yPos}
+
         task.spawn(function()
             while true do
                 TweenService:Create(btn, TweenInfo.new(1.5), {ImageColor3 = Color3.fromRGB(255,255,255)}):Play(); task.wait(1.5)
@@ -414,7 +449,8 @@ local function runSyaaHub()
     end
     
     makeSidebarIcon("rbxassetid://76171785807172", 18, "Freecam", UDim2.new(0, 26, 0, 26))
-    makeSidebarIcon("rbxassetid://116019702436521", 58, "Orientation", UDim2.new(0, 34, 0, 34))
+    -- Icon Orientation Diperbesar dari 34 jadi 40 sesuai permintaan Syaa
+    makeSidebarIcon("rbxassetid://116019702436521", 58, "Orientation", UDim2.new(0, 40, 0, 40))
     makeSidebarIcon("rbxassetid://112703342701931", 98, "Tools", UDim2.new(0, 30, 0, 30))
 
     -- PANELS CREATION
@@ -444,8 +480,8 @@ local function runSyaaHub()
         local isOn = false
         local function setState(v)
             isOn = v
-            if v then TweenService:Create(track,TweenInfo.new(0.2,Enum.EasingStyle.Quad),{BackgroundColor3=onColor}):Play(); TweenService:Create(knob,TweenInfo.new(0.18,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Position=UDim2.new(1,-16,0.5,-7)}):Play()
-            else TweenService:Create(track,TweenInfo.new(0.2,Enum.EasingStyle.Quad),{BackgroundColor3=Color3.fromRGB(5,10,25)}):Play(); TweenService:Create(knob,TweenInfo.new(0.18,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Position=UDim2.new(0,2,0.5,-7)}):Play() end
+            if v then TweenService:Create(track,TweenInfo.new(0.2,Enum.EasingStyle.Quad),{BackgroundColor3=onColor}):Play(); TweenService:Create(knob,TweenInfo.new(0.18,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),{Position=UDim2.new(1,-16,0.5,-7)}):Play()
+            else TweenService:Create(track,TweenInfo.new(0.2,Enum.EasingStyle.Quad),{BackgroundColor3=Color3.fromRGB(5,10,25)}):Play(); TweenService:Create(knob,TweenInfo.new(0.18,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),{Position=UDim2.new(0,2,0.5,-7)}):Play() end
         end
         return row, setState, function() return isOn end
     end
@@ -604,7 +640,7 @@ local function runSyaaHub()
         local flyBtn = Instance.new("TextButton"); flyBtn.Text = "🚀 Load Fly"; flyBtn.Size = UDim2.new(0.92,0,0,30); flyBtn.Position = UDim2.new(0.04,0,0,tY); flyBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); flyBtn.BackgroundTransparency = 0.5; flyBtn.TextColor3 = Color3.fromRGB(255,255,255); flyBtn.Font = Enum.Font.GothamBold; flyBtn.TextSize = 10; flyBtn.Parent = pTools; Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0,6); tY = tY + 36
         flyBtn.MouseButton1Click:Connect(function() pcall(function() loadstring(game:HttpGet("https://rawscripts.net/raw/Brookhaven-RP-Fly-v1-27423"))() end) end)
 
-        local emoteBtn = Instance.new("TextButton"); emoteBtn.Text = "🕺 Load Emote"; emoteBtn.Size = UDim2.new(0.92,0,0,30); emoteBtn.Position = UDim2.new(0.04,0,0,tY); emoteBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); emoteBtn.BackgroundTransparency = 0.5; emoteBtn.TextColor3 = Color3.fromRGB(255,255,255); flyBtn.Font = Enum.Font.GothamBold; emoteBtn.TextSize = 10; emoteBtn.Parent = pTools; Instance.new("UICorner", emoteBtn).CornerRadius = UDim.new(0,6); tY = tY + 36
+        local emoteBtn = Instance.new("TextButton"); emoteBtn.Text = "🕺 Load Emote"; emoteBtn.Size = UDim2.new(0.92,0,0,30); emoteBtn.Position = UDim2.new(0.04,0,0,tY); emoteBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); emoteBtn.BackgroundTransparency = 0.5; emoteBtn.TextColor3 = Color3.fromRGB(255,255,255); emoteBtn.Font = Enum.Font.GothamBold; emoteBtn.TextSize = 10; emoteBtn.Parent = pTools; Instance.new("UICorner", emoteBtn).CornerRadius = UDim.new(0,6); tY = tY + 36
         emoteBtn.MouseButton1Click:Connect(function() task.spawn(function() pcall(function() local src = ""; local StarterGui = game:GetService("StarterGui"); pcall(function() src = game:HttpGet("https://yarhm.mhi.im/scr?channel=afemmax", false) end); if src == "" then StarterGui:SetCore("SendNotification", {Title = "YARHM Outage"; Text = "Using YARHM Offline."; Duration = 5;}); src = game:HttpGet("https://raw.githubusercontent.com/Joystickplays/AFEM/refs/heads/main/max/afemmax.lua", false) end; if src ~= "" then loadstring(src)() end end) end) end)
         
         local infJumpRow, setInfJump = makeIosRow("Unlimited Jump", tY, pTools); tY = tY+36
