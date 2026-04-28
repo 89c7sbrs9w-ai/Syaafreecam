@@ -38,7 +38,7 @@ end
 saveOriginalData()
 
 -- =====================
--- SISTEM NOTIFIKASI SLIDE (STARTUP)
+-- SISTEM NOTIFIKASI (SUDAH DIKECILIN)
 -- =====================
 local function showStartupNotification()
     local NotifGui = Instance.new("ScreenGui")
@@ -48,7 +48,7 @@ local function showStartupNotification()
     NotifGui.Parent = game:GetService("CoreGui")
 
     local NotifFrame = Instance.new("Frame")
-    NotifFrame.Size = UDim2.new(0, 310, 0, 80)
+    NotifFrame.Size = UDim2.new(0, 270, 0, 68) 
     NotifFrame.Position = UDim2.new(1, 400, 0.85, 0)
     NotifFrame.AnchorPoint = Vector2.new(1, 0.5)
     NotifFrame.BackgroundColor3 = Color3.fromRGB(10, 20, 35)
@@ -56,7 +56,7 @@ local function showStartupNotification()
     NotifFrame.BorderSizePixel = 0
     NotifFrame.Parent = NotifGui
 
-    Instance.new("UICorner", NotifFrame).CornerRadius = UDim.new(0, 12)
+    Instance.new("UICorner", NotifFrame).CornerRadius = UDim.new(0, 10)
     
     local NStroke = Instance.new("UIStroke", NotifFrame)
     NStroke.Color = Color3.fromRGB(0, 120, 255)
@@ -68,8 +68,8 @@ local function showStartupNotification()
     })
 
     local Img = Instance.new("ImageLabel", NotifFrame)
-    Img.Size = UDim2.new(0, 56, 0, 56)
-    Img.Position = UDim2.new(0, 12, 0.5, -28)
+    Img.Size = UDim2.new(0, 48, 0, 48) 
+    Img.Position = UDim2.new(0, 10, 0.5, -24)
     Img.BackgroundColor3 = Color3.fromRGB(15, 25, 45)
     Img.Image = syaaAvatarUrl
     Img.Parent = NotifFrame
@@ -79,35 +79,35 @@ local function showStartupNotification()
     IStroke.Thickness = 1.5
 
     local DevLabel = Instance.new("TextLabel", NotifFrame)
-    DevLabel.Size = UDim2.new(1, -90, 0, 16)
-    DevLabel.Position = UDim2.new(0, 80, 0, 12)
+    DevLabel.Size = UDim2.new(1, -75, 0, 14)
+    DevLabel.Position = UDim2.new(0, 70, 0, 8)
     DevLabel.BackgroundTransparency = 1
     DevLabel.Text = "Developer"
     DevLabel.TextColor3 = Color3.fromRGB(100, 180, 255)
     DevLabel.Font = Enum.Font.GothamBold
-    DevLabel.TextSize = 11
+    DevLabel.TextSize = 10
     DevLabel.TextXAlignment = Enum.TextXAlignment.Left
     DevLabel.Parent = NotifFrame
 
     local NameLabel = Instance.new("TextLabel", NotifFrame)
-    NameLabel.Size = UDim2.new(1, -90, 0, 22)
-    NameLabel.Position = UDim2.new(0, 80, 0, 28)
+    NameLabel.Size = UDim2.new(1, -75, 0, 18)
+    NameLabel.Position = UDim2.new(0, 70, 0, 22)
     NameLabel.BackgroundTransparency = 1
     NameLabel.Text = targetUsername
     NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     NameLabel.Font = Enum.Font.GothamBlack
-    NameLabel.TextSize = 17
+    NameLabel.TextSize = 15
     NameLabel.TextXAlignment = Enum.TextXAlignment.Left
     NameLabel.Parent = NotifFrame
 
     local ValidLabel = Instance.new("TextLabel", NotifFrame)
-    ValidLabel.Size = UDim2.new(1, -90, 0, 16)
-    ValidLabel.Position = UDim2.new(0, 80, 0, 52)
+    ValidLabel.Size = UDim2.new(1, -75, 0, 14)
+    ValidLabel.Position = UDim2.new(0, 70, 0, 42)
     ValidLabel.BackgroundTransparency = 1
     ValidLabel.Text = "Copy Avatar Valid By Syaa"
     ValidLabel.TextColor3 = Color3.fromRGB(130, 180, 255)
     ValidLabel.Font = Enum.Font.Gotham
-    ValidLabel.TextSize = 11
+    ValidLabel.TextSize = 10
     ValidLabel.TextXAlignment = Enum.TextXAlignment.Left
     ValidLabel.Parent = NotifFrame
 
@@ -122,7 +122,7 @@ local function showStartupNotification()
 
     TweenService:Create(NotifFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(1, -20, 0.85, 0)}):Play()
     
-    task.delay(4, function()
+    task.delay(3.5, function()
         TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Position = UDim2.new(1, 400, 0.85, 0)}):Play()
         task.wait(0.6)
         NotifGui:Destroy()
@@ -132,7 +132,7 @@ end
 showStartupNotification()
 
 -- =====================
--- GUI UTAMA SCRIPT (UI ASLI SYAA)
+-- GUI UTAMA SCRIPT
 -- =====================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CopyAvatarGUI"
@@ -240,7 +240,7 @@ SubLabel.TextXAlignment = Enum.TextXAlignment.Left
 SubLabel.ZIndex = 5
 
 -- =====================
--- ANIMASI TEKS KERETA (MARQUEE)
+-- MARQUEE ANIMATION
 -- =====================
 local MarqueeFrame = Instance.new("Frame", Header)
 MarqueeFrame.Size = UDim2.new(1, -115, 0, HEADER_H)
@@ -255,7 +255,6 @@ local TEXT_WIDTH = 190
 
 local MText1 = Instance.new("TextLabel", MarqueeFrame)
 MText1.Size = UDim2.new(0, TEXT_WIDTH, 1, 0)
-MText1.Position = UDim2.new(0, 0, 0, 0)
 MText1.BackgroundTransparency = 1
 MText1.Text = rawText
 MText1.TextColor3 = Color3.fromRGB(200, 230, 255)
@@ -267,7 +266,6 @@ local MText2 = MText1:Clone()
 MText2.Parent = MarqueeFrame
 MText2.Position = UDim2.new(0, TEXT_WIDTH, 0, 0)
 
--- SPEED PAS: 90
 local textSpeed = 90 
 RunService.RenderStepped:Connect(function(dt)
     if not MarqueeFrame.Visible then return end
@@ -309,25 +307,43 @@ CloseBtn.AutoButtonColor = false
 CloseBtn.ZIndex = 6
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 7)
 
-local Content = Instance.new("Frame", MainFrame)
+-- =====================
+-- MAIN SCROLL CONTAINER (SEMUA BISA DI SCROLL)
+-- =====================
+local Content = Instance.new("ScrollingFrame", MainFrame)
 Content.Name = "Content"
 Content.Size = UDim2.new(1, 0, 1, -HEADER_H)
 Content.Position = UDim2.new(0, 0, 0, HEADER_H)
 Content.BackgroundTransparency = 1
+Content.BorderSizePixel = 0
+Content.ScrollBarThickness = 2
+Content.ScrollBarImageColor3 = Color3.fromRGB(70, 130, 255)
+Content.CanvasSize = UDim2.new(0, 0, 0, 0)
+Content.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
+-- RONGGA UTAMA
+local ContentLayout = Instance.new("UIListLayout", Content)
+ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ContentLayout.Padding = UDim.new(0, 12)
+ContentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local ContentPad = Instance.new("UIPadding", Content)
+ContentPad.PaddingTop = UDim.new(0, 5)
+ContentPad.PaddingBottom = UDim.new(0, 20)
+ContentPad.PaddingLeft = UDim.new(0, 14)
+ContentPad.PaddingRight = UDim.new(0, 14)
+
+-- 1. DIVIDER
 local Divider = Instance.new("Frame", Content)
-Divider.Size = UDim2.new(1, -24, 0, 1)
-Divider.Position = UDim2.new(0, 12, 0, 0)
+Divider.Size = UDim2.new(1, 0, 0, 1)
 Divider.BackgroundColor3 = Color3.fromRGB(30, 60, 100)
 Divider.BorderSizePixel = 0
+Divider.LayoutOrder = 1
 
--- =====================
--- SEARCH BAR FITUR BARU
--- =====================
+-- 2. SEARCH BAR
 local SearchBar = Instance.new("TextBox", Content)
 SearchBar.Name = "SearchBar"
-SearchBar.Size = UDim2.new(1, -14, 0, 30)
-SearchBar.Position = UDim2.new(0, 7, 0, 6)
+SearchBar.Size = UDim2.new(1, 0, 0, 34)
 SearchBar.BackgroundColor3 = Color3.fromRGB(15, 25, 45)
 SearchBar.TextColor3 = Color3.fromRGB(200, 230, 255)
 SearchBar.PlaceholderText = "🔍 Cari Username / Display Name..."
@@ -336,46 +352,63 @@ SearchBar.Font = Enum.Font.Gotham
 SearchBar.TextSize = 12
 SearchBar.Text = ""
 SearchBar.ClearTextOnFocus = false
+SearchBar.LayoutOrder = 2
 Instance.new("UICorner", SearchBar).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", SearchBar).Color = Color3.fromRGB(40, 80, 120)
+Instance.new("UIPadding", SearchBar).PaddingLeft = UDim.new(0, 12)
 
-local SearchStroke = Instance.new("UIStroke", SearchBar)
-SearchStroke.Color = Color3.fromRGB(40, 80, 120)
-SearchStroke.Thickness = 1
+-- 3. KOTAKAN KHUSUS DAFTAR PLAYER (INNER SCROLL)
+local ListFrame = Instance.new("Frame", Content)
+ListFrame.Size = UDim2.new(1, 0, 0, 230) 
+ListFrame.BackgroundColor3 = Color3.fromRGB(8, 14, 25) 
+ListFrame.BackgroundTransparency = 0.3
+ListFrame.LayoutOrder = 3
+Instance.new("UICorner", ListFrame).CornerRadius = UDim.new(0, 12)
+local ListStroke = Instance.new("UIStroke", ListFrame)
+ListStroke.Color = Color3.fromRGB(35, 60, 95)
+ListStroke.Thickness = 1
 
--- ScrollFrame di-adjust turun dikit buat tempat Search Bar
-local ScrollFrame = Instance.new("ScrollingFrame", Content)
-ScrollFrame.Size = UDim2.new(1, -14, 1, -132)
-ScrollFrame.Position = UDim2.new(0, 7, 0, 42)
+local ScrollFrame = Instance.new("ScrollingFrame", ListFrame)
+ScrollFrame.Size = UDim2.new(1, -10, 1, -12)
+ScrollFrame.Position = UDim2.new(0, 5, 0, 6)
 ScrollFrame.BackgroundTransparency = 1
 ScrollFrame.BorderSizePixel = 0
 ScrollFrame.ScrollBarThickness = 3
-ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(70, 130, 255)
+ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(50, 100, 200)
 ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 ScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
 local ListLayout = Instance.new("UIListLayout", ScrollFrame)
 ListLayout.SortOrder = Enum.SortOrder.Name
-ListLayout.Padding = UDim.new(0, 5)
+ListLayout.Padding = UDim.new(0, 8)
+Instance.new("UIPadding", ScrollFrame).PaddingTop = UDim.new(0, 5)
 
-local ListPad = Instance.new("UIPadding", ScrollFrame)
-ListPad.PaddingTop = UDim.new(0, 4)
-ListPad.PaddingLeft = UDim.new(0, 2)
-ListPad.PaddingRight = UDim.new(0, 2)
-ListPad.PaddingBottom = UDim.new(0, 4)
+-- 4. TOMBOL RESTORE
+local RestoreBtn = Instance.new("TextButton", Content)
+RestoreBtn.Size = UDim2.new(1, 0, 0, 36)
+RestoreBtn.BackgroundColor3 = Color3.fromRGB(20, 40, 80)
+RestoreBtn.Text = "↩ Lepas Visual Clone"
+RestoreBtn.TextColor3 = Color3.fromRGB(150, 200, 255)
+RestoreBtn.TextSize = 12
+RestoreBtn.Font = Enum.Font.GothamBold
+RestoreBtn.BorderSizePixel = 0
+RestoreBtn.AutoButtonColor = false
+RestoreBtn.LayoutOrder = 4
+Instance.new("UICorner", RestoreBtn).CornerRadius = UDim.new(0, 9)
+Instance.new("UIStroke", RestoreBtn).Color = Color3.fromRGB(50, 100, 200)
 
+-- 5. STATUS BAR
 local StatusBar = Instance.new("Frame", Content)
-StatusBar.Size = UDim2.new(1, -14, 0, 36)
-StatusBar.Position = UDim2.new(0, 7, 1, -42)
+StatusBar.Size = UDim2.new(1, 0, 0, 38)
 StatusBar.BackgroundColor3 = Color3.fromRGB(12, 22, 40)
 StatusBar.BorderSizePixel = 0
+StatusBar.LayoutOrder = 5
 Instance.new("UICorner", StatusBar).CornerRadius = UDim.new(0, 9)
-local SS = Instance.new("UIStroke", StatusBar)
-SS.Color = Color3.fromRGB(40, 80, 150)
-SS.Thickness = 1
+Instance.new("UIStroke", StatusBar).Color = Color3.fromRGB(40, 80, 150)
 
 local StatusLabel = Instance.new("TextLabel", StatusBar)
-StatusLabel.Size = UDim2.new(1, -10, 1, 0)
-StatusLabel.Position = UDim2.new(0, 8, 0, 0)
+StatusLabel.Size = UDim2.new(1, -20, 1, 0)
+StatusLabel.Position = UDim2.new(0, 10, 0, 0)
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Text = "🔵 Siap — Pilih player untuk diclone"
 StatusLabel.TextColor3 = Color3.fromRGB(130, 180, 255)
@@ -392,14 +425,15 @@ local function tw(obj, props, t)
     TweenService:Create(obj, TweenInfo.new(t or 0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), props):Play()
 end
 
--- Fungsi Filter Player based on Search
+-- =====================
+-- LOGIKA FILTER SEARCH
+-- =====================
 local function filterPlayers()
     local searchText = string.lower(SearchBar.Text)
     for _, child in ipairs(ScrollFrame:GetChildren()) do
         if child:IsA("Frame") then
             local pName = string.lower(child.Name)
             local dName = ""
-            -- Cari TextLabel yang isinya Display Name
             for _, lbl in ipairs(child:GetChildren()) do
                 if lbl:IsA("TextLabel") and lbl.TextSize == 13 then
                     dName = string.lower(lbl.Text)
@@ -414,11 +448,10 @@ local function filterPlayers()
         end
     end
 end
-
 SearchBar:GetPropertyChangedSignal("Text"):Connect(filterPlayers)
 
 -- =====================
--- KUNCI DEWA: ROBLOX API RIG GENERATOR + ANIMASI SYNC
+-- KUNCI DEWA: ROBLOX API RIG GENERATOR + ANIMASI SYNC + CAMERA DYNAMIC OFFSET
 -- =====================
 local function createVisualHologram(targetPlayer)
     local char = LocalPlayer.Character
@@ -437,7 +470,6 @@ local function createVisualHologram(targetPlayer)
             visualConnection = nil
         end
 
-        -- 1. FIX DEWA: Sembunyikan badan asli lu pakai Attribute Transparency
         for _, v in ipairs(char:GetDescendants()) do
             if v:IsA("BasePart") or v:IsA("Decal") then
                 if v.Name ~= "HumanoidRootPart" then
@@ -449,7 +481,6 @@ local function createVisualHologram(targetPlayer)
             end
         end
 
-        -- 2. COPY ANIMASI TARGET
         local myAnimScript = char:FindFirstChild("Animate")
         local tAnimScript = tChar:FindFirstChild("Animate")
         if myAnimScript and tAnimScript then
@@ -461,13 +492,11 @@ local function createVisualHologram(targetPlayer)
                     if myAnim then myAnim.AnimationId = tAnim.AnimationId end
                 end
             end
-            -- Refresh Animate script biar animasi jalan/lari/lompat target kebaca
             myAnimScript.Disabled = true
             task.wait(0.1)
             myAnimScript.Disabled = false
         end
 
-        -- 3. BIKIN BADAN TARGET DARI NOL PAKE API
         local desc = tHum:GetAppliedDescription()
         local fakeChar = Players:CreateHumanoidModelFromDescription(desc, hum.RigType)
         fakeChar.Name = "SyaaVisualHologram"
@@ -506,9 +535,7 @@ local function createVisualHologram(targetPlayer)
 
         local realRoot = char:FindFirstChild("HumanoidRootPart")
         local fakeRoot = fakeChar:FindFirstChild("HumanoidRootPart")
-        if fakeRoot then
-            fakeRoot.Anchored = true
-        end
+        if fakeRoot then fakeRoot.Anchored = true end
         
         local yOffset = 0
         if fakeHum and hum then
@@ -521,10 +548,19 @@ local function createVisualHologram(targetPlayer)
             if char and fakeChar and fakeChar.Parent and realRoot and fakeRoot then
                 fakeRoot.CFrame = realRoot.CFrame + Vector3.new(0, yOffset, 0)
                 
+                -- ========================================================
+                -- FIX CAMERA DYNAMIC OFFSET: Ngukur Kepala Target ke Kepala Asli
+                -- ========================================================
+                local rHead = char:FindFirstChild("Head")
+                local fHead = fakeChar:FindFirstChild("Head")
+                if rHead and fHead and hum then
+                    -- Nambahin / kurangin titik fokus kamera biar sesuai kepala Clone lu
+                    hum.CameraOffset = Vector3.new(0, fHead.Position.Y - rHead.Position.Y, 0)
+                end
+                
                 for _, v in ipairs(fakeChar:GetDescendants()) do
                     if v:IsA("BasePart") then v.CanCollide = false end
                 end
-
                 for _, realMotor in ipairs(char:GetDescendants()) do
                     if realMotor:IsA("Motor6D") then
                         local fakeMotor = fakeChar:FindFirstChild(realMotor.Name, true)
@@ -543,14 +579,13 @@ local function createVisualHologram(targetPlayer)
 end
 
 -- =====================
--- FIX BUG RESTORE VISUAL (1000% ANTI GAGAL)
+-- FIX BUG RESTORE VISUAL & RESET CAMERA
 -- =====================
 local function restoreVisualAvatar()
     local char = LocalPlayer.Character
     if not char then return false, "Karakter tidak ditemukan" end
 
     local ok, err = pcall(function()
-        -- Hapus Hologram
         if workspace.CurrentCamera:FindFirstChild("SyaaVisualHologram") then
             workspace.CurrentCamera.SyaaVisualHologram:Destroy()
         end
@@ -559,7 +594,10 @@ local function restoreVisualAvatar()
             visualConnection = nil
         end
 
-        -- Balikin Transparansi Fisik Lu
+        -- BALIKIN CAMERA KE TINGGI AWAL LU
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.CameraOffset = Vector3.new(0, 0, 0) end
+
         for _, v in ipairs(char:GetDescendants()) do
             if v:IsA("BasePart") or v:IsA("Decal") then
                 local oriTrans = v:GetAttribute("SyaaOriTrans")
@@ -570,7 +608,6 @@ local function restoreVisualAvatar()
             end
         end
 
-        -- Balikin Animasi Original Lu
         local myAnimScript = char:FindFirstChild("Animate")
         if myAnimScript then
             for folderName, id in pairs(backup.AnimIds) do
@@ -578,7 +615,6 @@ local function restoreVisualAvatar()
                 local anim = folder and folder:FindFirstChildOfClass("Animation")
                 if anim then anim.AnimationId = id end
             end
-            -- Refresh Animate script biar balik ke gaya jalan/lari ori lu
             myAnimScript.Disabled = true
             task.wait(0.1)
             myAnimScript.Disabled = false
@@ -589,7 +625,7 @@ local function restoreVisualAvatar()
 end
 
 -- =====================
--- PLAYER CARD & UI
+-- PLAYER CARD BUILDER
 -- =====================
 local function createPlayerCard(player)
     if player == LocalPlayer then return end
@@ -608,7 +644,7 @@ local function createPlayerCard(player)
 
     local Img = Instance.new("ImageLabel", Card)
     Img.Size = UDim2.new(0, 36, 0, 36)
-    Img.Position = UDim2.new(0, 8, 0.5, -18)
+    Img.Position = UDim2.new(0, 10, 0.5, -18)
     Img.BackgroundColor3 = Color3.fromRGB(20, 30, 50)
     Img.BorderSizePixel = 0
     Img.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. player.UserId .. "&width=48&height=48&format=png"
@@ -618,8 +654,8 @@ local function createPlayerCard(player)
     IS.Thickness = 1.5
 
     local NL = Instance.new("TextLabel", Card)
-    NL.Size = UDim2.new(1, -112, 0, 20)
-    NL.Position = UDim2.new(0, 52, 0, 8)
+    NL.Size = UDim2.new(1, -125, 0, 20)
+    NL.Position = UDim2.new(0, 56, 0, 8)
     NL.BackgroundTransparency = 1
     NL.Text = player.DisplayName
     NL.TextColor3 = Color3.fromRGB(200, 230, 255)
@@ -628,8 +664,8 @@ local function createPlayerCard(player)
     NL.TextXAlignment = Enum.TextXAlignment.Left
 
     local UL = Instance.new("TextLabel", Card)
-    UL.Size = UDim2.new(1, -112, 0, 14)
-    UL.Position = UDim2.new(0, 52, 0, 29)
+    UL.Size = UDim2.new(1, -125, 0, 14)
+    UL.Position = UDim2.new(0, 56, 0, 29)
     UL.BackgroundTransparency = 1
     UL.Text = "@" .. player.Name
     UL.TextColor3 = Color3.fromRGB(100, 150, 200)
@@ -638,8 +674,8 @@ local function createPlayerCard(player)
     UL.TextXAlignment = Enum.TextXAlignment.Left
 
     local CopyBtn = Instance.new("TextButton", Card)
-    CopyBtn.Size = UDim2.new(0, 58, 0, 28)
-    CopyBtn.Position = UDim2.new(1, -64, 0.5, -14)
+    CopyBtn.Size = UDim2.new(0, 60, 0, 28)
+    CopyBtn.Position = UDim2.new(1, -70, 0.5, -14)
     CopyBtn.BackgroundColor3 = Color3.fromRGB(30, 100, 200)
     CopyBtn.Text = "Clone"
     CopyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -682,23 +718,8 @@ local function createPlayerCard(player)
     end)
 
     tw(Card, {BackgroundTransparency = 0}, 0.3)
-    filterPlayers() -- Pas player baru join, otomatis cek filter search bar
+    filterPlayers()
 end
-
-local RestoreBtn = Instance.new("TextButton", Content)
-RestoreBtn.Size = UDim2.new(1, -14, 0, 32)
-RestoreBtn.Position = UDim2.new(0, 7, 1, -80)
-RestoreBtn.BackgroundColor3 = Color3.fromRGB(20, 40, 80)
-RestoreBtn.Text = "↩ Lepas Visual Clone"
-RestoreBtn.TextColor3 = Color3.fromRGB(150, 200, 255)
-RestoreBtn.TextSize = 12
-RestoreBtn.Font = Enum.Font.GothamBold
-RestoreBtn.BorderSizePixel = 0
-RestoreBtn.AutoButtonColor = false
-Instance.new("UICorner", RestoreBtn).CornerRadius = UDim.new(0, 9)
-local RS = Instance.new("UIStroke", RestoreBtn)
-RS.Color = Color3.fromRGB(50, 100, 200)
-RS.Thickness = 1
 
 local restoring = false
 RestoreBtn.MouseButton1Click:Connect(function()
