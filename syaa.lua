@@ -94,7 +94,7 @@ local function startLoading(callback)
             updTitle.TextXAlignment = Enum.TextXAlignment.Left; updTitle.Parent = updFrame
 
             local updDesc = Instance.new("TextLabel")
-            updDesc.Text = "Smooth UI Animations Active 🚀"; updDesc.Size = UDim2.new(1, -60, 0, 28)
+            updDesc.Text = "Home Menu Baru & Auto-Minimize 🚀"; updDesc.Size = UDim2.new(1, -60, 0, 28)
             updDesc.Position = UDim2.new(0, 55, 0, 34)
             updDesc.BackgroundTransparency = 1; updDesc.TextColor3 = Color3.fromRGB(200, 200, 200)
             updDesc.Font = Enum.Font.Gotham; updDesc.TextSize = 10
@@ -363,50 +363,14 @@ local function runSyaaHub()
     minBtn.Parent = mainFrame
     Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0,6)
 
-    -- STATE UNTUK TAB & ANIMASI ICON
-    local tabPanels = {}; local activeTab = nil
-    local sidebarIconsData = {}
-
-    local function setTab(name)
-        activeTab = name
-        
-        -- Animasi ganti panel menu (Slide Up halus)
-        for n, panel in pairs(tabPanels) do 
-            if n == name then
-                panel.Visible = true
-                panel.Position = UDim2.new(0, 10, 0, 60) -- Posisi awal sebelum naik
-                TweenService:Create(panel, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(0, 10, 0, 40)}):Play()
-            else
-                panel.Visible = false
-            end
-        end
-        
-        -- Efek Animasi Zoom In/Out Icon Sidebar (Pakai Quart biar super halus)
-        for tName, data in pairs(sidebarIconsData) do
-            local btn = data.btn
-            local bSize = data.baseSize
-            local yPos = data.yPos
-            
-            if tName == name then
-                -- Icon aktif membesar (tambah 8 pixel biar proposional)
-                local actSize = UDim2.new(0, bSize.X.Offset + 8, 0, bSize.Y.Offset + 8)
-                local actPos = UDim2.new(0.5, -(actSize.X.Offset/2), 0, yPos - 4) 
-                TweenService:Create(btn, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = actSize, Position = actPos}):Play()
-            else
-                -- Icon yang ga dipilih kembali ke ukuran normal
-                local normPos = UDim2.new(0.5, -(bSize.X.Offset/2), 0, yPos)
-                TweenService:Create(btn, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = bSize, Position = normPos}):Play()
-            end
-        end
-    end
-
+    -- FUNGSI TOGGLE MAIN FRAME (Minimize System)
     local function toggleMainFrame(state)
         if state then
             local tweenOutIcon = TweenService:Create(openIcon, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
             tweenOutIcon:Play(); tweenOutIcon.Completed:Wait(); openIcon.Visible = false
             mainFrame.Visible = true; mainFrame.Size = UDim2.new(0, 180, 0, 120)
             TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, 360, 0, 240)}):Play()
-            if activeTab==nil then setTab("Freecam") end
+            if activeTab==nil then setTab("Home") end
         else
             local tw = TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0, 90, 0, 50)})
             tw:Play()
@@ -416,14 +380,47 @@ local function runSyaaHub()
             end)
         end
     end
-
     minBtn.MouseButton1Click:Connect(function() toggleMainFrame(false) end)
     openIcon.MouseButton1Click:Connect(function() toggleMainFrame(true) end)
 
-    -- SIDEBAR 
+    -- STATE UNTUK TAB & ANIMASI ICON
+    tabPanels = {}
+    local activeTab = nil
+    local sidebarIconsData = {}
+
+    function setTab(name)
+        activeTab = name
+        
+        for n, panel in pairs(tabPanels) do 
+            if n == name then
+                panel.Visible = true
+                panel.Position = UDim2.new(0, 10, 0, 60) 
+                TweenService:Create(panel, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(0, 10, 0, 40)}):Play()
+            else
+                panel.Visible = false
+            end
+        end
+        
+        for tName, data in pairs(sidebarIconsData) do
+            local btn = data.btn
+            local bSize = data.baseSize
+            local yPos = data.yPos
+            
+            if tName == name then
+                local actSize = UDim2.new(0, bSize.X.Offset + 8, 0, bSize.Y.Offset + 8)
+                local actPos = UDim2.new(0.5, -(actSize.X.Offset/2), 0, yPos - 4) 
+                TweenService:Create(btn, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = actSize, Position = actPos}):Play()
+            else
+                local normPos = UDim2.new(0.5, -(bSize.X.Offset/2), 0, yPos)
+                TweenService:Create(btn, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = bSize, Position = normPos}):Play()
+            end
+        end
+    end
+
+    -- SIDEBAR DIPERPANJANG UNTUK 4 ICON
     local sidebar = Instance.new("Frame")
-    sidebar.Size = UDim2.new(0, 42, 0, 140) 
-    sidebar.Position = UDim2.new(0, -52, 0.5, -70)
+    sidebar.Size = UDim2.new(0, 42, 0, 180) 
+    sidebar.Position = UDim2.new(0, -52, 0.5, -90)
     sidebar.BackgroundColor3 = Color3.fromRGB(5,10,25)
     sidebar.BackgroundTransparency = 0.2
     sidebar.Parent = mainFrame
@@ -436,7 +433,6 @@ local function runSyaaHub()
         btn.BackgroundTransparency = 1; btn.Image = assetId; btn.ImageColor3 = Color3.fromRGB(0, 120, 255)
         btn.Parent = sidebar
         
-        -- Simpan data buat dipanggil di animasi pas diklik
         sidebarIconsData[tabName] = {btn = btn, baseSize = customSize, yPos = yPos}
 
         task.spawn(function()
@@ -448,10 +444,11 @@ local function runSyaaHub()
         btn.MouseButton1Click:Connect(function() setTab(tabName) end)
     end
     
-    makeSidebarIcon("rbxassetid://76171785807172", 18, "Freecam", UDim2.new(0, 26, 0, 26))
-    -- Icon Orientation Diperbesar dari 34 jadi 40 sesuai permintaan Syaa
-    makeSidebarIcon("rbxassetid://116019702436521", 58, "Orientation", UDim2.new(0, 40, 0, 40))
-    makeSidebarIcon("rbxassetid://112703342701931", 98, "Tools", UDim2.new(0, 30, 0, 30))
+    -- ICON HOME DIPERBESAR JADI 34x34 SESUAI REQUEST SYAA
+    makeSidebarIcon("rbxassetid://119774215618572", 18, "Home", UDim2.new(0, 34, 0, 34))
+    makeSidebarIcon("rbxassetid://76171785807172", 58, "Freecam", UDim2.new(0, 26, 0, 26))
+    makeSidebarIcon("rbxassetid://116019702436521", 98, "Orientation", UDim2.new(0, 40, 0, 40))
+    makeSidebarIcon("rbxassetid://112703342701931", 138, "Tools", UDim2.new(0, 30, 0, 30))
 
     -- PANELS CREATION
     local function createPanel(name)
@@ -465,6 +462,7 @@ local function runSyaaHub()
         return panel
     end
 
+    local pHome = createPanel("Home")
     local pFC = createPanel("Freecam")
     local pOR = createPanel("Orientation")
     local pTools = createPanel("Tools")
@@ -577,7 +575,59 @@ local function runSyaaHub()
 
 
     -- ==========================================
-    -- SCOPE 1: PANEL TOOLS (+ SPY CAM MERGE)
+    -- SCOPE 0: PANEL HOME (INFO & LOADS)
+    -- ==========================================
+    local function buildHomePanel()
+        local hY = 2
+        makeSepHdr("INFO SCRIPT", hY, pHome); hY = hY + 22
+        
+        local infoText = makeLbl("Syaa Hub V8.0\nIni adalah Script Multi-Fungsi yang khusus dikembangkan oleh Syaa untuk mempermudah gameplay lu broo 🗿.", hY, pHome, 40, Color3.fromRGB(200, 200, 200))
+        infoText.TextWrapped = true; infoText.TextYAlignment = Enum.TextYAlignment.Top
+        hY = hY + 46
+
+        makeSepHdr("LOAD SCRIPTS (Auto Minimize)", hY, pHome); hY = hY + 22
+        
+        local flyBtn = Instance.new("TextButton"); flyBtn.Text = "🚀 Load Fly"; flyBtn.Size = UDim2.new(0.92,0,0,30); flyBtn.Position = UDim2.new(0.04,0,0,hY); flyBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); flyBtn.BackgroundTransparency = 0.5; flyBtn.TextColor3 = Color3.fromRGB(255,255,255); flyBtn.Font = Enum.Font.GothamBold; flyBtn.TextSize = 10; flyBtn.Parent = pHome; Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
+        flyBtn.MouseButton1Click:Connect(function() 
+            toggleMainFrame(false) -- Auto minimize pas dipencet
+            pcall(function() loadstring(game:HttpGet("https://rawscripts.net/raw/Brookhaven-RP-Fly-v1-27423"))() end) 
+        end)
+
+        local copyAvaBtn = Instance.new("TextButton"); copyAvaBtn.Text = "👥 Copy Avatar"; copyAvaBtn.Size = UDim2.new(0.92,0,0,30); copyAvaBtn.Position = UDim2.new(0.04,0,0,hY); copyAvaBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); copyAvaBtn.BackgroundTransparency = 0.5; copyAvaBtn.TextColor3 = Color3.fromRGB(255,255,255); copyAvaBtn.Font = Enum.Font.GothamBold; copyAvaBtn.TextSize = 10; copyAvaBtn.Parent = pHome; Instance.new("UICorner", copyAvaBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
+        copyAvaBtn.MouseButton1Click:Connect(function() 
+            toggleMainFrame(false) 
+            pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/89c7sbrs9w-ai/Syaafreecam/main/coppy%20avatar.lua"))() end) 
+        end)
+
+        local emoteBtn = Instance.new("TextButton"); emoteBtn.Text = "🕺 Load Emote"; emoteBtn.Size = UDim2.new(0.92,0,0,30); emoteBtn.Position = UDim2.new(0.04,0,0,hY); emoteBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); emoteBtn.BackgroundTransparency = 0.5; emoteBtn.TextColor3 = Color3.fromRGB(255,255,255); emoteBtn.Font = Enum.Font.GothamBold; emoteBtn.TextSize = 10; emoteBtn.Parent = pHome; Instance.new("UICorner", emoteBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
+        emoteBtn.MouseButton1Click:Connect(function() 
+            toggleMainFrame(false) 
+            task.spawn(function() pcall(function() local src = ""; local StarterGui = game:GetService("StarterGui"); pcall(function() src = game:HttpGet("https://yarhm.mhi.im/scr?channel=afemmax", false) end); if src == "" then StarterGui:SetCore("SendNotification", {Title = "YARHM Outage"; Text = "Using YARHM Offline."; Duration = 5;}); src = game:HttpGet("https://raw.githubusercontent.com/Joystickplays/AFEM/refs/heads/main/max/afemmax.lua", false) end; if src ~= "" then loadstring(src)() end end) end) 
+        end)
+
+        makeSepHdr("KONTAK DEVELOPER (SYAA)", hY, pHome); hY = hY + 22
+
+        local waNumBtn = Instance.new("TextButton"); waNumBtn.Text = "Salin Nomor WA Syaa"; waNumBtn.Size = UDim2.new(0.92,0,0,30); waNumBtn.Position = UDim2.new(0.04,0,0,hY); waNumBtn.BackgroundColor3 = Color3.fromRGB(30,160,80); waNumBtn.BackgroundTransparency = 0.4; waNumBtn.TextColor3 = Color3.fromRGB(255,255,255); waNumBtn.Font = Enum.Font.GothamBold; waNumBtn.TextSize = 10; waNumBtn.Parent = pHome; Instance.new("UICorner", waNumBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
+        waNumBtn.MouseButton1Click:Connect(function()
+            pcall(function() setclipboard("087792945563") end)
+            waNumBtn.Text = "✅ Berhasil Disalin!"
+            task.wait(1.5)
+            waNumBtn.Text = "Salin Nomor WA Syaa"
+        end)
+
+        local waLinkBtn = Instance.new("TextButton"); waLinkBtn.Text = "Salin Link Saluran WA"; waLinkBtn.Size = UDim2.new(0.92,0,0,30); waLinkBtn.Position = UDim2.new(0.04,0,0,hY); waLinkBtn.BackgroundColor3 = Color3.fromRGB(30,160,80); waLinkBtn.BackgroundTransparency = 0.4; waLinkBtn.TextColor3 = Color3.fromRGB(255,255,255); waLinkBtn.Font = Enum.Font.GothamBold; waLinkBtn.TextSize = 10; waLinkBtn.Parent = pHome; Instance.new("UICorner", waLinkBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
+        waLinkBtn.MouseButton1Click:Connect(function()
+            pcall(function() setclipboard("https://whatsapp.com/channel/0029Vb7sDCb7oQhgPP18Zh0m") end)
+            waLinkBtn.Text = "✅ Berhasil Disalin!"
+            task.wait(1.5)
+            waLinkBtn.Text = "Salin Link Saluran WA"
+        end)
+
+        local hPad = Instance.new("Frame"); hPad.Size = UDim2.new(1,0,0,40); hPad.Position = UDim2.new(0,0,0,hY); hPad.BackgroundTransparency = 1; hPad.Parent = pHome
+    end
+
+    -- ==========================================
+    -- SCOPE 1: PANEL TOOLS (Dipangkas pindah ke Home)
     -- ==========================================
     local function buildToolsPanel()
         local tY = 2
@@ -637,16 +687,6 @@ local function runSyaaHub()
 
         makeSepHdr("PLAYER MODS", tY, pTools); tY = tY+22
         
-        local flyBtn = Instance.new("TextButton"); flyBtn.Text = "🚀 Load Fly"; flyBtn.Size = UDim2.new(0.92,0,0,30); flyBtn.Position = UDim2.new(0.04,0,0,tY); flyBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); flyBtn.BackgroundTransparency = 0.5; flyBtn.TextColor3 = Color3.fromRGB(255,255,255); flyBtn.Font = Enum.Font.GothamBold; flyBtn.TextSize = 10; flyBtn.Parent = pTools; Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0,6); tY = tY + 36
-        flyBtn.MouseButton1Click:Connect(function() pcall(function() loadstring(game:HttpGet("https://rawscripts.net/raw/Brookhaven-RP-Fly-v1-27423"))() end) end)
-
-        -- NEW: Load Coppy Avatar button
-        local copyAvaBtn = Instance.new("TextButton"); copyAvaBtn.Text = "👥 Copy Avatar"; copyAvaBtn.Size = UDim2.new(0.92,0,0,30); copyAvaBtn.Position = UDim2.new(0.04,0,0,tY); copyAvaBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); copyAvaBtn.BackgroundTransparency = 0.5; copyAvaBtn.TextColor3 = Color3.fromRGB(255,255,255); copyAvaBtn.Font = Enum.Font.GothamBold; copyAvaBtn.TextSize = 10; copyAvaBtn.Parent = pTools; Instance.new("UICorner", copyAvaBtn).CornerRadius = UDim.new(0,6); tY = tY + 36
-        copyAvaBtn.MouseButton1Click:Connect(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/89c7sbrs9w-ai/Syaafreecam/main/coppy%20avatar.lua"))() end) end)
-
-        local emoteBtn = Instance.new("TextButton"); emoteBtn.Text = "🕺 Load Emote"; emoteBtn.Size = UDim2.new(0.92,0,0,30); emoteBtn.Position = UDim2.new(0.04,0,0,tY); emoteBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); emoteBtn.BackgroundTransparency = 0.5; emoteBtn.TextColor3 = Color3.fromRGB(255,255,255); emoteBtn.Font = Enum.Font.GothamBold; emoteBtn.TextSize = 10; emoteBtn.Parent = pTools; Instance.new("UICorner", emoteBtn).CornerRadius = UDim.new(0,6); tY = tY + 36
-        emoteBtn.MouseButton1Click:Connect(function() task.spawn(function() pcall(function() local src = ""; local StarterGui = game:GetService("StarterGui"); pcall(function() src = game:HttpGet("https://yarhm.mhi.im/scr?channel=afemmax", false) end); if src == "" then StarterGui:SetCore("SendNotification", {Title = "YARHM Outage"; Text = "Using YARHM Offline."; Duration = 5;}); src = game:HttpGet("https://raw.githubusercontent.com/Joystickplays/AFEM/refs/heads/main/max/afemmax.lua", false) end; if src ~= "" then loadstring(src)() end end) end) end)
-        
         local infJumpRow, setInfJump = makeIosRow("Unlimited Jump", tY, pTools); tY = tY+36
         local isInfJump = false
         infJumpRow.MouseButton1Click:Connect(function() isInfJump = not isInfJump; setInfJump(isInfJump) end)
@@ -703,27 +743,18 @@ local function runSyaaHub()
         local function mod3D(cf) if activeImage then activeImage.CFrame = activeImage.CFrame * cf end end
         btnLeft.MouseButton1Click:Connect(function() mod3D(CFrame.new(0.5, 0, 0)) end); btnRight.MouseButton1Click:Connect(function() mod3D(CFrame.new(-0.5, 0, 0)) end); btnUp.MouseButton1Click:Connect(function() mod3D(CFrame.new(0, 0.5, 0)) end); btnDown.MouseButton1Click:Connect(function() mod3D(CFrame.new(0, -0.5, 0)) end); btnFwd.MouseButton1Click:Connect(function() mod3D(CFrame.new(0, 0, 0.5)) end); btnBack.MouseButton1Click:Connect(function() mod3D(CFrame.new(0, 0, -0.5)) end); btnRotL.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0, math.rad(15), 0)) end); btnRotR.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0, math.rad(-15), 0)) end); btnTiltL.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0, 0, math.rad(15))) end); btnTiltR.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0, 0, math.rad(-15))) end); btnRotUp.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(math.rad(15), 0, 0)) end); btnRotDown.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(math.rad(-15), 0, 0)) end)
         
-
-        -- ==========================================
-        -- BAGIAN SPY CAM (Sekarang gabung di Tools)
-        -- ==========================================
+        -- SPY CAM
         local spyActive = false
         local spyTarget = nil
         local spyConn = nil
-        local spyCamOffset = Vector3.new(0, 2, 5) -- offset kamera dari belakang player
+        local spyCamOffset = Vector3.new(0, 2, 5)
 
         makeSepHdr("SPY CAM", tY, pTools); tY = tY + 22
 
-        -- Toggle SPY
         local spyRow, setSpyState, getSpyState = makeIosRow("Aktifkan Spy Cam", tY, pTools); tY = tY + 36
-
-        -- Info label
         local infoLbl = makeLbl("▸ Pilih player yang mau dipantau:", tY, pTools, 14, Color3.fromRGB(50, 150, 255)); tY = tY + 18
-
-        -- Target display
         local targetLbl = makeLbl("Target: Belum dipilih", tY, pTools, 14, Color3.fromRGB(200, 200, 200)); tY = tY + 16
 
-        -- Refresh button
         local refreshSpyBtn = Instance.new("TextButton")
         refreshSpyBtn.Text = "↺ Refresh Player List"
         refreshSpyBtn.Size = UDim2.new(0.92, 0, 0, 26)
@@ -737,7 +768,6 @@ local function runSyaaHub()
         Instance.new("UICorner", refreshSpyBtn).CornerRadius = UDim.new(0, 6)
         tY = tY + 32
 
-        -- Player list scrollframe
         local spyListFrame = Instance.new("ScrollingFrame")
         spyListFrame.Size = UDim2.new(0.92, 0, 0, 110)
         spyListFrame.Position = UDim2.new(0.04, 0, 0, tY)
@@ -757,7 +787,6 @@ local function runSyaaHub()
 
         makeSepHdr("KAMERA OFFSET", tY, pTools); tY = tY + 22
 
-        -- Offset Y slider
         local offYLab = makeLbl("Tinggi (Y): 2", tY, pTools, 14); tY = tY + 16
         local offYBg = Instance.new("Frame"); offYBg.Size = UDim2.new(0.88, 0, 0, 4); offYBg.Position = UDim2.new(0.06, 0, 0, tY); offYBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); offYBg.Parent = pTools; Instance.new("UICorner", offYBg)
         local offYFill = Instance.new("Frame"); offYFill.Size = UDim2.new(2/10, 0, 1, 0); offYFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); offYFill.BorderSizePixel = 0; offYFill.Parent = offYBg; Instance.new("UICorner", offYFill)
@@ -767,7 +796,6 @@ local function runSyaaHub()
         UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then offYSld = false end end)
         UserInputService.InputChanged:Connect(function(i) if offYSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X - offYBg.AbsolutePosition.X) / offYBg.AbsoluteSize.X, 0, 1); offYFill.Size = UDim2.new(pos, 0, 1, 0); offYKnob.Position = UDim2.new(pos, -7, 0.5, -7); local v = math.floor(pos * 20) - 5; offYLab.Text = "Tinggi (Y): " .. v; spyCamOffset = Vector3.new(spyCamOffset.X, v, spyCamOffset.Z) end end)
 
-        -- Offset Z slider
         local offZLab = makeLbl("Jarak (Z): 5", tY, pTools, 14); tY = tY + 16
         local offZBg = Instance.new("Frame"); offZBg.Size = UDim2.new(0.88, 0, 0, 4); offZBg.Position = UDim2.new(0.06, 0, 0, tY); offZBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); offZBg.Parent = pTools; Instance.new("UICorner", offZBg)
         local offZFill = Instance.new("Frame"); offZFill.Size = UDim2.new(5/25, 0, 1, 0); offZFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); offZFill.BorderSizePixel = 0; offZFill.Parent = offZBg; Instance.new("UICorner", offZFill)
@@ -777,7 +805,6 @@ local function runSyaaHub()
         UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then offZSld = false end end)
         UserInputService.InputChanged:Connect(function(i) if offZSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X - offZBg.AbsolutePosition.X) / offZBg.AbsoluteSize.X, 0, 1); offZFill.Size = UDim2.new(pos, 0, 1, 0); offZKnob.Position = UDim2.new(pos, -7, 0.5, -7); local v = math.floor(pos * 25) + 1; offZLab.Text = "Jarak (Z): " .. v; spyCamOffset = Vector3.new(spyCamOffset.X, spyCamOffset.Y, v) end end)
 
-        -- Stop spy button
         local stopSpyBtn = Instance.new("TextButton")
         stopSpyBtn.Text = "■ Stop Spy"
         stopSpyBtn.Size = UDim2.new(0.92, 0, 0, 28)
@@ -791,10 +818,8 @@ local function runSyaaHub()
         Instance.new("UICorner", stopSpyBtn).CornerRadius = UDim.new(0, 6)
         tY = tY + 36
 
-        -- Zoom buttons (buat mobile, PC bisa scroll)
         makeSepHdr("ZOOM (Mobile)", tY, pTools); tY = tY + 20
         local zoomInBtn, zoomOutBtn = makeBtn2("🔍 Zoom In", "🔍 Zoom Out", tY, pTools); tY = tY + 32
-        -- Hold to zoom continuously
         local zoomInHeld, zoomOutHeld = false, false
         zoomInBtn.MouseButton1Down:Connect(function() zoomInHeld = true end)
         zoomInBtn.MouseButton1Up:Connect(function() zoomInHeld = false end)
@@ -809,12 +834,10 @@ local function runSyaaHub()
             end
         end)
 
-        -- Spy logic functions
         local spyRows = {}
-
-        local spyOrbitYaw = 180   -- derajat, 180 = posisi belakang target
-        local spyOrbitPitch = 15  -- derajat ke atas
-        local spyZoomDist = 7     -- jarak dari target
+        local spyOrbitYaw = 180   
+        local spyOrbitPitch = 15  
+        local spyZoomDist = 7     
         local spyDragging = false
         local spyLastInput = nil
         local spyInputConn1, spyInputConn2, spyInputConn3
@@ -834,7 +857,6 @@ local function runSyaaHub()
             if spyConn then spyConn:Disconnect(); spyConn = nil end
             disconnectSpyInput()
             
-            -- Animasi mulus kembali ke player Syaa
             if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 local hrp = localPlayer.Character.HumanoidRootPart
                 local backPos = hrp.Position + (hrp.CFrame.LookVector * -10) + Vector3.new(0, 5, 0)
@@ -856,7 +878,6 @@ local function runSyaaHub()
 
         local function connectSpyInput()
             disconnectSpyInput()
-            -- Drag untuk rotate orbit
             spyInputConn1 = UserInputService.InputBegan:Connect(function(inp, gpe)
                 if gpe then return end
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
@@ -870,14 +891,12 @@ local function runSyaaHub()
             end)
             spyInputConn3 = UserInputService.InputChanged:Connect(function(inp)
                 if spyActive then
-                    -- Drag rotate
                     if spyDragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
                         local delta = inp.Position - (spyLastInput or inp.Position)
                         spyLastInput = inp.Position
                         spyOrbitYaw = spyOrbitYaw - delta.X * 0.4
                         spyOrbitPitch = math.clamp(spyOrbitPitch + delta.Y * 0.3, -60, 75)
                     end
-                    -- Scroll zoom (PC)
                     if inp.UserInputType == Enum.UserInputType.MouseWheel then
                         spyZoomDist = math.clamp(spyZoomDist - inp.Position.Z * 2, 2, 80)
                     end
@@ -899,7 +918,6 @@ local function runSyaaHub()
             Camera.CameraType = Enum.CameraType.Scriptable
             connectSpyInput()
 
-            -- Animasi mulus nyamperin target
             if spyTarget.Character and spyTarget.Character:FindFirstChild("HumanoidRootPart") then
                 local tHrp = spyTarget.Character.HumanoidRootPart
                 local targetPos = tHrp.Position + Vector3.new(0, spyCamOffset.Y, 0)
@@ -918,7 +936,6 @@ local function runSyaaHub()
                 tw.Completed:Wait()
             end
 
-            -- Mulai loop spy setelah animasi selesai (jika belum di-stop)
             if not spyActive then return end
 
             spyConn = RunService.RenderStepped:Connect(function()
@@ -1040,7 +1057,6 @@ local function runSyaaHub()
 
         task.spawn(function() task.wait(0.8); refreshSpyList() end)
 
-        -- Padding bawah Tools
         local tPad = Instance.new("Frame"); tPad.Size = UDim2.new(1,0,0,40); tPad.Position = UDim2.new(0,0,0,tY); tPad.BackgroundTransparency = 1; tPad.Parent = pTools
     end
 
@@ -1159,11 +1175,12 @@ local function runSyaaHub()
     end
 
     -- EXECUTE PANELS
+    buildHomePanel()
     buildToolsPanel()
     buildOrientationPanel()
     buildFreecamPanel()
 
-    setTab("Freecam") 
+    setTab("Home") 
 end
 
 startLoading(runSyaaHub)
