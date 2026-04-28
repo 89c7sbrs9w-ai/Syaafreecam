@@ -1,4 +1,4 @@
--- [[ SYAAA HUB V8.0 - BLUE THEME + SPY CAM ]] --
+-- [[ SYAAA HUB V8.0 - BLUE THEME + SPY CAM + CUSTOM JUMP ]] --
 
 -- Tahan eksekusi aman sampai game 100% ke-load biar LocalPlayer gak nil
 if not game:IsLoaded() then 
@@ -230,6 +230,190 @@ local function runSyaaHub()
     local autoWalkDirection = 0
     local autoWalkSpeed = 10
     local PlayerModule = require(localPlayer.PlayerScripts:WaitForChild("PlayerModule")):GetControls()
+
+    -- ==========================================
+    -- CUSTOM JUMP BUTTON SYSTEM
+    -- ==========================================
+    local customJumpActive = false
+    local customJumpSize = 80
+    local customJumpX = 0.85
+    local customJumpY = 0.75
+
+    -- Hide tombol jump original Roblox
+    local function hideOriginalJump(hide)
+        pcall(function()
+            local playerGui = localPlayer:WaitForChild("PlayerGui")
+            -- Coba cari TouchGui bawaan Roblox
+            local touchGui = playerGui:FindFirstChild("TouchGui")
+            if touchGui then
+                local touchFrame = touchGui:FindFirstChild("TouchControlFrame")
+                if touchFrame then
+                    local jumpBtn = touchFrame:FindFirstChild("JumpButton")
+                    if jumpBtn then
+                        jumpBtn.Visible = not hide
+                    end
+                end
+            end
+        end)
+        -- Juga disable via StarterGui CoreGui
+        pcall(function()
+            local StarterGui = game:GetService("StarterGui")
+            if hide then
+                StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true)
+                -- Sembunyiin jump button dari TouchGui
+                for _, gui in pairs(localPlayer.PlayerGui:GetDescendants()) do
+                    if gui.Name == "JumpButton" then
+                        gui.Visible = false
+                    end
+                end
+            else
+                for _, gui in pairs(localPlayer.PlayerGui:GetDescendants()) do
+                    if gui.Name == "JumpButton" then
+                        gui.Visible = true
+                    end
+                end
+            end
+        end)
+    end
+
+    -- Container custom jump
+    local jumpContainer = Instance.new("Frame")
+    jumpContainer.Name = "SyaaJumpContainer"
+    jumpContainer.Size = UDim2.new(0, customJumpSize, 0, customJumpSize)
+    jumpContainer.Position = UDim2.new(customJumpX, -customJumpSize/2, customJumpY, -customJumpSize/2)
+    jumpContainer.BackgroundTransparency = 1
+    jumpContainer.Visible = false
+    jumpContainer.ZIndex = 10
+    jumpContainer.Parent = screenGui
+
+    -- Tombol jump custom
+    local jumpBtn = Instance.new("ImageButton")
+    jumpBtn.Name = "SyaaJumpBtn"
+    jumpBtn.Size = UDim2.new(1, 0, 1, 0)
+    jumpBtn.Position = UDim2.new(0, 0, 0, 0)
+    jumpBtn.BackgroundTransparency = 1
+    jumpBtn.Image = "rbxassetid://132246991346105"
+    jumpBtn.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    jumpBtn.ZIndex = 11
+    jumpBtn.Parent = jumpContainer
+
+    -- Fungsi spawn partikel biru
+    local function spawnJumpParticles()
+        local centerX = jumpContainer.AbsolutePosition.X + jumpContainer.AbsoluteSize.X / 2
+        local centerY = jumpContainer.AbsolutePosition.Y + jumpContainer.AbsoluteSize.Y / 2
+
+        for i = 1, 12 do
+            local particle = Instance.new("Frame")
+            particle.ZIndex = 15
+            particle.BackgroundColor3 = Color3.fromHSV(0.6 + math.random(-5,5)*0.01, 0.8 + math.random()*0.2, 1)
+            particle.BackgroundTransparency = 0.1
+            particle.BorderSizePixel = 0
+            local pSize = math.random(5, 14)
+            particle.Size = UDim2.new(0, pSize, 0, pSize)
+            -- Posisi awal di tengah button
+            particle.Position = UDim2.new(0, centerX - pSize/2, 0, centerY - pSize/2)
+            particle.Parent = screenGui
+            Instance.new("UICorner", particle).CornerRadius = UDim.new(1, 0)
+
+            -- Arah acak
+            local angle = math.rad(math.random(0, 360))
+            local dist = math.random(40, 90)
+            local targetX = centerX + math.cos(angle) * dist - pSize/2
+            local targetY = centerY + math.sin(angle) * dist - pSize/2
+
+            -- Glow stroke biru
+            local stroke = Instance.new("UIStroke", particle)
+            stroke.Color = Color3.fromRGB(0, 180, 255)
+            stroke.Thickness = 1.5
+            stroke.Transparency = 0
+
+            -- Animasi terbang keluar + fade
+            local moveTween = TweenService:Create(particle, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Position = UDim2.new(0, targetX, 0, targetY),
+                BackgroundTransparency = 1,
+                Size = UDim2.new(0, pSize * 0.3, 0, pSize * 0.3)
+            })
+            moveTween:Play()
+            TweenService:Create(stroke, TweenInfo.new(0.4), {Transparency = 1}):Play()
+
+            task.delay(0.5, function()
+                pcall(function() particle:Destroy() end)
+            end)
+        end
+
+        -- Ring expand effect
+        local ring = Instance.new("Frame")
+        ring.ZIndex = 12
+        ring.BackgroundTransparency = 1
+        ring.Size = UDim2.new(0, customJumpSize * 0.6, 0, customJumpSize * 0.6)
+        ring.Position = UDim2.new(0, centerX - customJumpSize*0.3, 0, centerY - customJumpSize*0.3)
+        ring.Parent = screenGui
+        Instance.new("UICorner", ring).CornerRadius = UDim.new(1, 0)
+        local ringStroke = Instance.new("UIStroke", ring)
+        ringStroke.Color = Color3.fromRGB(0, 150, 255)
+        ringStroke.Thickness = 3
+        ringStroke.Transparency = 0.2
+
+        TweenService:Create(ring, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, customJumpSize * 1.4, 0, customJumpSize * 1.4),
+            Position = UDim2.new(0, centerX - customJumpSize*0.7, 0, centerY - customJumpSize*0.7)
+        }):Play()
+        TweenService:Create(ringStroke, TweenInfo.new(0.4), {Transparency = 1}):Play()
+        task.delay(0.45, function() pcall(function() ring:Destroy() end) end)
+
+        -- Scale bounce effect pada button
+        TweenService:Create(jumpBtn, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(1.25, 0, 1.25, 0),
+            Position = UDim2.new(-0.125, 0, -0.125, 0)
+        }):Play()
+        task.delay(0.1, function()
+            TweenService:Create(jumpBtn, TweenInfo.new(0.15, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1, 0, 1, 0),
+                Position = UDim2.new(0, 0, 0, 0)
+            }):Play()
+        end)
+    end
+
+    -- Fungsi update posisi & ukuran jump button
+    local function updateJumpBtn()
+        jumpContainer.Size = UDim2.new(0, customJumpSize, 0, customJumpSize)
+        jumpContainer.Position = UDim2.new(customJumpX, -customJumpSize/2, customJumpY, -customJumpSize/2)
+    end
+
+    -- Logic jump pas tombol diklik
+    jumpBtn.MouseButton1Down:Connect(function()
+        spawnJumpParticles()
+        local char = localPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end
+    end)
+
+    -- Touch support
+    jumpBtn.TouchLongPress:Connect(function() end) -- prevent long press conflict
+    jumpBtn.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.Touch then
+            spawnJumpParticles()
+            local char = localPlayer.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end
+        end
+    end)
+
+    -- Respawn handling
+    localPlayer.CharacterAdded:Connect(function(char)
+        task.wait(0.5)
+        if customJumpActive then
+            hideOriginalJump(true)
+        end
+    end)
 
     -- SHIFTLOCK (ICON & LOGIC)
     local shiftlockBtn = Instance.new("ImageButton")
@@ -589,7 +773,7 @@ local function runSyaaHub()
         
         local flyBtn = Instance.new("TextButton"); flyBtn.Text = "🚀 Load Fly"; flyBtn.Size = UDim2.new(0.92,0,0,30); flyBtn.Position = UDim2.new(0.04,0,0,hY); flyBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); flyBtn.BackgroundTransparency = 0.5; flyBtn.TextColor3 = Color3.fromRGB(255,255,255); flyBtn.Font = Enum.Font.GothamBold; flyBtn.TextSize = 10; flyBtn.Parent = pHome; Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
         flyBtn.MouseButton1Click:Connect(function() 
-            toggleMainFrame(false) -- Auto minimize pas dipencet
+            toggleMainFrame(false)
             pcall(function() loadstring(game:HttpGet("https://rawscripts.net/raw/Brookhaven-RP-Fly-v1-27423"))() end) 
         end)
 
@@ -627,7 +811,7 @@ local function runSyaaHub()
     end
 
     -- ==========================================
-    -- SCOPE 1: PANEL TOOLS (Dipangkas pindah ke Home)
+    -- SCOPE 1: PANEL TOOLS
     -- ==========================================
     local function buildToolsPanel()
         local tY = 2
@@ -1149,6 +1333,150 @@ local function runSyaaHub()
         slYBtn.MouseButton1Down:Connect(function() slYSld=true end)
         UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then slYSld=false end end)
         UserInputService.InputChanged:Connect(function(i) if slYSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X-slYBg.AbsolutePosition.X)/slYBg.AbsoluteSize.X,0,1); slYFill.Size = UDim2.new(pos,0,1,0); slYBtn.Position = UDim2.new(pos,-7,0.5,-7); slYLab.Text = string.format("Posisi Y: %.2f",pos); shiftlockBtn.Position = UDim2.new(shiftlockBtn.Position.X.Scale,0,pos,0) end end)
+
+        -- ==========================================
+        -- CUSTOM JUMP BUTTON SETTINGS (di panel Freecam)
+        -- ==========================================
+        makeSepHdr("CUSTOM JUMP BUTTON", Y, pFC); Y = Y + 22
+
+        local jumpRow, setJumpState, getJumpState = makeIosRow("Aktifkan Custom Jump", Y, pFC); Y = Y + 36
+
+        jumpRow.MouseButton1Click:Connect(function()
+            customJumpActive = not customJumpActive
+            setJumpState(customJumpActive)
+            jumpContainer.Visible = customJumpActive
+            hideOriginalJump(customJumpActive)
+            -- Handle jika jump diaktifkan saat belum ada karakter
+            if customJumpActive then
+                task.spawn(function()
+                    -- Poll tiap detik buat jaga-jaga TouchGui muncul telat
+                    for _ = 1, 10 do
+                        task.wait(0.5)
+                        hideOriginalJump(true)
+                    end
+                end)
+            end
+        end)
+
+        -- Slider ukuran jump button
+        local jSzLab = makeLbl("Ukuran: 80", Y, pFC, 14); Y = Y + 16
+        local jSzBg = Instance.new("Frame")
+        jSzBg.Size = UDim2.new(0.88, 0, 0, 4)
+        jSzBg.Position = UDim2.new(0.06, 0, 0, Y)
+        jSzBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50)
+        jSzBg.Parent = pFC
+        Instance.new("UICorner", jSzBg)
+        local jSzFill = Instance.new("Frame")
+        jSzFill.Size = UDim2.new((80-40)/160, 0, 1, 0)
+        jSzFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+        jSzFill.BorderSizePixel = 0
+        jSzFill.Parent = jSzBg
+        Instance.new("UICorner", jSzFill)
+        local jSzKnob = Instance.new("TextButton")
+        jSzKnob.Size = UDim2.new(0, 14, 0, 14)
+        jSzKnob.Position = UDim2.new((80-40)/160, -7, 0.5, -7)
+        jSzKnob.Text = ""
+        jSzKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        jSzKnob.Parent = jSzBg
+        Instance.new("UICorner", jSzKnob).CornerRadius = UDim.new(1, 0)
+        Y = Y + 18
+        local jSzSld = false
+        jSzKnob.MouseButton1Down:Connect(function() jSzSld = true end)
+        UserInputService.InputEnded:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                jSzSld = false
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(i)
+            if jSzSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X - jSzBg.AbsolutePosition.X) / jSzBg.AbsoluteSize.X, 0, 1)
+                jSzFill.Size = UDim2.new(pos, 0, 1, 0)
+                jSzKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                customJumpSize = math.floor(40 + pos * 160)
+                jSzLab.Text = "Ukuran: " .. customJumpSize
+                updateJumpBtn()
+            end
+        end)
+
+        -- Slider posisi X
+        local jXLab = makeLbl("Posisi X: 0.85", Y, pFC, 14); Y = Y + 16
+        local jXBg = Instance.new("Frame")
+        jXBg.Size = UDim2.new(0.88, 0, 0, 4)
+        jXBg.Position = UDim2.new(0.06, 0, 0, Y)
+        jXBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50)
+        jXBg.Parent = pFC
+        Instance.new("UICorner", jXBg)
+        local jXFill = Instance.new("Frame")
+        jXFill.Size = UDim2.new(0.85, 0, 1, 0)
+        jXFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+        jXFill.BorderSizePixel = 0
+        jXFill.Parent = jXBg
+        Instance.new("UICorner", jXFill)
+        local jXKnob = Instance.new("TextButton")
+        jXKnob.Size = UDim2.new(0, 14, 0, 14)
+        jXKnob.Position = UDim2.new(0.85, -7, 0.5, -7)
+        jXKnob.Text = ""
+        jXKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        jXKnob.Parent = jXBg
+        Instance.new("UICorner", jXKnob).CornerRadius = UDim.new(1, 0)
+        Y = Y + 18
+        local jXSld = false
+        jXKnob.MouseButton1Down:Connect(function() jXSld = true end)
+        UserInputService.InputEnded:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                jXSld = false
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(i)
+            if jXSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X - jXBg.AbsolutePosition.X) / jXBg.AbsoluteSize.X, 0, 1)
+                jXFill.Size = UDim2.new(pos, 0, 1, 0)
+                jXKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                customJumpX = pos
+                jXLab.Text = string.format("Posisi X: %.2f", pos)
+                updateJumpBtn()
+            end
+        end)
+
+        -- Slider posisi Y
+        local jYLab = makeLbl("Posisi Y: 0.75", Y, pFC, 14); Y = Y + 16
+        local jYBg = Instance.new("Frame")
+        jYBg.Size = UDim2.new(0.88, 0, 0, 4)
+        jYBg.Position = UDim2.new(0.06, 0, 0, Y)
+        jYBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50)
+        jYBg.Parent = pFC
+        Instance.new("UICorner", jYBg)
+        local jYFill = Instance.new("Frame")
+        jYFill.Size = UDim2.new(0.75, 0, 1, 0)
+        jYFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+        jYFill.BorderSizePixel = 0
+        jYFill.Parent = jYBg
+        Instance.new("UICorner", jYFill)
+        local jYKnob = Instance.new("TextButton")
+        jYKnob.Size = UDim2.new(0, 14, 0, 14)
+        jYKnob.Position = UDim2.new(0.75, -7, 0.5, -7)
+        jYKnob.Text = ""
+        jYKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        jYKnob.Parent = jYBg
+        Instance.new("UICorner", jYKnob).CornerRadius = UDim.new(1, 0)
+        Y = Y + 18
+        local jYSld = false
+        jYKnob.MouseButton1Down:Connect(function() jYSld = true end)
+        UserInputService.InputEnded:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                jYSld = false
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(i)
+            if jYSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X - jYBg.AbsolutePosition.X) / jYBg.AbsoluteSize.X, 0, 1)
+                jYFill.Size = UDim2.new(pos, 0, 1, 0)
+                jYKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                customJumpY = pos
+                jYLab.Text = string.format("Posisi Y: %.2f", pos)
+                updateJumpBtn()
+            end
+        end)
 
         local bPadFC = Instance.new("Frame"); bPadFC.Size = UDim2.new(1,0,0,20); bPadFC.Position = UDim2.new(0,0,0,Y); bPadFC.BackgroundTransparency = 1; bPadFC.Parent = pFC
 
