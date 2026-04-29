@@ -774,7 +774,8 @@ local function runSyaaHub()
         local flyBtn = Instance.new("TextButton"); flyBtn.Text = "🚀 Load Fly"; flyBtn.Size = UDim2.new(0.92,0,0,30); flyBtn.Position = UDim2.new(0.04,0,0,hY); flyBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); flyBtn.BackgroundTransparency = 0.5; flyBtn.TextColor3 = Color3.fromRGB(255,255,255); flyBtn.Font = Enum.Font.GothamBold; flyBtn.TextSize = 10; flyBtn.Parent = pHome; Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
         flyBtn.MouseButton1Click:Connect(function() 
             toggleMainFrame(false)
-            pcall(function() loadstring(game:HttpGet("https://rawscripts.net/raw/Brookhaven-RP-Fly-v1-27423"))() end) 
+            pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/89c7sbrs9w-ai/Syaafreecam/main/fly.lua"))()
+ end) 
         end)
 
         local copyAvaBtn = Instance.new("TextButton"); copyAvaBtn.Text = "👥 Copy Avatar"; copyAvaBtn.Size = UDim2.new(0.92,0,0,30); copyAvaBtn.Position = UDim2.new(0.04,0,0,hY); copyAvaBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); copyAvaBtn.BackgroundTransparency = 0.5; copyAvaBtn.TextColor3 = Color3.fromRGB(255,255,255); copyAvaBtn.Font = Enum.Font.GothamBold; copyAvaBtn.TextSize = 10; copyAvaBtn.Parent = pHome; Instance.new("UICorner", copyAvaBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
