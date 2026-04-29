@@ -1,209 +1,232 @@
--- [[ SYAAA HUB V4 - DRAGGABLE & AUTO-SCALE FIXED ]] --
+-- // Layanan Roblox //
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local localPlayer = Players.LocalPlayer
-local playerGui = localPlayer:WaitForChild("PlayerGui")
-local Camera = workspace.CurrentCamera
+local CoreGui = game:GetService("CoreGui")
 
--- Variabel Freecam Smooth Original
-local isFreecamActive = false
-local moveSpeed = 10
-local targetFov = 70
-local zoomSpeed = 30
-local currentMoveVelocity = Vector3.new(0, 0, 0)
-local targetYaw, targetPitch, displayYaw, displayPitch = 0, 0, 0, 0
-local moveInputs = { F = 0, B = 0, L = 0, R = 0, U = 0, D = 0 }
-local zoomInputs = { In = 0, Out = 0 }
-local mouseSensitivity = 0.15
-local moveSmoothness, lookSmoothness = 10, 3
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
 
-local PlayerModule = require(localPlayer.PlayerScripts:WaitForChild("PlayerModule")):GetControls()
+-- // Modul Kontrol Analog / PC //
+local PlayerModule = require(player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
+local Controls = PlayerModule:GetControls()
 
--- ==========================================
--- 1. UI SETUP
--- ==========================================
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "SyaaaHub_V4_FinalFix"
-screenGui.ResetOnSpawn = false
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.Parent = (gethui and gethui()) or game:GetService("CoreGui")
+-- // Variabel State //
+local isFlying = false
+local flySpeedLevel = 1
+local baseFlySpeed = 40
+local upPressed = false
+local downPressed = false
+local flyBodyVelocity, flyBodyGyro
 
--- Icon Bulat Draggable
-local arrowIcon = Instance.new("TextButton")
-arrowIcon.Size = UDim2.new(0, 45, 0, 45)
-arrowIcon.Position = UDim2.new(0, 20, 0.45, 0) 
-arrowIcon.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-arrowIcon.Text = ">"
-arrowIcon.TextColor3 = Color3.new(1, 1, 1)
-arrowIcon.Font = Enum.Font.GothamBold
-arrowIcon.TextSize = 22
-arrowIcon.Parent = screenGui
-Instance.new("UICorner", arrowIcon).CornerRadius = UDim.new(0.5, 0)
-local iconStroke = Instance.new("UIStroke", arrowIcon)
-iconStroke.Color = Color3.fromRGB(0, 150, 255)
-iconStroke.Thickness = 2
+-- // Proteksi GUI //
+local guiParent = pcall(function() return CoreGui end) and CoreGui or player:WaitForChild("PlayerGui")
 
--- Main Frame
-local mainFrame = Instance.new("Frame")
-mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-mainFrame.ClipsDescendants = true
-mainFrame.Visible = false
-mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-mainFrame.Parent = screenGui
-Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 15)
-local mainStroke = Instance.new("UIStroke", mainFrame)
-mainStroke.Color = Color3.fromRGB(0, 80, 200)
-mainStroke.Thickness = 2
-
--- Content
-local titleBar = Instance.new("TextLabel")
-titleBar.Text = "SYAAA HUB V4"; titleBar.Size = UDim2.new(1, 0, 0, 40); titleBar.BackgroundColor3 = Color3.fromRGB(15, 15, 30); titleBar.TextColor3 = Color3.fromRGB(0, 150, 255); titleBar.Font = Enum.Font.GothamBold; titleBar.TextSize = 16; titleBar.Parent = mainFrame
-
-local container = Instance.new("Frame")
-container.Size = UDim2.new(1, -20, 1, -55); container.Position = UDim2.new(0, 10, 0, 50); container.BackgroundTransparency = 1; container.Parent = mainFrame
-local layout = Instance.new("UIListLayout", container)
-layout.FillDirection = Enum.FillDirection.Horizontal; layout.Padding = UDim.new(0, 10); layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
-local function makePanel(name)
-    local p = Instance.new("Frame")
-    p.Size = UDim2.new(0.31, 0, 1, 0); p.BackgroundColor3 = Color3.fromRGB(20, 20, 35); p.Parent = container
-    Instance.new("UICorner", p).CornerRadius = UDim.new(0, 12)
-    local l = Instance.new("TextLabel")
-    l.Text = name; l.Size = UDim2.new(1, 0, 0, 30); l.BackgroundTransparency = 1; l.TextColor3 = Color3.fromRGB(0, 180, 255); l.Font = Enum.Font.GothamBold; l.TextSize = 10; l.Parent = p
-    return p
+if guiParent:FindFirstChild("SyaaFlyV4_Final") then
+    guiParent.SyaaFlyV4_Final:Destroy()
 end
 
-local pFreecam = makePanel("Freecam")
-local pMusic = makePanel("Music Player")
-local pRotasi = makePanel("Orientation")
+-- // Pengaturan Tema //
+local theme = {
+    bg = Color3.fromRGB(20, 20, 20),
+    border = Color3.fromRGB(0, 100, 255),
+    text = Color3.fromRGB(255, 255, 255)
+}
 
--- ==========================================
--- 2. LOGIKA DRAG & ANIMASI OPEN/CLOSE
--- ==========================================
-local dragging, dragInput, dragStart, startPos
-arrowIcon.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = arrowIcon.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragging = false end
-        end)
-    end
-end)
-arrowIcon.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        arrowIcon.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
+-- // Fungsi Notifikasi Slide ke Kiri //
+local function showNotify(msg)
+    local notifyGui = Instance.new("ScreenGui")
+    notifyGui.Name = "SyaaNotify_" .. tostring(tick())
+    notifyGui.ResetOnSpawn = false
+    notifyGui.Parent = guiParent
 
-local isOpen = false
-arrowIcon.MouseButton1Click:Connect(function()
-    isOpen = not isOpen
-    if isOpen then
-        arrowIcon.Text = "<"
-        -- Tentukan ukuran berdasarkan orientasi saat ini
-        local isPortrait = Camera.ViewportSize.X < Camera.ViewportSize.Y
-        local targetSize = isPortrait and UDim2.new(0, 320, 0, 240) or UDim2.new(0, 480, 0, 280)
-        
-        mainFrame.Size = UDim2.new(0, 0, 0, 0)
-        mainFrame.Visible = true
-        mainFrame:TweenSize(targetSize, "Out", "Back", 0.4, true)
-    else
-        arrowIcon.Text = ">"
-        mainFrame:TweenSize(UDim2.new(0, 0, 0, 0), "In", "Quad", 0.3, true, function()
-            mainFrame.Visible = false
-        end)
-    end
-end)
+    local notifyFrame = Instance.new("Frame")
+    notifyFrame.Size = UDim2.new(0, 160, 0, 44)
+    notifyFrame.Position = UDim2.new(1, 10, 0.08, 0)
+    notifyFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    notifyFrame.BorderSizePixel = 0
+    notifyFrame.Parent = notifyGui
 
--- ==========================================
--- 3. FITUR LENGKAP (RE-ESTABLISHED)
--- ==========================================
--- Music Player
-local currentSound = nil
-local musicInp = Instance.new("TextBox")
-musicInp.PlaceholderText = "ID Music"; musicInp.Size = UDim2.new(0.85, 0, 0, 30); musicInp.Position = UDim2.new(0.075, 0, 0, 40); musicInp.BackgroundColor3 = Color3.fromRGB(25, 25, 45); musicInp.TextColor3 = Color3.new(1,1,1); musicInp.Parent = pMusic; Instance.new("UICorner", musicInp)
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(0, 100, 255)
+    stroke.Thickness = 1.2
+    stroke.Parent = notifyFrame
 
-local playBtn = Instance.new("TextButton")
-playBtn.Text = "PLAY/STOP"; playBtn.Size = UDim2.new(0.85, 0, 0, 30); playBtn.Position = UDim2.new(0.075, 0, 0, 75); playBtn.BackgroundColor3 = Color3.fromRGB(0, 90, 180); playBtn.TextColor3 = Color3.new(1,1,1); playBtn.Parent = pMusic; Instance.new("UICorner", playBtn)
-playBtn.MouseButton1Click:Connect(function()
-    if currentSound and currentSound.IsPlaying then currentSound:Stop(); currentSound:Destroy(); currentSound = nil
-    else
-        local id = musicInp.Text:gsub("%D", "")
-        if id ~= "" then currentSound = Instance.new("Sound", workspace); currentSound.SoundId = "rbxassetid://"..id; currentSound:Play() end
-    end
-end)
+    Instance.new("UICorner", notifyFrame).CornerRadius = UDim.new(0, 6)
 
--- Orientation Buttons
-local function createRotBtn(text, yPos, orient)
-    local b = Instance.new("TextButton")
-    b.Text = text; b.Size = UDim2.new(0.85, 0, 0, 30); b.Position = UDim2.new(0.075, 0, 0, yPos); b.BackgroundColor3 = Color3.fromRGB(35, 35, 45); b.TextColor3 = Color3.new(1,1,1); b.Parent = pRotasi; Instance.new("UICorner", b)
-    b.MouseButton1Click:Connect(function() playerGui.ScreenOrientation = orient end)
+    -- Ambil avatar tepresakkriminal
+    local userId
+    local ok, result = pcall(function()
+        return Players:GetUserIdFromNameAsync("tepresakkriminal")
+    end)
+    if ok then userId = result else userId = player.UserId end
+
+    local av = Instance.new("ImageLabel")
+    av.Size = UDim2.new(0, 30, 0, 30)
+    av.Position = UDim2.new(0, 7, 0.5, -15)
+    av.BackgroundTransparency = 1
+    av.Image = Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+    av.Parent = notifyFrame
+    Instance.new("UICorner", av).CornerRadius = UDim.new(1, 0)
+
+    local titleLbl = Instance.new("TextLabel")
+    titleLbl.Size = UDim2.new(1, -45, 0, 14)
+    titleLbl.Position = UDim2.new(0, 43, 0, 7)
+    titleLbl.BackgroundTransparency = 1
+    titleLbl.Text = "Developer  •  syaaa"
+    titleLbl.TextColor3 = Color3.fromRGB(0, 120, 255)
+    titleLbl.TextSize = 9
+    titleLbl.Font = Enum.Font.GothamBold
+    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+    titleLbl.Parent = notifyFrame
+
+    local descLbl = Instance.new("TextLabel")
+    descLbl.Size = UDim2.new(1, -45, 0, 14)
+    descLbl.Position = UDim2.new(0, 43, 0, 22)
+    descLbl.BackgroundTransparency = 1
+    descLbl.Text = msg
+    descLbl.TextColor3 = Color3.fromRGB(220, 220, 220)
+    descLbl.TextSize = 9
+    descLbl.Font = Enum.Font.Gotham
+    descLbl.TextXAlignment = Enum.TextXAlignment.Left
+    descLbl.Parent = notifyFrame
+
+    -- Slide IN dari kanan ke kiri
+    notifyFrame:TweenPosition(UDim2.new(1, -170, 0.08, 0), "Out", "Quad", 0.4, true)
+    task.wait(2.8)
+    -- Slide OUT balik ke kanan
+    notifyFrame:TweenPosition(UDim2.new(1, 10, 0.08, 0), "In", "Quad", 0.35, true, function()
+        notifyGui:Destroy()
+    end)
 end
-createRotBtn("PORTRAIT", 40, Enum.ScreenOrientation.Portrait)
-createRotBtn("LANDSCAPE L", 75, Enum.ScreenOrientation.LandscapeLeft)
-createRotBtn("LANDSCAPE R", 110, Enum.ScreenOrientation.LandscapeRight)
 
--- Freecam Logic Original (Smooth)
-local speedLabel = Instance.new("TextLabel")
-speedLabel.Text = "Spd: 10"; speedLabel.Size = UDim2.new(1, 0, 0, 20); speedLabel.Position = UDim2.new(0, 0, 0, 65); speedLabel.BackgroundTransparency = 1; speedLabel.TextColor3 = Color3.new(1,1,1); speedLabel.TextSize = 10; speedLabel.Parent = pFreecam
-local function createSpd(t, x, d)
-    local b = Instance.new("TextButton"); b.Text = t; b.Size = UDim2.new(0, 30, 0, 25); b.Position = UDim2.new(x, -15, 0, 85); b.BackgroundColor3 = Color3.fromRGB(40,40,50); b.TextColor3 = Color3.new(1,1,1); b.Parent = pFreecam; Instance.new("UICorner", b)
-    b.MouseButton1Click:Connect(function() moveSpeed = math.clamp(moveSpeed + d, 1, 300); speedLabel.Text = "Spd: "..moveSpeed end)
+-- // Muncul sekali otomatis pas execute //
+task.spawn(function()
+    task.wait(0.5)
+    showNotify("gui fly loaded")
+end)
+
+-- // Membuat GUI //
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SyaaFlyV4_Final"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = guiParent
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 190, 0, 110)
+MainFrame.Position = UDim2.new(0, 50, 0.3, 0)
+MainFrame.BackgroundTransparency = 1
+MainFrame.Parent = ScreenGui
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+local function createCell(name, size, pos, parent)
+    local cell = Instance.new("Frame")
+    cell.Name = name
+    cell.Size = size
+    cell.Position = pos
+    cell.BackgroundColor3 = theme.bg
+    cell.BorderSizePixel = 0
+    cell.Parent = parent
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = theme.border
+    stroke.Thickness = 1.2
+    stroke.Parent = cell
+    Instance.new("UICorner", cell).CornerRadius = UDim.new(0, 4)
+    return cell
 end
-createSpd("-", 0.3, -5); createSpd("+", 0.7, 5)
 
-local fcToggle = Instance.new("TextButton")
-fcToggle.Text = "OFF"; fcToggle.Size = UDim2.new(0.85, 0, 0, 30); fcToggle.Position = UDim2.new(0.075, 0, 0, 35); fcToggle.BackgroundColor3 = Color3.fromRGB(40, 40, 50); fcToggle.TextColor3 = Color3.new(1,1,1); fcToggle.Parent = pFreecam; Instance.new("UICorner", fcToggle)
+-- Grid Layout
+local btnClose = createCell("BtnX", UDim2.new(0, 42, 0, 34), UDim2.new(0, 0, 0, 0), MainFrame)
+local txtClose = Instance.new("TextButton")
+txtClose.Size = UDim2.new(1, 0, 1, 0); txtClose.BackgroundTransparency = 1; txtClose.Text = "x"; txtClose.TextColor3 = theme.text; txtClose.TextSize = 16; txtClose.Font = Enum.Font.GothamBold; txtClose.Parent = btnClose
 
-local fcHUD = Instance.new("Frame")
-fcHUD.Size = UDim2.new(1, 0, 1, 0); fcHUD.BackgroundTransparency = 1; fcHUD.Visible = false; fcHUD.Parent = screenGui
-local function createFCBtn(text, pos, key, isZoom)
-    local b = Instance.new("TextButton"); b.Text = text; b.Size = UDim2.new(0, 45, 0, 45); b.Position = pos; b.BackgroundColor3 = Color3.fromRGB(15, 15, 30); b.TextColor3 = Color3.fromRGB(0, 150, 255); b.Parent = fcHUD; Instance.new("UICorner", b)
-    b.InputBegan:Connect(function() if isZoom then zoomInputs[key] = 1 else moveInputs[key] = 1 end end)
-    b.InputEnded:Connect(function() if isZoom then zoomInputs[key] = 0 else moveInputs[key] = 0 end end)
+local cellAvTop = createCell("AvTop", UDim2.new(0, 42, 0, 34), UDim2.new(0, 44, 0, 0), MainFrame)
+local imgT = Instance.new("ImageLabel")
+imgT.Size = UDim2.new(0, 24, 0, 24); imgT.Position = UDim2.new(0.5, -12, 0.5, -12); imgT.BackgroundTransparency = 1; imgT.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420); imgT.Parent = cellAvTop; Instance.new("UICorner", imgT).CornerRadius = UDim.new(1, 0)
+
+local btnUp = createCell("BtnUp", UDim2.new(0, 42, 0, 34), UDim2.new(0, 0, 0, 36), MainFrame)
+local txtUp = txtClose:Clone(); txtUp.Parent = btnUp; txtUp.Text = "up"; txtUp.TextSize = 12
+
+local btnPlus = createCell("BtnPlus", UDim2.new(0, 42, 0, 34), UDim2.new(0, 44, 0, 36), MainFrame)
+local txtPlus = txtClose:Clone(); txtPlus.Parent = btnPlus; txtPlus.Text = "+"; txtPlus.TextSize = 18
+
+local cellProf = createCell("Prof", UDim2.new(0, 100, 0, 34), UDim2.new(0, 88, 0, 36), MainFrame)
+local imgS = imgT:Clone(); imgS.Position = UDim2.new(0, 5, 0.5, -12); imgS.Parent = cellProf
+local txtN = Instance.new("TextLabel")
+txtN.Size = UDim2.new(1, -35, 1, 0); txtN.Position = UDim2.new(0, 32, 0, 0); txtN.BackgroundTransparency = 1; txtN.Text = player.DisplayName; txtN.TextColor3 = theme.text; txtN.TextSize = 9; txtN.Font = Enum.Font.GothamSemibold; txtN.TextXAlignment = Enum.TextXAlignment.Left; txtN.Parent = cellProf
+
+local btnDown = createCell("BtnDown", UDim2.new(0, 42, 0, 34), UDim2.new(0, 0, 0, 72), MainFrame)
+local txtDown = txtUp:Clone(); txtDown.Parent = btnDown; txtDown.Text = "down"
+
+local btnMinus = createCell("BtnMinus", UDim2.new(0, 42, 0, 34), UDim2.new(0, 44, 0, 72), MainFrame)
+local txtMinus = txtPlus:Clone(); txtMinus.Parent = btnMinus; txtMinus.Text = "-"
+
+local cellSpd = createCell("Spd", UDim2.new(0, 36, 0, 34), UDim2.new(0, 88, 0, 72), MainFrame)
+local txtSpd = txtClose:Clone(); txtSpd.Parent = cellSpd; txtSpd.Text = tostring(flySpeedLevel); txtSpd.TextSize = 14
+
+local cellTog = createCell("Tog", UDim2.new(0, 62, 0, 34), UDim2.new(0, 126, 0, 72), MainFrame)
+local btnTogArea = Instance.new("TextButton")
+btnTogArea.Size = UDim2.new(1, 0, 1, 0); btnTogArea.BackgroundTransparency = 1; btnTogArea.Text = ""; btnTogArea.Parent = cellTog
+
+local tBg = Instance.new("Frame")
+tBg.Size = UDim2.new(0, 36, 0, 16); tBg.Position = UDim2.new(0.5, -18, 0.5, -8); tBg.BackgroundColor3 = Color3.fromRGB(150, 150, 150); tBg.Parent = btnTogArea; Instance.new("UICorner", tBg).CornerRadius = UDim.new(1, 0)
+
+local tC = Instance.new("Frame")
+tC.Size = UDim2.new(0, 12, 0, 12); tC.Position = UDim2.new(0, 2, 0.5, -6); tC.BackgroundColor3 = Color3.fromRGB(255, 255, 255); tC.Parent = tBg; Instance.new("UICorner", tC).CornerRadius = UDim.new(1, 0)
+
+-- // Engine Fly //
+local function getP()
+    local c = player.Character
+    return c and c:FindFirstChildOfClass("Humanoid"), c and c:FindFirstChild("HumanoidRootPart")
 end
-createFCBtn("W", UDim2.new(0, 75, 1, -120), "F"); createFCBtn("S", UDim2.new(0, 75, 1, -65), "B")
-createFCBtn("A", UDim2.new(0, 20, 1, -65), "L"); createFCBtn("D", UDim2.new(0, 130, 1, -65), "R")
-createFCBtn("UP", UDim2.new(1, -115, 1, -120), "U"); createFCBtn("DN", UDim2.new(1, -115, 1, -65), "D")
-createFCBtn("+", UDim2.new(1, -60, 1, -120), "In", true); createFCBtn("-", UDim2.new(1, -60, 1, -65), "Out", true)
 
-fcToggle.MouseButton1Click:Connect(function()
-    isFreecamActive = not isFreecamActive
-    fcToggle.Text = isFreecamActive and "ON" or "OFF"
-    fcToggle.BackgroundColor3 = isFreecamActive and Color3.fromRGB(0, 100, 200) or Color3.fromRGB(40, 40, 50)
-    fcHUD.Visible = isFreecamActive
-    if isFreecamActive then
-        PlayerModule:Disable(); Camera.CameraType = Enum.CameraType.Scriptable
-        RunService:BindToRenderStep("FCLoop", 201, function(dt)
-            local mAlpha, lAlpha = 1 - math.exp(-moveSmoothness * dt), 1 - math.exp(-lookSmoothness * dt)
-            displayYaw, displayPitch = displayYaw + (targetYaw - displayYaw) * lAlpha, displayPitch + (targetPitch - displayPitch) * lAlpha
-            local rot = CFrame.Angles(0, math.rad(displayYaw), 0) * CFrame.Angles(math.rad(displayPitch), 0, 0)
-            local moveVec = Vector3.new(moveInputs.R - moveInputs.L, moveInputs.U - moveInputs.D, moveInputs.B - moveInputs.F)
-            if moveVec.Magnitude > 0 then moveVec = moveVec.Unit end
-            currentMoveVelocity = currentMoveVelocity:Lerp(moveVec * moveSpeed, mAlpha)
-            Camera.CFrame = rot + (Camera.CFrame.Position + rot:VectorToWorldSpace(currentMoveVelocity * dt))
-            targetFov = targetFov + (zoomInputs.Out - zoomInputs.In) * zoomSpeed * dt
-            Camera.FieldOfView = Camera.FieldOfView + (targetFov - Camera.FieldOfView) * mAlpha
-        end)
-    else
-        PlayerModule:Enable(); Camera.CameraType = Enum.CameraType.Custom; RunService:UnbindFromRenderStep("FCLoop")
+local function stop()
+    isFlying = false
+    if flyBodyVelocity then flyBodyVelocity:Destroy() end
+    if flyBodyGyro then flyBodyGyro:Destroy() end
+    local h = getP()
+    if h then h.PlatformStand = false end
+    TweenService:Create(tC, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0.5, -6)}):Play()
+    TweenService:Create(tBg, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(150, 150, 150)}):Play()
+end
+
+local function start()
+    local h, r = getP()
+    if not r then return end
+    isFlying = true
+    h.PlatformStand = true
+    flyBodyVelocity = Instance.new("BodyVelocity", r)
+    flyBodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    flyBodyVelocity.Velocity = Vector3.new(0,0,0)
+    flyBodyGyro = Instance.new("BodyGyro", r)
+    flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    flyBodyGyro.CFrame = r.CFrame
+    TweenService:Create(tC, TweenInfo.new(0.2), {Position = UDim2.new(1, -14, 0.5, -6)}):Play()
+    TweenService:Create(tBg, TweenInfo.new(0.2), {BackgroundColor3 = theme.border}):Play()
+end
+
+-- // Loop (Smooth Lerp) //
+RunService.RenderStepped:Connect(function()
+    if isFlying then
+        local h, r = getP()
+        if not r or not flyBodyVelocity then return end
+        h.PlatformStand = true
+        local move = Controls:GetMoveVector()
+        local cam = camera.CFrame
+        local dir = (cam.RightVector * move.X) + (cam.LookVector * -move.Z)
+        local vs = (upPressed and 1 or 0) - (downPressed and 1 or 0)
+        local spd = baseFlySpeed * flySpeedLevel
+        local target = (dir * spd) + Vector3.new(0, vs * spd, 0)
+        flyBodyVelocity.Velocity = flyBodyVelocity.Velocity:Lerp(target, 0.1)
+        flyBodyGyro.CFrame = cam
     end
 end)
 
-UserInputService.InputChanged:Connect(function(input)
-    if isFreecamActive and input.UserInputType == Enum.UserInputType.Touch then
-        targetYaw = targetYaw - (input.Delta.X * mouseSensitivity)
-        targetPitch = math.clamp(targetPitch - (input.Delta.Y * mouseSensitivity), -89, 89)
-    end
-end)
+-- // Interaction //
+txtClose.MouseButton1Click:Connect(function() stop() ScreenGui:Destroy() end)
+btnTogArea.MouseButton1Click:Connect(function() if isFlying then stop() else start() end end)
+txtPlus.MouseButton1Click:Connect(function() flySpeedLevel = flySpeedLevel + 1 txtSpd.Text = tostring(flySpeedLevel) end)
+txtMinus.MouseButton1Click:Connect(function() if flySpeedLevel > 1 then flySpeedLevel = flySpeedLevel - 1 txtSpd.Text = tostring(flySpeedLevel) end end)
+txtUp.MouseButton1Down:Connect(function() upPressed = true end); txtUp.MouseButton1Up:Connect(function() upPressed = false end)
+txtDown.MouseButton1Down:Connect(function() downPressed = true end); txtDown.MouseButton1Up:Connect(function() downPressed = false end)
