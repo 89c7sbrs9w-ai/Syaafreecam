@@ -871,7 +871,42 @@ local function runSyaaHub()
         UserInputService.InputChanged:Connect(function(i) if tySld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X-tyBg.AbsolutePosition.X)/tyBg.AbsoluteSize.X,0,1); tyFill.Size = UDim2.new(pos,0,1,0); tyKnob.Position = UDim2.new(pos,-7,0.5,-7); local val = math.floor(pos*10*10)/10; tyLab.Text = "Posisi Tinggi: "..val; cTitleGui.ExtentsOffset = Vector3.new(0, val, 0) end end)
 
         makeSepHdr("PLAYER MODS", tY, pTools); tY = tY+22
-        
+
+        -- NOCLIP
+        local noclipRow, setNoclipState = makeIosRow("Noclip (Tembus Tembok)", tY, pTools); tY = tY+36
+        local noclipInfo = makeLbl("▸ Tembus tembok, tidak tembus tanah", tY, pTools, 14, Color3.fromRGB(50, 150, 255)); tY = tY+20
+
+        local isNoclipOn = false
+        local noclipConn = nil
+
+        -- Teknik: set CanCollide = false di RenderStepped (sebelum physics step server apply)
+        -- Pas off: cukup disconnect, Humanoid akan restore state-nya sendiri secara natural
+        -- TANPA kita manual set true → tidak ada conflict → tidak getar
+        RunService.RenderStepped:Connect(function()
+            if not isNoclipOn then return end
+            local char = localPlayer.Character
+            if not char then return end
+            for _, p in ipairs(char:GetDescendants()) do
+                if p:IsA("BasePart") and p.CanCollide then
+                    p.CanCollide = false
+                end
+            end
+        end)
+
+        noclipRow.MouseButton1Click:Connect(function()
+            isNoclipOn = not isNoclipOn
+            setNoclipState(isNoclipOn)
+            if isNoclipOn then
+                noclipInfo.Text = "▸ AKTIF — bisa tembus tembok 👻"
+                noclipInfo.TextColor3 = Color3.fromRGB(0, 200, 100)
+            else
+                -- JANGAN set CanCollide manual sama sekali
+                -- Biarkan Humanoid engine restore sendiri setelah loop berhenti
+                noclipInfo.Text = "▸ Tembus tembok, tidak tembus tanah"
+                noclipInfo.TextColor3 = Color3.fromRGB(50, 150, 255)
+            end
+        end)
+
         local infJumpRow, setInfJump = makeIosRow("Unlimited Jump", tY, pTools); tY = tY+36
         local isInfJump = false
         infJumpRow.MouseButton1Click:Connect(function() isInfJump = not isInfJump; setInfJump(isInfJump) end)
