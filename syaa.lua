@@ -1,6 +1,5 @@
--- [[ SYAAA HUB V8.0 - BLUE THEME + SPY CAM + CUSTOM JUMP ]] --
+-- [[ SYAAA HUB V8.0 - BLUE THEME + SPY CAM + CUSTOM JUMP + STABILIZER ]] --
 
--- Tahan eksekusi aman sampai game 100% ke-load biar LocalPlayer gak nil
 if not game:IsLoaded() then 
     game.Loaded:Wait() 
 end
@@ -15,22 +14,18 @@ local localPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "SyaaaHub_V7_Final"
+screenGui.Name = "SyaaaHub_V8_Stab"
 screenGui.ResetOnSpawn = false
 
--- Panggil gethui() pakai pcall biar aman dari error executor
 local coreGui
 pcall(function() coreGui = gethui and gethui() end)
 screenGui.Parent = coreGui or game:GetService("CoreGui")
 
--- AVATARS FETCHING
-local devAvaUrl = "rbxthumb://type=AvatarHeadShot&id=0&w=150&h=150" -- Default
+local devAvaUrl = "rbxthumb://type=AvatarHeadShot&id=0&w=150&h=150"
 local playerAvaUrl = "rbxthumb://type=AvatarHeadShot&id="..localPlayer.UserId.."&w=150&h=150"
 
--- Asynchronous Fetch pake task.spawn biar nggak nge-block loading GUI
 task.spawn(function()
     pcall(function()
-        -- Ambil UserId Syaa 'tepresakkriminal'
         local userIdSyaa = Players:GetUserIdFromNameAsync("tepresakkriminal")
         devAvaUrl = "rbxthumb://type=AvatarHeadShot&id="..userIdSyaa.."&w=150&h=150"
     end)
@@ -69,7 +64,6 @@ local function startLoading(callback)
         TweenService:Create(barOutline,TweenInfo.new(0.3),{BackgroundTransparency=1}):Play()
         closeTween:Play(); closeTween.Completed:Wait(); loadBG:Destroy()
 
-        -- Notifikasi update
         task.spawn(function()
             local updFrame = Instance.new("Frame")
             updFrame.Size = UDim2.new(0, 280, 0, 70)
@@ -94,7 +88,7 @@ local function startLoading(callback)
             updTitle.TextXAlignment = Enum.TextXAlignment.Left; updTitle.Parent = updFrame
 
             local updDesc = Instance.new("TextLabel")
-            updDesc.Text = "Home Menu Baru & Auto-Minimize 🚀"; updDesc.Size = UDim2.new(1, -60, 0, 28)
+            updDesc.Text = "Stabilizer Karakter + Kamera Baru 🚀"; updDesc.Size = UDim2.new(1, -60, 0, 28)
             updDesc.Position = UDim2.new(0, 55, 0, 34)
             updDesc.BackgroundTransparency = 1; updDesc.TextColor3 = Color3.fromRGB(200, 200, 200)
             updDesc.Font = Enum.Font.Gotham; updDesc.TextSize = 10
@@ -231,6 +225,52 @@ local function runSyaaHub()
     local autoWalkSpeed = 10
     local PlayerModule = require(localPlayer.PlayerScripts:WaitForChild("PlayerModule")):GetControls()
 
+    -- STABILIZER VARIABLES
+    local stabilizerActive = false
+    local stabYaw = 0
+    local stabPitch = 0
+    local lastSwipeTime = 0
+    local STAB_RETURN_DELAY = 0.8
+    local STAB_STRENGTH = 0.15
+    -- Character stabilizer
+    local CHAR_STAB_STRENGTH = 0.85   -- seberapa kuat horizontal velocity diredam (0=off, 1=totally frozen)
+    local charStabActive = false       -- ngikut stabilizerActive, diset bareng
+
+    -- ==========================================
+    -- CHARACTER STABILIZER LOOP
+    -- ==========================================
+    -- Logika: saat karakter di udara (jumping/falling), redam horizontal velocity
+    -- supaya karakter ga kepleset ke kiri/kanan saat lompat di tangga/obstacle
+    RunService.Heartbeat:Connect(function(dt)
+        if not stabilizerActive then return end
+        local char = localPlayer.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hrp or not hum then return end
+
+        -- Cek apakah karakter lagi di udara
+        local state = hum:GetState()
+        local isAirborne = (
+            state == Enum.HumanoidStateType.Jumping or
+            state == Enum.HumanoidStateType.Freefall
+        )
+
+        if isAirborne then
+            local vel = hrp.AssemblyLinearVelocity
+            -- Pisahkan komponen horizontal dan vertikal
+            local horizontalVel = Vector3.new(vel.X, 0, vel.Z)
+            local verticalVel = Vector3.new(0, vel.Y, 0)
+
+            -- Redam horizontal velocity berdasarkan CHAR_STAB_STRENGTH
+            -- Semakin tinggi strength, makin sedikit horizontal drift
+            local dampedHorizontal = horizontalVel * (1 - math.clamp(CHAR_STAB_STRENGTH, 0, 0.97))
+
+            -- Terapkan velocity baru (vertikal tetap utuh supaya lompat normal)
+            hrp.AssemblyLinearVelocity = dampedHorizontal + verticalVel
+        end
+    end)
+
     -- ==========================================
     -- CUSTOM JUMP BUTTON SYSTEM
     -- ==========================================
@@ -239,11 +279,9 @@ local function runSyaaHub()
     local customJumpX = 0.85
     local customJumpY = 0.75
 
-    -- Hide tombol jump original Roblox
     local function hideOriginalJump(hide)
         pcall(function()
             local playerGui = localPlayer:WaitForChild("PlayerGui")
-            -- Coba cari TouchGui bawaan Roblox
             local touchGui = playerGui:FindFirstChild("TouchGui")
             if touchGui then
                 local touchFrame = touchGui:FindFirstChild("TouchControlFrame")
@@ -255,12 +293,10 @@ local function runSyaaHub()
                 end
             end
         end)
-        -- Juga disable via StarterGui CoreGui
         pcall(function()
             local StarterGui = game:GetService("StarterGui")
             if hide then
                 StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true)
-                -- Sembunyiin jump button dari TouchGui
                 for _, gui in pairs(localPlayer.PlayerGui:GetDescendants()) do
                     if gui.Name == "JumpButton" then
                         gui.Visible = false
@@ -276,7 +312,6 @@ local function runSyaaHub()
         end)
     end
 
-    -- Container custom jump
     local jumpContainer = Instance.new("Frame")
     jumpContainer.Name = "SyaaJumpContainer"
     jumpContainer.Size = UDim2.new(0, customJumpSize, 0, customJumpSize)
@@ -286,7 +321,6 @@ local function runSyaaHub()
     jumpContainer.ZIndex = 10
     jumpContainer.Parent = screenGui
 
-    -- Tombol jump custom
     local jumpBtn = Instance.new("ImageButton")
     jumpBtn.Name = "SyaaJumpBtn"
     jumpBtn.Size = UDim2.new(1, 0, 1, 0)
@@ -297,7 +331,6 @@ local function runSyaaHub()
     jumpBtn.ZIndex = 11
     jumpBtn.Parent = jumpContainer
 
-    -- Fungsi spawn partikel biru
     local function spawnJumpParticles()
         local centerX = jumpContainer.AbsolutePosition.X + jumpContainer.AbsoluteSize.X / 2
         local centerY = jumpContainer.AbsolutePosition.Y + jumpContainer.AbsoluteSize.Y / 2
@@ -310,24 +343,20 @@ local function runSyaaHub()
             particle.BorderSizePixel = 0
             local pSize = math.random(5, 14)
             particle.Size = UDim2.new(0, pSize, 0, pSize)
-            -- Posisi awal di tengah button
             particle.Position = UDim2.new(0, centerX - pSize/2, 0, centerY - pSize/2)
             particle.Parent = screenGui
             Instance.new("UICorner", particle).CornerRadius = UDim.new(1, 0)
 
-            -- Arah acak
             local angle = math.rad(math.random(0, 360))
             local dist = math.random(40, 90)
             local targetX = centerX + math.cos(angle) * dist - pSize/2
             local targetY = centerY + math.sin(angle) * dist - pSize/2
 
-            -- Glow stroke biru
             local stroke = Instance.new("UIStroke", particle)
             stroke.Color = Color3.fromRGB(0, 180, 255)
             stroke.Thickness = 1.5
             stroke.Transparency = 0
 
-            -- Animasi terbang keluar + fade
             local moveTween = TweenService:Create(particle, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Position = UDim2.new(0, targetX, 0, targetY),
                 BackgroundTransparency = 1,
@@ -341,7 +370,6 @@ local function runSyaaHub()
             end)
         end
 
-        -- Ring expand effect
         local ring = Instance.new("Frame")
         ring.ZIndex = 12
         ring.BackgroundTransparency = 1
@@ -361,7 +389,6 @@ local function runSyaaHub()
         TweenService:Create(ringStroke, TweenInfo.new(0.4), {Transparency = 1}):Play()
         task.delay(0.45, function() pcall(function() ring:Destroy() end) end)
 
-        -- Scale bounce effect pada button
         TweenService:Create(jumpBtn, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Size = UDim2.new(1.25, 0, 1.25, 0),
             Position = UDim2.new(-0.125, 0, -0.125, 0)
@@ -374,13 +401,11 @@ local function runSyaaHub()
         end)
     end
 
-    -- Fungsi update posisi & ukuran jump button
     local function updateJumpBtn()
         jumpContainer.Size = UDim2.new(0, customJumpSize, 0, customJumpSize)
         jumpContainer.Position = UDim2.new(customJumpX, -customJumpSize/2, customJumpY, -customJumpSize/2)
     end
 
-    -- Logic jump pas tombol diklik
     jumpBtn.MouseButton1Down:Connect(function()
         spawnJumpParticles()
         local char = localPlayer.Character
@@ -392,8 +417,7 @@ local function runSyaaHub()
         end
     end)
 
-    -- Touch support
-    jumpBtn.TouchLongPress:Connect(function() end) -- prevent long press conflict
+    jumpBtn.TouchLongPress:Connect(function() end)
     jumpBtn.InputBegan:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.Touch then
             spawnJumpParticles()
@@ -407,7 +431,6 @@ local function runSyaaHub()
         end
     end)
 
-    -- Respawn handling
     localPlayer.CharacterAdded:Connect(function(char)
         task.wait(0.5)
         if customJumpActive then
@@ -415,7 +438,7 @@ local function runSyaaHub()
         end
     end)
 
-    -- SHIFTLOCK (ICON & LOGIC)
+    -- SHIFTLOCK
     local shiftlockBtn = Instance.new("ImageButton")
     shiftlockBtn.Size = UDim2.new(0, 85, 0, 85) 
     shiftlockBtn.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -547,7 +570,6 @@ local function runSyaaHub()
     minBtn.Parent = mainFrame
     Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0,6)
 
-    -- FUNGSI TOGGLE MAIN FRAME (Minimize System)
     local function toggleMainFrame(state)
         if state then
             local tweenOutIcon = TweenService:Create(openIcon, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
@@ -567,14 +589,12 @@ local function runSyaaHub()
     minBtn.MouseButton1Click:Connect(function() toggleMainFrame(false) end)
     openIcon.MouseButton1Click:Connect(function() toggleMainFrame(true) end)
 
-    -- STATE UNTUK TAB & ANIMASI ICON
     tabPanels = {}
     local activeTab = nil
     local sidebarIconsData = {}
 
     function setTab(name)
         activeTab = name
-        
         for n, panel in pairs(tabPanels) do 
             if n == name then
                 panel.Visible = true
@@ -584,12 +604,10 @@ local function runSyaaHub()
                 panel.Visible = false
             end
         end
-        
         for tName, data in pairs(sidebarIconsData) do
             local btn = data.btn
             local bSize = data.baseSize
             local yPos = data.yPos
-            
             if tName == name then
                 local actSize = UDim2.new(0, bSize.X.Offset + 8, 0, bSize.Y.Offset + 8)
                 local actPos = UDim2.new(0.5, -(actSize.X.Offset/2), 0, yPos - 4) 
@@ -601,7 +619,6 @@ local function runSyaaHub()
         end
     end
 
-    -- SIDEBAR DIPERPANJANG UNTUK 4 ICON
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, 42, 0, 180) 
     sidebar.Position = UDim2.new(0, -52, 0.5, -90)
@@ -616,9 +633,7 @@ local function runSyaaHub()
         btn.Size = customSize; btn.Position = UDim2.new(0.5, -(btn.Size.X.Offset/2), 0, yPos)
         btn.BackgroundTransparency = 1; btn.Image = assetId; btn.ImageColor3 = Color3.fromRGB(0, 120, 255)
         btn.Parent = sidebar
-        
         sidebarIconsData[tabName] = {btn = btn, baseSize = customSize, yPos = yPos}
-
         task.spawn(function()
             while true do
                 TweenService:Create(btn, TweenInfo.new(1.5), {ImageColor3 = Color3.fromRGB(255,255,255)}):Play(); task.wait(1.5)
@@ -628,13 +643,11 @@ local function runSyaaHub()
         btn.MouseButton1Click:Connect(function() setTab(tabName) end)
     end
     
-    -- ICON HOME DIPERBESAR JADI 34x34 SESUAI REQUEST SYAA
     makeSidebarIcon("rbxassetid://119774215618572", 18, "Home", UDim2.new(0, 34, 0, 34))
     makeSidebarIcon("rbxassetid://76171785807172", 58, "Freecam", UDim2.new(0, 26, 0, 26))
     makeSidebarIcon("rbxassetid://116019702436521", 98, "Orientation", UDim2.new(0, 40, 0, 40))
     makeSidebarIcon("rbxassetid://112703342701931", 138, "Tools", UDim2.new(0, 30, 0, 30))
 
-    -- PANELS CREATION
     local function createPanel(name)
         local panel = Instance.new("ScrollingFrame")
         panel.Name = "Panel_"..name; panel.Size = UDim2.new(1,-20,1,-45); panel.Position = UDim2.new(0,10,0,40)
@@ -688,7 +701,7 @@ local function runSyaaHub()
     end
 
     -- ==========================================
-    -- CUSTOM TITLE LOGIC (GLOBAL)
+    -- CUSTOM TITLE LOGIC
     -- ==========================================
     local cTitleGui = Instance.new("BillboardGui")
     cTitleGui.Name = "SyaaCustomTitle"
@@ -757,9 +770,8 @@ local function runSyaaHub()
         end
     end)
 
-
     -- ==========================================
-    -- SCOPE 0: PANEL HOME (INFO & LOADS)
+    -- PANEL HOME
     -- ==========================================
     local function buildHomePanel()
         local hY = 2
@@ -774,8 +786,7 @@ local function runSyaaHub()
         local flyBtn = Instance.new("TextButton"); flyBtn.Text = "🚀 Load Fly"; flyBtn.Size = UDim2.new(0.92,0,0,30); flyBtn.Position = UDim2.new(0.04,0,0,hY); flyBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); flyBtn.BackgroundTransparency = 0.5; flyBtn.TextColor3 = Color3.fromRGB(255,255,255); flyBtn.Font = Enum.Font.GothamBold; flyBtn.TextSize = 10; flyBtn.Parent = pHome; Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
         flyBtn.MouseButton1Click:Connect(function() 
             toggleMainFrame(false)
-            pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/89c7sbrs9w-ai/Syaafreecam/main/fly.lua"))()
- end) 
+            pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/89c7sbrs9w-ai/Syaafreecam/main/fly.lua"))() end) 
         end)
 
         local copyAvaBtn = Instance.new("TextButton"); copyAvaBtn.Text = "👥 Copy Avatar"; copyAvaBtn.Size = UDim2.new(0.92,0,0,30); copyAvaBtn.Position = UDim2.new(0.04,0,0,hY); copyAvaBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); copyAvaBtn.BackgroundTransparency = 0.5; copyAvaBtn.TextColor3 = Color3.fromRGB(255,255,255); copyAvaBtn.Font = Enum.Font.GothamBold; copyAvaBtn.TextSize = 10; copyAvaBtn.Parent = pHome; Instance.new("UICorner", copyAvaBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
@@ -812,7 +823,7 @@ local function runSyaaHub()
     end
 
     -- ==========================================
-    -- SCOPE 1: PANEL TOOLS
+    -- PANEL TOOLS
     -- ==========================================
     local function buildToolsPanel()
         local tY = 2
@@ -872,16 +883,10 @@ local function runSyaaHub()
 
         makeSepHdr("PLAYER MODS", tY, pTools); tY = tY+22
 
-        -- NOCLIP
         local noclipRow, setNoclipState = makeIosRow("Noclip (Tembus Tembok)", tY, pTools); tY = tY+36
         local noclipInfo = makeLbl("▸ Tembus tembok, tidak tembus tanah", tY, pTools, 14, Color3.fromRGB(50, 150, 255)); tY = tY+20
 
         local isNoclipOn = false
-        local noclipConn = nil
-
-        -- Teknik: set CanCollide = false di RenderStepped (sebelum physics step server apply)
-        -- Pas off: cukup disconnect, Humanoid akan restore state-nya sendiri secara natural
-        -- TANPA kita manual set true → tidak ada conflict → tidak getar
         RunService.RenderStepped:Connect(function()
             if not isNoclipOn then return end
             local char = localPlayer.Character
@@ -900,8 +905,6 @@ local function runSyaaHub()
                 noclipInfo.Text = "▸ AKTIF — bisa tembus tembok 👻"
                 noclipInfo.TextColor3 = Color3.fromRGB(0, 200, 100)
             else
-                -- JANGAN set CanCollide manual sama sekali
-                -- Biarkan Humanoid engine restore sendiri setelah loop berhenti
                 noclipInfo.Text = "▸ Tembus tembok, tidak tembus tanah"
                 noclipInfo.TextColor3 = Color3.fromRGB(50, 150, 255)
             end
@@ -1041,6 +1044,7 @@ local function runSyaaHub()
         makeSepHdr("ZOOM (Mobile)", tY, pTools); tY = tY + 20
         local zoomInBtn, zoomOutBtn = makeBtn2("🔍 Zoom In", "🔍 Zoom Out", tY, pTools); tY = tY + 32
         local zoomInHeld, zoomOutHeld = false, false
+        local spyZoomDist = 7
         zoomInBtn.MouseButton1Down:Connect(function() zoomInHeld = true end)
         zoomInBtn.MouseButton1Up:Connect(function() zoomInHeld = false end)
         zoomInBtn.InputEnded:Connect(function() zoomInHeld = false end)
@@ -1057,7 +1061,6 @@ local function runSyaaHub()
         local spyRows = {}
         local spyOrbitYaw = 180   
         local spyOrbitPitch = 15  
-        local spyZoomDist = 7     
         local spyDragging = false
         local spyLastInput = nil
         local spyInputConn1, spyInputConn2, spyInputConn3
@@ -1081,18 +1084,14 @@ local function runSyaaHub()
                 local hrp = localPlayer.Character.HumanoidRootPart
                 local backPos = hrp.Position + (hrp.CFrame.LookVector * -10) + Vector3.new(0, 5, 0)
                 local goalCF = CFrame.lookAt(backPos, hrp.Position)
-                
                 local tw = TweenService:Create(Camera, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = goalCF})
-                tw:Play()
-                tw.Completed:Wait()
-                
+                tw:Play(); tw.Completed:Wait()
                 Camera.CameraType = Enum.CameraType.Custom
                 local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
                 if hum then Camera.CameraSubject = hum end
             else
                 Camera.CameraType = Enum.CameraType.Custom
             end
-            
             pcall(function() PlayerModule:Enable() end)
         end
 
@@ -1133,7 +1132,6 @@ local function runSyaaHub()
             spyZoomDist = spyCamOffset.Z + 2
             setSpyState(true)
             targetLbl.Text = "Target: " .. player.DisplayName .. " (@" .. player.Name .. ")"
-
             pcall(function() PlayerModule:Disable() end)
             Camera.CameraType = Enum.CameraType.Scriptable
             connectSpyInput()
@@ -1150,10 +1148,8 @@ local function runSyaaHub()
                     dist * math.cos(yawRad) * math.cos(pitchRad)
                 )
                 local goalCF = CFrame.lookAt(targetPos + camOffset, targetPos + Vector3.new(0, 0.5, 0))
-                
                 local tw = TweenService:Create(Camera, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = goalCF})
-                tw:Play()
-                tw.Completed:Wait()
+                tw:Play(); tw.Completed:Wait()
             end
 
             if not spyActive then return end
@@ -1165,7 +1161,6 @@ local function runSyaaHub()
                 if not char then return end
                 local hrp = char:FindFirstChild("HumanoidRootPart")
                 if not hrp then return end
-
                 local targetPos = hrp.Position + Vector3.new(0, spyCamOffset.Y, 0)
                 local yawRad = math.rad(spyOrbitYaw)
                 local pitchRad = math.rad(spyOrbitPitch)
@@ -1211,7 +1206,6 @@ local function runSyaaHub()
                 row.AutoButtonColor = false
                 row.Parent = spyListFrame
                 Instance.new("UICorner", row)
-
                 local ava = Instance.new("ImageLabel")
                 ava.Size = UDim2.new(0, 26, 0, 26)
                 ava.Position = UDim2.new(0, 4, 0.5, -13)
@@ -1223,7 +1217,6 @@ local function runSyaaHub()
                         ava.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
                     end)
                 end)
-
                 local nl = Instance.new("TextLabel")
                 nl.Size = UDim2.new(1, -40, 0, 16)
                 nl.Position = UDim2.new(0, 36, 0, 4)
@@ -1234,7 +1227,6 @@ local function runSyaaHub()
                 nl.TextSize = 10
                 nl.TextXAlignment = Enum.TextXAlignment.Left
                 nl.Parent = row
-
                 local un = Instance.new("TextLabel")
                 un.Size = UDim2.new(1, -40, 0, 13)
                 un.Position = UDim2.new(0, 36, 0, 18)
@@ -1245,7 +1237,6 @@ local function runSyaaHub()
                 un.TextSize = 9
                 un.TextXAlignment = Enum.TextXAlignment.Left
                 un.Parent = row
-
                 row.MouseButton1Click:Connect(function()
                     startSpy(p)
                     refreshSpyList()
@@ -1281,7 +1272,7 @@ local function runSyaaHub()
     end
 
     -- ==========================================
-    -- SCOPE 2: PANEL ORIENTATION
+    -- PANEL ORIENTATION
     -- ==========================================
     local function buildOrientationPanel()
         local oY = 2
@@ -1307,7 +1298,7 @@ local function runSyaaHub()
     end
 
     -- ==========================================
-    -- SCOPE 3: PANEL FREECAM + RENDER ENGINE
+    -- PANEL FREECAM + STABILIZER
     -- ==========================================
     local function buildFreecamPanel()
         local Y = 2
@@ -1371,7 +1362,7 @@ local function runSyaaHub()
         UserInputService.InputChanged:Connect(function(i) if slYSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X-slYBg.AbsolutePosition.X)/slYBg.AbsoluteSize.X,0,1); slYFill.Size = UDim2.new(pos,0,1,0); slYBtn.Position = UDim2.new(pos,-7,0.5,-7); slYLab.Text = string.format("Posisi Y: %.2f",pos); shiftlockBtn.Position = UDim2.new(shiftlockBtn.Position.X.Scale,0,pos,0) end end)
 
         -- ==========================================
-        -- CUSTOM JUMP BUTTON SETTINGS (di panel Freecam)
+        -- CUSTOM JUMP BUTTON SETTINGS
         -- ==========================================
         makeSepHdr("CUSTOM JUMP BUTTON", Y, pFC); Y = Y + 22
 
@@ -1382,10 +1373,8 @@ local function runSyaaHub()
             setJumpState(customJumpActive)
             jumpContainer.Visible = customJumpActive
             hideOriginalJump(customJumpActive)
-            -- Handle jika jump diaktifkan saat belum ada karakter
             if customJumpActive then
                 task.spawn(function()
-                    -- Poll tiap detik buat jaga-jaga TouchGui muncul telat
                     for _ = 1, 10 do
                         task.wait(0.5)
                         hideOriginalJump(true)
@@ -1394,123 +1383,130 @@ local function runSyaaHub()
             end
         end)
 
-        -- Slider ukuran jump button
         local jSzLab = makeLbl("Ukuran: 80", Y, pFC, 14); Y = Y + 16
-        local jSzBg = Instance.new("Frame")
-        jSzBg.Size = UDim2.new(0.88, 0, 0, 4)
-        jSzBg.Position = UDim2.new(0.06, 0, 0, Y)
-        jSzBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50)
-        jSzBg.Parent = pFC
-        Instance.new("UICorner", jSzBg)
-        local jSzFill = Instance.new("Frame")
-        jSzFill.Size = UDim2.new((80-40)/160, 0, 1, 0)
-        jSzFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-        jSzFill.BorderSizePixel = 0
-        jSzFill.Parent = jSzBg
-        Instance.new("UICorner", jSzFill)
-        local jSzKnob = Instance.new("TextButton")
-        jSzKnob.Size = UDim2.new(0, 14, 0, 14)
-        jSzKnob.Position = UDim2.new((80-40)/160, -7, 0.5, -7)
-        jSzKnob.Text = ""
-        jSzKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        jSzKnob.Parent = jSzBg
-        Instance.new("UICorner", jSzKnob).CornerRadius = UDim.new(1, 0)
-        Y = Y + 18
-        local jSzSld = false
+        local jSzBg = Instance.new("Frame"); jSzBg.Size = UDim2.new(0.88, 0, 0, 4); jSzBg.Position = UDim2.new(0.06, 0, 0, Y); jSzBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); jSzBg.Parent = pFC; Instance.new("UICorner", jSzBg)
+        local jSzFill = Instance.new("Frame"); jSzFill.Size = UDim2.new((80-40)/160, 0, 1, 0); jSzFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); jSzFill.BorderSizePixel = 0; jSzFill.Parent = jSzBg; Instance.new("UICorner", jSzFill)
+        local jSzKnob = Instance.new("TextButton"); jSzKnob.Size = UDim2.new(0, 14, 0, 14); jSzKnob.Position = UDim2.new((80-40)/160, -7, 0.5, -7); jSzKnob.Text = ""; jSzKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); jSzKnob.Parent = jSzBg; Instance.new("UICorner", jSzKnob).CornerRadius = UDim.new(1, 0)
+        Y = Y + 18; local jSzSld = false
         jSzKnob.MouseButton1Down:Connect(function() jSzSld = true end)
-        UserInputService.InputEnded:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-                jSzSld = false
-            end
-        end)
-        UserInputService.InputChanged:Connect(function(i)
-            if jSzSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-                local pos = math.clamp((i.Position.X - jSzBg.AbsolutePosition.X) / jSzBg.AbsoluteSize.X, 0, 1)
-                jSzFill.Size = UDim2.new(pos, 0, 1, 0)
-                jSzKnob.Position = UDim2.new(pos, -7, 0.5, -7)
-                customJumpSize = math.floor(40 + pos * 160)
-                jSzLab.Text = "Ukuran: " .. customJumpSize
-                updateJumpBtn()
-            end
-        end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then jSzSld = false end end)
+        UserInputService.InputChanged:Connect(function(i) if jSzSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X - jSzBg.AbsolutePosition.X) / jSzBg.AbsoluteSize.X, 0, 1); jSzFill.Size = UDim2.new(pos, 0, 1, 0); jSzKnob.Position = UDim2.new(pos, -7, 0.5, -7); customJumpSize = math.floor(40 + pos * 160); jSzLab.Text = "Ukuran: " .. customJumpSize; updateJumpBtn() end end)
 
-        -- Slider posisi X
         local jXLab = makeLbl("Posisi X: 0.85", Y, pFC, 14); Y = Y + 16
-        local jXBg = Instance.new("Frame")
-        jXBg.Size = UDim2.new(0.88, 0, 0, 4)
-        jXBg.Position = UDim2.new(0.06, 0, 0, Y)
-        jXBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50)
-        jXBg.Parent = pFC
-        Instance.new("UICorner", jXBg)
-        local jXFill = Instance.new("Frame")
-        jXFill.Size = UDim2.new(0.85, 0, 1, 0)
-        jXFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-        jXFill.BorderSizePixel = 0
-        jXFill.Parent = jXBg
-        Instance.new("UICorner", jXFill)
-        local jXKnob = Instance.new("TextButton")
-        jXKnob.Size = UDim2.new(0, 14, 0, 14)
-        jXKnob.Position = UDim2.new(0.85, -7, 0.5, -7)
-        jXKnob.Text = ""
-        jXKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        jXKnob.Parent = jXBg
-        Instance.new("UICorner", jXKnob).CornerRadius = UDim.new(1, 0)
-        Y = Y + 18
-        local jXSld = false
+        local jXBg = Instance.new("Frame"); jXBg.Size = UDim2.new(0.88, 0, 0, 4); jXBg.Position = UDim2.new(0.06, 0, 0, Y); jXBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); jXBg.Parent = pFC; Instance.new("UICorner", jXBg)
+        local jXFill = Instance.new("Frame"); jXFill.Size = UDim2.new(0.85, 0, 1, 0); jXFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); jXFill.BorderSizePixel = 0; jXFill.Parent = jXBg; Instance.new("UICorner", jXFill)
+        local jXKnob = Instance.new("TextButton"); jXKnob.Size = UDim2.new(0, 14, 0, 14); jXKnob.Position = UDim2.new(0.85, -7, 0.5, -7); jXKnob.Text = ""; jXKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); jXKnob.Parent = jXBg; Instance.new("UICorner", jXKnob).CornerRadius = UDim.new(1, 0)
+        Y = Y + 18; local jXSld = false
         jXKnob.MouseButton1Down:Connect(function() jXSld = true end)
-        UserInputService.InputEnded:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-                jXSld = false
-            end
-        end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then jXSld = false end end)
+        UserInputService.InputChanged:Connect(function(i) if jXSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X - jXBg.AbsolutePosition.X) / jXBg.AbsoluteSize.X, 0, 1); jXFill.Size = UDim2.new(pos, 0, 1, 0); jXKnob.Position = UDim2.new(pos, -7, 0.5, -7); customJumpX = pos; jXLab.Text = string.format("Posisi X: %.2f", pos); updateJumpBtn() end end)
+
+        local jYLab = makeLbl("Posisi Y: 0.75", Y, pFC, 14); Y = Y + 16
+        local jYBg = Instance.new("Frame"); jYBg.Size = UDim2.new(0.88, 0, 0, 4); jYBg.Position = UDim2.new(0.06, 0, 0, Y); jYBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); jYBg.Parent = pFC; Instance.new("UICorner", jYBg)
+        local jYFill = Instance.new("Frame"); jYFill.Size = UDim2.new(0.75, 0, 1, 0); jYFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); jYFill.BorderSizePixel = 0; jYFill.Parent = jYBg; Instance.new("UICorner", jYFill)
+        local jYKnob = Instance.new("TextButton"); jYKnob.Size = UDim2.new(0, 14, 0, 14); jYKnob.Position = UDim2.new(0.75, -7, 0.5, -7); jYKnob.Text = ""; jYKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); jYKnob.Parent = jYBg; Instance.new("UICorner", jYKnob).CornerRadius = UDim.new(1, 0)
+        Y = Y + 18; local jYSld = false
+        jYKnob.MouseButton1Down:Connect(function() jYSld = true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then jYSld = false end end)
+        UserInputService.InputChanged:Connect(function(i) if jYSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X - jYBg.AbsolutePosition.X) / jYBg.AbsoluteSize.X, 0, 1); jYFill.Size = UDim2.new(pos, 0, 1, 0); jYKnob.Position = UDim2.new(pos, -7, 0.5, -7); customJumpY = pos; jYLab.Text = string.format("Posisi Y: %.2f", pos); updateJumpBtn() end end)
+
+        -- ==========================================
+        -- CAMERA + CHARACTER STABILIZER
+        -- ==========================================
+        makeSepHdr("STABILIZER (Kamera + Karakter)", Y, pFC); Y = Y + 22
+
+        local stabRow, setStabState, getStabState = makeIosRow("Aktifkan Stabilizer", Y, pFC); Y = Y + 36
+        local stabInfoLbl = makeLbl("▸ Stabil saat lompat di tangga/obstacle", Y, pFC, 14, Color3.fromRGB(50, 150, 255)); Y = Y + 18
+
+        -- Slider kekuatan redam karakter
+        local charStabLab = makeLbl("Redam Karakter: 85%", Y, pFC, 14); Y = Y + 16
+        local cStabBg = Instance.new("Frame"); cStabBg.Size = UDim2.new(0.88, 0, 0, 4); cStabBg.Position = UDim2.new(0.06, 0, 0, Y); cStabBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); cStabBg.Parent = pFC; Instance.new("UICorner", cStabBg)
+        local cStabFill = Instance.new("Frame"); cStabFill.Size = UDim2.new(0.85, 0, 1, 0); cStabFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); cStabFill.BorderSizePixel = 0; cStabFill.Parent = cStabBg; Instance.new("UICorner", cStabFill)
+        local cStabKnob = Instance.new("TextButton"); cStabKnob.Size = UDim2.new(0, 14, 0, 14); cStabKnob.Position = UDim2.new(0.85, -7, 0.5, -7); cStabKnob.Text = ""; cStabKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); cStabKnob.Parent = cStabBg; Instance.new("UICorner", cStabKnob).CornerRadius = UDim.new(1, 0)
+        Y = Y + 18; local cStabSld = false
+        cStabKnob.MouseButton1Down:Connect(function() cStabSld = true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then cStabSld = false end end)
         UserInputService.InputChanged:Connect(function(i)
-            if jXSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-                local pos = math.clamp((i.Position.X - jXBg.AbsolutePosition.X) / jXBg.AbsoluteSize.X, 0, 1)
-                jXFill.Size = UDim2.new(pos, 0, 1, 0)
-                jXKnob.Position = UDim2.new(pos, -7, 0.5, -7)
-                customJumpX = pos
-                jXLab.Text = string.format("Posisi X: %.2f", pos)
-                updateJumpBtn()
+            if cStabSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X - cStabBg.AbsolutePosition.X) / cStabBg.AbsoluteSize.X, 0, 1)
+                cStabFill.Size = UDim2.new(pos, 0, 1, 0)
+                cStabKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                CHAR_STAB_STRENGTH = pos * 0.97
+                charStabLab.Text = "Redam Karakter: " .. math.floor(pos * 97) .. "%"
             end
         end)
 
-        -- Slider posisi Y
-        local jYLab = makeLbl("Posisi Y: 0.75", Y, pFC, 14); Y = Y + 16
-        local jYBg = Instance.new("Frame")
-        jYBg.Size = UDim2.new(0.88, 0, 0, 4)
-        jYBg.Position = UDim2.new(0.06, 0, 0, Y)
-        jYBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50)
-        jYBg.Parent = pFC
-        Instance.new("UICorner", jYBg)
-        local jYFill = Instance.new("Frame")
-        jYFill.Size = UDim2.new(0.75, 0, 1, 0)
-        jYFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-        jYFill.BorderSizePixel = 0
-        jYFill.Parent = jYBg
-        Instance.new("UICorner", jYFill)
-        local jYKnob = Instance.new("TextButton")
-        jYKnob.Size = UDim2.new(0, 14, 0, 14)
-        jYKnob.Position = UDim2.new(0.75, -7, 0.5, -7)
-        jYKnob.Text = ""
-        jYKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        jYKnob.Parent = jYBg
-        Instance.new("UICorner", jYKnob).CornerRadius = UDim.new(1, 0)
-        Y = Y + 18
-        local jYSld = false
-        jYKnob.MouseButton1Down:Connect(function() jYSld = true end)
-        UserInputService.InputEnded:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-                jYSld = false
+        -- Slider kecepatan return kamera
+        local stabStrLab = makeLbl("Kecepatan Return Kamera: 15%", Y, pFC, 14); Y = Y + 16
+        local stabStrBg = Instance.new("Frame"); stabStrBg.Size = UDim2.new(0.88, 0, 0, 4); stabStrBg.Position = UDim2.new(0.06, 0, 0, Y); stabStrBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); stabStrBg.Parent = pFC; Instance.new("UICorner", stabStrBg)
+        local stabStrFill = Instance.new("Frame"); stabStrFill.Size = UDim2.new(0.15, 0, 1, 0); stabStrFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); stabStrFill.BorderSizePixel = 0; stabStrFill.Parent = stabStrBg; Instance.new("UICorner", stabStrFill)
+        local stabStrKnob = Instance.new("TextButton"); stabStrKnob.Size = UDim2.new(0, 14, 0, 14); stabStrKnob.Position = UDim2.new(0.15, -7, 0.5, -7); stabStrKnob.Text = ""; stabStrKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); stabStrKnob.Parent = stabStrBg; Instance.new("UICorner", stabStrKnob).CornerRadius = UDim.new(1, 0)
+        Y = Y + 18; local stabStrSld = false
+        stabStrKnob.MouseButton1Down:Connect(function() stabStrSld = true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then stabStrSld = false end end)
+        UserInputService.InputChanged:Connect(function(i)
+            if stabStrSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X - stabStrBg.AbsolutePosition.X) / stabStrBg.AbsoluteSize.X, 0, 1)
+                stabStrFill.Size = UDim2.new(pos, 0, 1, 0)
+                stabStrKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                STAB_STRENGTH = math.clamp(pos, 0.01, 1)
+                stabStrLab.Text = "Kecepatan Return Kamera: " .. math.floor(pos * 100) .. "%"
             end
         end)
+
+        -- Slider delay return
+        local stabDelayLab = makeLbl("Delay Return: 0.8s", Y, pFC, 14); Y = Y + 16
+        local stabDelayBg = Instance.new("Frame"); stabDelayBg.Size = UDim2.new(0.88, 0, 0, 4); stabDelayBg.Position = UDim2.new(0.06, 0, 0, Y); stabDelayBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); stabDelayBg.Parent = pFC; Instance.new("UICorner", stabDelayBg)
+        local stabDelayFill = Instance.new("Frame"); stabDelayFill.Size = UDim2.new(0.16, 0, 1, 0); stabDelayFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); stabDelayFill.BorderSizePixel = 0; stabDelayFill.Parent = stabDelayBg; Instance.new("UICorner", stabDelayFill)
+        local stabDelayKnob = Instance.new("TextButton"); stabDelayKnob.Size = UDim2.new(0, 14, 0, 14); stabDelayKnob.Position = UDim2.new(0.16, -7, 0.5, -7); stabDelayKnob.Text = ""; stabDelayKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); stabDelayKnob.Parent = stabDelayBg; Instance.new("UICorner", stabDelayKnob).CornerRadius = UDim.new(1, 0)
+        Y = Y + 18; local stabDelaySld = false
+        stabDelayKnob.MouseButton1Down:Connect(function() stabDelaySld = true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then stabDelaySld = false end end)
         UserInputService.InputChanged:Connect(function(i)
-            if jYSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-                local pos = math.clamp((i.Position.X - jYBg.AbsolutePosition.X) / jYBg.AbsoluteSize.X, 0, 1)
-                jYFill.Size = UDim2.new(pos, 0, 1, 0)
-                jYKnob.Position = UDim2.new(pos, -7, 0.5, -7)
-                customJumpY = pos
-                jYLab.Text = string.format("Posisi Y: %.2f", pos)
-                updateJumpBtn()
+            if stabDelaySld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X - stabDelayBg.AbsolutePosition.X) / stabDelayBg.AbsoluteSize.X, 0, 1)
+                stabDelayFill.Size = UDim2.new(pos, 0, 1, 0)
+                stabDelayKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                local val = math.floor(pos * 50) / 10
+                stabDelayLab.Text = "Delay Return: " .. val .. "s"
+                STAB_RETURN_DELAY = val
+            end
+        end)
+
+        -- Tombol lock arah sekarang
+        local lockDirBtn = Instance.new("TextButton")
+        lockDirBtn.Text = "📌 Lock Arah Kamera Sekarang"
+        lockDirBtn.Size = UDim2.new(0.92, 0, 0, 28)
+        lockDirBtn.Position = UDim2.new(0.04, 0, 0, Y)
+        lockDirBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 230)
+        lockDirBtn.BackgroundTransparency = 0.4
+        lockDirBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        lockDirBtn.Font = Enum.Font.GothamBold
+        lockDirBtn.TextSize = 10
+        lockDirBtn.Parent = pFC
+        Instance.new("UICorner", lockDirBtn).CornerRadius = UDim.new(0, 6)
+        Y = Y + 34
+
+        lockDirBtn.MouseButton1Click:Connect(function()
+            stabYaw = targetYaw
+            stabPitch = targetPitch
+            lockDirBtn.Text = "✅ Arah Terkunci!"
+            task.wait(1.2)
+            lockDirBtn.Text = "📌 Lock Arah Kamera Sekarang"
+        end)
+
+        stabRow.MouseButton1Click:Connect(function()
+            stabilizerActive = not stabilizerActive
+            setStabState(stabilizerActive)
+            if stabilizerActive then
+                stabYaw = targetYaw
+                stabPitch = targetPitch
+                lastSwipeTime = tick()
+                stabInfoLbl.Text = "▸ AKTIF 🔒 Karakter + Kamera stabil"
+                stabInfoLbl.TextColor3 = Color3.fromRGB(0, 200, 100)
+            else
+                stabInfoLbl.Text = "▸ Stabil saat lompat di tangga/obstacle"
+                stabInfoLbl.TextColor3 = Color3.fromRGB(50, 150, 255)
             end
         end)
 
@@ -1528,14 +1524,60 @@ local function runSyaaHub()
         setHudState(true); hudRow.MouseButton1Click:Connect(function() local newState = not getHudState(); setHudState(newState); if isFreecamActive then hud.Visible=newState end end); lockRow.MouseButton1Click:Connect(function() isLockOn = not isLockOn; setLockState(isLockOn); if not isLockOn then lockTarget=nil end end)
 
         -- RENDER ENGINE
-        RunService:BindToRenderStep("SyaaaEngine", Enum.RenderPriority.Camera.Value+1, function(dt) if not isFreecamActive then return end; local rotAlpha = math.clamp(dt*((101-smoothValue)/10),0.01,1); local rawMove = Vector3.new(moveInputs.R-moveInputs.L, moveInputs.U-moveInputs.D, moveInputs.B-moveInputs.F)
+        RunService:BindToRenderStep("SyaaaEngine", Enum.RenderPriority.Camera.Value+1, function(dt)
+            if not isFreecamActive then return end
+            local rotAlpha = math.clamp(dt*((101-smoothValue)/10),0.01,1)
+            local rawMove = Vector3.new(moveInputs.R-moveInputs.L, moveInputs.U-moveInputs.D, moveInputs.B-moveInputs.F)
             if zoomInputs.In == 1 then if targetFov > 1 then targetFov = math.clamp(targetFov - 1.5, 1, 170) else rawMove = rawMove + Vector3.new(0, 0, -1.5) end end
             if zoomInputs.Out == 1 then if targetFov < 170 then targetFov = math.clamp(targetFov + 1.5, 1, 170) else rawMove = rawMove + Vector3.new(0, 0, 1.5) end end
-            Camera.FieldOfView = Camera.FieldOfView + (targetFov-Camera.FieldOfView)*rotAlpha; local mVec = rawMove; if mVec.Magnitude > 0 then mVec = mVec.Unit end
-            if lockTarget then local tPos = (lockTarget:IsA("BasePart") and lockTarget.Position) or (lockTarget:IsA("Model") and lockTarget:GetPivot().Position) or lockTarget; local nextPos = Camera.CFrame.Position + Camera.CFrame:VectorToWorldSpace(mVec*moveSpeed*dt); Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(nextPos,tPos),rotAlpha)
-            else displayYaw, displayPitch = displayYaw+(targetYaw-displayYaw)*rotAlpha, displayPitch+(targetPitch-displayPitch)*rotAlpha; local newCamRot = CFrame.Angles(0, math.rad(displayYaw), 0) * CFrame.Angles(math.rad(displayPitch), 0, 0); local nextPos = Camera.CFrame.Position + newCamRot:VectorToWorldSpace(mVec*moveSpeed*dt); Camera.CFrame = CFrame.new(nextPos) * newCamRot end end)
-        UserInputService.InputBegan:Connect(function(input,gpe) if not gpe and isFreecamActive and isLockOn and (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1) then local unitRay = Camera:ScreenPointToRay(input.Position.X,input.Position.Y); local result = workspace:Raycast(unitRay.Origin,unitRay.Direction*2000); if result and result.Instance then lockTarget=result.Instance end end end)
-        UserInputService.InputChanged:Connect(function(input) if isFreecamActive and not lockTarget and (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseMovement) then targetYaw = targetYaw-(input.Delta.X*0.3); targetPitch = math.clamp(targetPitch-(input.Delta.Y*0.3),-88,88) end end)
+            Camera.FieldOfView = Camera.FieldOfView + (targetFov-Camera.FieldOfView)*rotAlpha
+            local mVec = rawMove; if mVec.Magnitude > 0 then mVec = mVec.Unit end
+            if lockTarget then
+                local tPos = (lockTarget:IsA("BasePart") and lockTarget.Position) or (lockTarget:IsA("Model") and lockTarget:GetPivot().Position) or lockTarget
+                local nextPos = Camera.CFrame.Position + Camera.CFrame:VectorToWorldSpace(mVec*moveSpeed*dt)
+                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(nextPos,tPos),rotAlpha)
+            else
+                -- STABILIZER KAMERA
+                if stabilizerActive then
+                    local timeSinceSwipe = tick() - lastSwipeTime
+                    if timeSinceSwipe > STAB_RETURN_DELAY then
+                        targetYaw = targetYaw + (stabYaw - targetYaw) * math.clamp(STAB_STRENGTH, 0.01, 1)
+                        targetPitch = targetPitch + (stabPitch - targetPitch) * math.clamp(STAB_STRENGTH, 0.01, 1)
+                    end
+                end
+                displayYaw = displayYaw + (targetYaw - displayYaw) * rotAlpha
+                displayPitch = displayPitch + (targetPitch - displayPitch) * rotAlpha
+                local newCamRot = CFrame.Angles(0, math.rad(displayYaw), 0) * CFrame.Angles(math.rad(displayPitch), 0, 0)
+                local nextPos = Camera.CFrame.Position + newCamRot:VectorToWorldSpace(mVec*moveSpeed*dt)
+                Camera.CFrame = CFrame.new(nextPos) * newCamRot
+            end
+        end)
+
+        -- INPUT SWIPE (dengan stabilizer update)
+        UserInputService.InputBegan:Connect(function(input,gpe)
+            if not gpe and isFreecamActive and isLockOn and (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1) then
+                local unitRay = Camera:ScreenPointToRay(input.Position.X,input.Position.Y)
+                local result = workspace:Raycast(unitRay.Origin,unitRay.Direction*2000)
+                if result and result.Instance then lockTarget=result.Instance end
+            end
+        end)
+
+        UserInputService.InputChanged:Connect(function(input)
+            if isFreecamActive and not lockTarget and (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseMovement) then
+                local dx = input.Delta.X
+                local dy = input.Delta.Y
+                -- Filter noise minimal supaya gerakan kecil ga ganggu stabilizer
+                if math.abs(dx) < 0.5 and math.abs(dy) < 0.5 then return end
+                targetYaw = targetYaw - (dx * 0.3)
+                targetPitch = math.clamp(targetPitch - (dy * 0.3), -88, 88)
+                if stabilizerActive then
+                    -- User swipe manual → update titik stabil ke posisi baru + catat waktu
+                    lastSwipeTime = tick()
+                    stabYaw = targetYaw
+                    stabPitch = targetPitch
+                end
+            end
+        end)
     end
 
     -- EXECUTE PANELS
