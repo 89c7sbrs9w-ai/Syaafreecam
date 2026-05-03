@@ -1,4 +1,4 @@
--- [[ SYAAA HUB V8.0 - BLUE THEME + SPY CAM + CUSTOM JUMP + STABILIZER ]] --
+-- [[ SYAAA HUB V8.0 - BLUE THEME + SPY CAM + CUSTOM JUMP + STABILIZER + SENTER ]] --
 
 if not game:IsLoaded() then 
     game.Loaded:Wait() 
@@ -112,7 +112,7 @@ local function startLoading(callback)
             updTitle.TextXAlignment = Enum.TextXAlignment.Left; updTitle.ZIndex = 5; updTitle.Parent = updFrame
 
             local updDesc = Instance.new("TextLabel")
-            updDesc.Text = "Stabilizer Karakter + Kamera Baru 🚀"; updDesc.Size = UDim2.new(1, -60, 0, 28)
+            updDesc.Text = "Stabilizer + Senter Baru 🔦🚀"; updDesc.Size = UDim2.new(1, -60, 0, 28)
             updDesc.Position = UDim2.new(0, 55, 0, 34)
             updDesc.BackgroundTransparency = 1; updDesc.TextColor3 = Color3.fromRGB(200, 200, 200)
             updDesc.Font = Enum.Font.Gotham; updDesc.TextSize = 10
@@ -262,6 +262,15 @@ local function runSyaaHub()
     local CHAR_STAB_STRENGTH = 0.85
     local charStabActive = false
 
+    -- SENTER VARIABLES
+    local senterActive = false
+    local senterPart = nil
+    local senterSpot = nil
+    local senterPoint = nil
+    local senterBrightness = 5
+    local senterRange = 60
+    local senterAngle = 45
+
     -- ==========================================
     -- CHARACTER STABILIZER LOOP
     -- ==========================================
@@ -283,6 +292,72 @@ local function runSyaaHub()
             local verticalVel = Vector3.new(0, vel.Y, 0)
             local dampedHorizontal = horizontalVel * (1 - math.clamp(CHAR_STAB_STRENGTH, 0, 0.97))
             hrp.AssemblyLinearVelocity = dampedHorizontal + verticalVel
+        end
+    end)
+
+    -- ==========================================
+    -- SENTER RENDER LOOP
+    -- ==========================================
+    RunService.RenderStepped:Connect(function()
+        if not senterActive then return end
+        if not senterPart or not senterPart.Parent then return end
+        local char = localPlayer.Character
+        if not char then return end
+        local head = char:FindFirstChild("Head")
+        if not head then return end
+        -- Posisi senter di kepala, arah ngikut kamera
+        local camLook = Camera.CFrame.LookVector
+        local spawnPos = head.Position + Vector3.new(0, 0.2, 0)
+        senterPart.CFrame = CFrame.new(spawnPos, spawnPos + camLook)
+    end)
+
+    -- ==========================================
+    -- SENTER HELPER FUNCTIONS
+    -- ==========================================
+    local function createSenter()
+        if senterPart then pcall(function() senterPart:Destroy() end) end
+
+        senterPart = Instance.new("Part")
+        senterPart.Name = "SyaaSenterPart"
+        senterPart.Size = Vector3.new(0.05, 0.05, 0.05)
+        senterPart.Transparency = 1
+        senterPart.CanCollide = false
+        senterPart.Anchored = true
+        senterPart.Massless = true
+        senterPart.CastShadow = false
+        senterPart.Parent = workspace
+
+        senterSpot = Instance.new("SpotLight")
+        senterSpot.Brightness = senterBrightness
+        senterSpot.Range = senterRange
+        senterSpot.Angle = senterAngle
+        senterSpot.Color = Color3.fromRGB(255, 255, 248)
+        senterSpot.Face = Enum.NormalId.Front
+        senterSpot.Shadows = true
+        senterSpot.Parent = senterPart
+
+        -- Cahaya ambient kecil supaya sekitar sedikit terang
+        senterPoint = Instance.new("PointLight")
+        senterPoint.Brightness = 1.2
+        senterPoint.Range = 22
+        senterPoint.Color = Color3.fromRGB(210, 225, 255)
+        senterPoint.Parent = senterPart
+    end
+
+    local function destroySenter()
+        if senterPart then
+            pcall(function() senterPart:Destroy() end)
+            senterPart = nil
+        end
+        senterSpot = nil
+        senterPoint = nil
+    end
+
+    -- Reinit senter kalau karakter respawn
+    localPlayer.CharacterAdded:Connect(function()
+        if senterActive then
+            task.wait(0.5)
+            createSenter()
         end
     end)
 
@@ -1287,6 +1362,84 @@ local function runSyaaHub()
         end)
 
         task.spawn(function() task.wait(0.8); refreshSpyList() end)
+
+        -- ==========================================
+        -- SENTER (FLASHLIGHT)
+        -- ==========================================
+        makeSepHdr("🔦 SENTER (FLASHLIGHT)", tY, pTools); tY = tY + 22
+
+        local senterRow, setSenterState, getSenterState = makeIosRow("Aktifkan Senter", tY, pTools); tY = tY + 36
+
+        local senterInfoLbl = makeLbl("▸ Cahaya putih mengikuti arah kamera", tY, pTools, 14, Color3.fromRGB(50, 150, 255)); tY = tY + 18
+
+        -- Brightness slider
+        local senBriLab = makeLbl("Brightness: 5", tY, pTools, 14); tY = tY + 16
+        local senBriBg = Instance.new("Frame"); senBriBg.Size = UDim2.new(0.88, 0, 0, 4); senBriBg.Position = UDim2.new(0.06, 0, 0, tY); senBriBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); senBriBg.ZIndex = 5; senBriBg.Parent = pTools; Instance.new("UICorner", senBriBg)
+        local senBriFill = Instance.new("Frame"); senBriFill.Size = UDim2.new(5/10, 0, 1, 0); senBriFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); senBriFill.BorderSizePixel = 0; senBriFill.ZIndex = 6; senBriFill.Parent = senBriBg; Instance.new("UICorner", senBriFill)
+        local senBriKnob = Instance.new("TextButton"); senBriKnob.Size = UDim2.new(0, 14, 0, 14); senBriKnob.Position = UDim2.new(5/10, -7, 0.5, -7); senBriKnob.Text = ""; senBriKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); senBriKnob.ZIndex = 7; senBriKnob.Parent = senBriBg; Instance.new("UICorner", senBriKnob).CornerRadius = UDim.new(1, 0)
+        tY = tY + 18; local senBriSld = false
+        senBriKnob.MouseButton1Down:Connect(function() senBriSld = true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then senBriSld = false end end)
+        UserInputService.InputChanged:Connect(function(i)
+            if senBriSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X - senBriBg.AbsolutePosition.X) / senBriBg.AbsoluteSize.X, 0, 1)
+                senBriFill.Size = UDim2.new(pos, 0, 1, 0); senBriKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                senterBrightness = math.max(0.5, math.floor(pos * 10 * 10) / 10)
+                senBriLab.Text = "Brightness: " .. senterBrightness
+                if senterSpot then senterSpot.Brightness = senterBrightness end
+            end
+        end)
+
+        -- Range slider
+        local senRangeLab = makeLbl("Range: 60", tY, pTools, 14); tY = tY + 16
+        local senRangeBg = Instance.new("Frame"); senRangeBg.Size = UDim2.new(0.88, 0, 0, 4); senRangeBg.Position = UDim2.new(0.06, 0, 0, tY); senRangeBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); senRangeBg.ZIndex = 5; senRangeBg.Parent = pTools; Instance.new("UICorner", senRangeBg)
+        local senRangeFill = Instance.new("Frame"); senRangeFill.Size = UDim2.new(60/120, 0, 1, 0); senRangeFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); senRangeFill.BorderSizePixel = 0; senRangeFill.ZIndex = 6; senRangeFill.Parent = senRangeBg; Instance.new("UICorner", senRangeFill)
+        local senRangeKnob = Instance.new("TextButton"); senRangeKnob.Size = UDim2.new(0, 14, 0, 14); senRangeKnob.Position = UDim2.new(60/120, -7, 0.5, -7); senRangeKnob.Text = ""; senRangeKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); senRangeKnob.ZIndex = 7; senRangeKnob.Parent = senRangeBg; Instance.new("UICorner", senRangeKnob).CornerRadius = UDim.new(1, 0)
+        tY = tY + 18; local senRangeSld = false
+        senRangeKnob.MouseButton1Down:Connect(function() senRangeSld = true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then senRangeSld = false end end)
+        UserInputService.InputChanged:Connect(function(i)
+            if senRangeSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X - senRangeBg.AbsolutePosition.X) / senRangeBg.AbsoluteSize.X, 0, 1)
+                senRangeFill.Size = UDim2.new(pos, 0, 1, 0); senRangeKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                senterRange = math.floor(10 + pos * 110)
+                senRangeLab.Text = "Range: " .. senterRange
+                if senterSpot then senterSpot.Range = senterRange end
+            end
+        end)
+
+        -- Angle slider (sudut sinar)
+        local senAngleLab = makeLbl("Sudut Sinar: 45°", tY, pTools, 14); tY = tY + 16
+        local senAngleBg = Instance.new("Frame"); senAngleBg.Size = UDim2.new(0.88, 0, 0, 4); senAngleBg.Position = UDim2.new(0.06, 0, 0, tY); senAngleBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); senAngleBg.ZIndex = 5; senAngleBg.Parent = pTools; Instance.new("UICorner", senAngleBg)
+        local senAngleFill = Instance.new("Frame"); senAngleFill.Size = UDim2.new(45/90, 0, 1, 0); senAngleFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); senAngleFill.BorderSizePixel = 0; senAngleFill.ZIndex = 6; senAngleFill.Parent = senAngleBg; Instance.new("UICorner", senAngleFill)
+        local senAngleKnob = Instance.new("TextButton"); senAngleKnob.Size = UDim2.new(0, 14, 0, 14); senAngleKnob.Position = UDim2.new(45/90, -7, 0.5, -7); senAngleKnob.Text = ""; senAngleKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); senAngleKnob.ZIndex = 7; senAngleKnob.Parent = senAngleBg; Instance.new("UICorner", senAngleKnob).CornerRadius = UDim.new(1, 0)
+        tY = tY + 18; local senAngleSld = false
+        senAngleKnob.MouseButton1Down:Connect(function() senAngleSld = true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then senAngleSld = false end end)
+        UserInputService.InputChanged:Connect(function(i)
+            if senAngleSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X - senAngleBg.AbsolutePosition.X) / senAngleBg.AbsoluteSize.X, 0, 1)
+                senAngleFill.Size = UDim2.new(pos, 0, 1, 0); senAngleKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                senterAngle = math.floor(5 + pos * 85)
+                senAngleLab.Text = "Sudut Sinar: " .. senterAngle .. "°"
+                if senterSpot then senterSpot.Angle = senterAngle end
+            end
+        end)
+
+        -- Toggle handler
+        senterRow.MouseButton1Click:Connect(function()
+            senterActive = not senterActive
+            setSenterState(senterActive)
+            if senterActive then
+                createSenter()
+                senterInfoLbl.Text = "▸ AKTIF 🔦 Senter menyala!"
+                senterInfoLbl.TextColor3 = Color3.fromRGB(255, 220, 50)
+            else
+                destroySenter()
+                senterInfoLbl.Text = "▸ Cahaya putih mengikuti arah kamera"
+                senterInfoLbl.TextColor3 = Color3.fromRGB(50, 150, 255)
+            end
+        end)
 
         local tPad = Instance.new("Frame"); tPad.Size = UDim2.new(1,0,0,40); tPad.Position = UDim2.new(0,0,0,tY); tPad.BackgroundTransparency = 1; tPad.Parent = pTools
     end
