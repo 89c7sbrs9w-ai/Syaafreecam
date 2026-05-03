@@ -305,7 +305,6 @@ local function runSyaaHub()
         if not char then return end
         local head = char:FindFirstChild("Head")
         if not head then return end
-        -- Posisi senter di kepala, arah ngikut kamera
         local camLook = Camera.CFrame.LookVector
         local spawnPos = head.Position + Vector3.new(0, 0.2, 0)
         senterPart.CFrame = CFrame.new(spawnPos, spawnPos + camLook)
@@ -336,7 +335,6 @@ local function runSyaaHub()
         senterSpot.Shadows = true
         senterSpot.Parent = senterPart
 
-        -- Cahaya ambient kecil supaya sekitar sedikit terang
         senterPoint = Instance.new("PointLight")
         senterPoint.Brightness = 1.2
         senterPoint.Range = 22
@@ -353,7 +351,6 @@ local function runSyaaHub()
         senterPoint = nil
     end
 
-    -- Reinit senter kalau karakter respawn
     localPlayer.CharacterAdded:Connect(function()
         if senterActive then
             task.wait(0.5)
@@ -888,6 +885,30 @@ local function runSyaaHub()
             task.spawn(function() pcall(function() local src = ""; local StarterGui = game:GetService("StarterGui"); pcall(function() src = game:HttpGet("https://yarhm.mhi.im/scr?channel=afemmax", false) end); if src == "" then StarterGui:SetCore("SendNotification", {Title = "YARHM Outage"; Text = "Using YARHM Offline."; Duration = 5;}); src = game:HttpGet("https://raw.githubusercontent.com/Joystickplays/AFEM/refs/heads/main/max/afemmax.lua", false) end; if src ~= "" then loadstring(src)() end end) end) 
         end)
 
+        -- ==========================================
+        -- TOMBOL LOAD VD (BARU)
+        -- ==========================================
+        local vdBtn = Instance.new("TextButton")
+        vdBtn.Text = "🔫 Load Violence District"
+        vdBtn.Size = UDim2.new(0.92, 0, 0, 30)
+        vdBtn.Position = UDim2.new(0.04, 0, 0, hY)
+        vdBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
+        vdBtn.BackgroundTransparency = 0.4
+        vdBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        vdBtn.Font = Enum.Font.GothamBold
+        vdBtn.TextSize = 10
+        vdBtn.ZIndex = 5
+        vdBtn.Parent = pHome
+        Instance.new("UICorner", vdBtn).CornerRadius = UDim.new(0, 6)
+        hY = hY + 36
+
+        vdBtn.MouseButton1Click:Connect(function()
+            toggleMainFrame(false)
+            pcall(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/ayamnubchh/Violence-District-Roblox-Script/main/ANCH-Hax.lua"))()
+            end)
+        end)
+
         makeSepHdr("KONTAK DEVELOPER (SYAA)", hY, pHome); hY = hY + 22
 
         local waNumBtn = Instance.new("TextButton"); waNumBtn.Text = "Salin Nomor WA Syaa"; waNumBtn.Size = UDim2.new(0.92,0,0,30); waNumBtn.Position = UDim2.new(0.04,0,0,hY); waNumBtn.BackgroundColor3 = Color3.fromRGB(30,160,80); waNumBtn.BackgroundTransparency = 0.4; waNumBtn.TextColor3 = Color3.fromRGB(255,255,255); waNumBtn.Font = Enum.Font.GothamBold; waNumBtn.TextSize = 10; waNumBtn.ZIndex = 5; waNumBtn.Parent = pHome; Instance.new("UICorner", waNumBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
@@ -1372,7 +1393,6 @@ local function runSyaaHub()
 
         local senterInfoLbl = makeLbl("▸ Cahaya putih mengikuti arah kamera", tY, pTools, 14, Color3.fromRGB(50, 150, 255)); tY = tY + 18
 
-        -- Brightness slider
         local senBriLab = makeLbl("Brightness: 5", tY, pTools, 14); tY = tY + 16
         local senBriBg = Instance.new("Frame"); senBriBg.Size = UDim2.new(0.88, 0, 0, 4); senBriBg.Position = UDim2.new(0.06, 0, 0, tY); senBriBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); senBriBg.ZIndex = 5; senBriBg.Parent = pTools; Instance.new("UICorner", senBriBg)
         local senBriFill = Instance.new("Frame"); senBriFill.Size = UDim2.new(5/10, 0, 1, 0); senBriFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); senBriFill.BorderSizePixel = 0; senBriFill.ZIndex = 6; senBriFill.Parent = senBriBg; Instance.new("UICorner", senBriFill)
@@ -1390,7 +1410,6 @@ local function runSyaaHub()
             end
         end)
 
-        -- Range slider
         local senRangeLab = makeLbl("Range: 60", tY, pTools, 14); tY = tY + 16
         local senRangeBg = Instance.new("Frame"); senRangeBg.Size = UDim2.new(0.88, 0, 0, 4); senRangeBg.Position = UDim2.new(0.06, 0, 0, tY); senRangeBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); senRangeBg.ZIndex = 5; senRangeBg.Parent = pTools; Instance.new("UICorner", senRangeBg)
         local senRangeFill = Instance.new("Frame"); senRangeFill.Size = UDim2.new(60/120, 0, 1, 0); senRangeFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); senRangeFill.BorderSizePixel = 0; senRangeFill.ZIndex = 6; senRangeFill.Parent = senRangeBg; Instance.new("UICorner", senRangeFill)
@@ -1408,7 +1427,6 @@ local function runSyaaHub()
             end
         end)
 
-        -- Angle slider (sudut sinar)
         local senAngleLab = makeLbl("Sudut Sinar: 45°", tY, pTools, 14); tY = tY + 16
         local senAngleBg = Instance.new("Frame"); senAngleBg.Size = UDim2.new(0.88, 0, 0, 4); senAngleBg.Position = UDim2.new(0.06, 0, 0, tY); senAngleBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); senAngleBg.ZIndex = 5; senAngleBg.Parent = pTools; Instance.new("UICorner", senAngleBg)
         local senAngleFill = Instance.new("Frame"); senAngleFill.Size = UDim2.new(45/90, 0, 1, 0); senAngleFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); senAngleFill.BorderSizePixel = 0; senAngleFill.ZIndex = 6; senAngleFill.Parent = senAngleBg; Instance.new("UICorner", senAngleFill)
@@ -1426,7 +1444,6 @@ local function runSyaaHub()
             end
         end)
 
-        -- Toggle handler
         senterRow.MouseButton1Click:Connect(function()
             senterActive = not senterActive
             setSenterState(senterActive)
