@@ -271,6 +271,18 @@ local function runSyaaHub()
     local senterRange = 60
     local senterAngle = 45
 
+    -- HEAD IMAGE VARIABLES (SELF)
+    local headImgActive = false
+    local headImgPart = nil
+    local headImgLastId = ""
+    local headImgXOffset = 0
+    local headImgYOffset = 3.5
+    local headImgSize = 4
+
+    -- HEAD IMAGE ON OTHER PLAYERS
+    -- otherHeadImgs = { [player] = { part=Part, id=string } }
+    local otherHeadImgs = {}
+
     -- ==========================================
     -- CHARACTER STABILIZER LOOP
     -- ==========================================
@@ -308,6 +320,61 @@ local function runSyaaHub()
         local camLook = Camera.CFrame.LookVector
         local spawnPos = head.Position + Vector3.new(0, 0.2, 0)
         senterPart.CFrame = CFrame.new(spawnPos, spawnPos + camLook)
+    end)
+
+    -- ==========================================
+    -- HEAD IMAGE SELF - RENDER LOOP (NGIKUTIN KEPALA)
+    -- ==========================================
+    RunService.RenderStepped:Connect(function()
+        if not headImgActive then return end
+        if not headImgPart or not headImgPart.Parent then return end
+        local char = localPlayer.Character
+        if not char then return end
+        local head = char:FindFirstChild("Head")
+        if not head then return end
+
+        -- Pake Head CFrame biar ngikutin semua animasi (emote, lompat, dll)
+        local headCF = head.CFrame
+        -- Arah depan dari kepala tapi flatten Y biar gambar tetap tegak
+        local look = headCF.LookVector
+        local flatLook = Vector3.new(look.X, 0, look.Z)
+        if flatLook.Magnitude < 0.01 then flatLook = Vector3.new(0, 0, -1) end
+        flatLook = flatLook.Unit
+        local right = Vector3.new(flatLook.Z, 0, -flatLook.X)
+
+        -- Posisi: tepat di atas kepala + ikut Y dari Head (bukan HRP)
+        local pos = headCF.Position + Vector3.new(0, headImgYOffset, 0) + right * headImgXOffset
+        headImgPart.CFrame = CFrame.lookAt(pos, pos + flatLook)
+        headImgPart.Size = Vector3.new(headImgSize, headImgSize, 0.05)
+    end)
+
+    -- ==========================================
+    -- HEAD IMAGE OTHER PLAYERS - RENDER LOOP
+    -- ==========================================
+    RunService.RenderStepped:Connect(function()
+        for player, data in pairs(otherHeadImgs) do
+            local part = data.part
+            if not part or not part.Parent then continue end
+            local char = player.Character
+            if not char then
+                part.CFrame = CFrame.new(0, -9999, 0)
+                continue
+            end
+            local head = char:FindFirstChild("Head")
+            if not head then
+                part.CFrame = CFrame.new(0, -9999, 0)
+                continue
+            end
+            local headCF = head.CFrame
+            local look = headCF.LookVector
+            local flatLook = Vector3.new(look.X, 0, look.Z)
+            if flatLook.Magnitude < 0.01 then flatLook = Vector3.new(0, 0, -1) end
+            flatLook = flatLook.Unit
+            local right = Vector3.new(flatLook.Z, 0, -flatLook.X)
+            local pos = headCF.Position + Vector3.new(0, data.yOffset, 0) + right * data.xOffset
+            part.CFrame = CFrame.lookAt(pos, pos + flatLook)
+            part.Size = Vector3.new(data.size, data.size, 0.05)
+        end
     end)
 
     -- ==========================================
@@ -356,6 +423,96 @@ local function runSyaaHub()
             task.wait(0.5)
             createSenter()
         end
+    end)
+
+    -- ==========================================
+    -- HEAD IMAGE SELF - HELPER FUNCTIONS
+    -- ==========================================
+    local function createHeadImg(imgId)
+        if headImgPart then pcall(function() headImgPart:Destroy() end) end
+        headImgPart = Instance.new("Part")
+        headImgPart.Name = "SyaaHeadImage"
+        headImgPart.Size = Vector3.new(headImgSize, headImgSize, 0.05)
+        headImgPart.Anchored = true
+        headImgPart.CanCollide = false
+        headImgPart.Massless = true
+        headImgPart.Transparency = 1
+        headImgPart.CastShadow = false
+        headImgPart.Parent = workspace
+        local dFront = Instance.new("Decal")
+        dFront.Face = Enum.NormalId.Front
+        dFront.Texture = "rbxassetid://" .. imgId
+        dFront.Parent = headImgPart
+        local dBack = Instance.new("Decal")
+        dBack.Face = Enum.NormalId.Back
+        dBack.Texture = "rbxassetid://" .. imgId
+        dBack.Parent = headImgPart
+    end
+
+    local function destroyHeadImg()
+        if headImgPart then
+            pcall(function() headImgPart:Destroy() end)
+            headImgPart = nil
+        end
+    end
+
+    localPlayer.CharacterAdded:Connect(function()
+        if headImgActive and headImgLastId ~= "" then
+            task.wait(0.5)
+            createHeadImg(headImgLastId)
+        end
+    end)
+
+    -- ==========================================
+    -- HEAD IMAGE OTHER PLAYERS - HELPER FUNCTIONS
+    -- ==========================================
+    local function createOtherHeadImg(player, imgId, xOffset, yOffset, size)
+        -- Hapus yang lama kalau ada
+        if otherHeadImgs[player] then
+            pcall(function() otherHeadImgs[player].part:Destroy() end)
+            otherHeadImgs[player] = nil
+        end
+        if not imgId or imgId == "" then return end
+
+        local part = Instance.new("Part")
+        part.Name = "SyaaOtherHeadImg_" .. player.Name
+        part.Size = Vector3.new(size or 4, size or 4, 0.05)
+        part.Anchored = true
+        part.CanCollide = false
+        part.Massless = true
+        part.Transparency = 1
+        part.CastShadow = false
+        part.Parent = workspace
+
+        local dFront = Instance.new("Decal")
+        dFront.Face = Enum.NormalId.Front
+        dFront.Texture = "rbxassetid://" .. imgId
+        dFront.Parent = part
+
+        local dBack = Instance.new("Decal")
+        dBack.Face = Enum.NormalId.Back
+        dBack.Texture = "rbxassetid://" .. imgId
+        dBack.Parent = part
+
+        otherHeadImgs[player] = {
+            part = part,
+            id = imgId,
+            xOffset = xOffset or 0,
+            yOffset = yOffset or 3.5,
+            size = size or 4
+        }
+    end
+
+    local function removeOtherHeadImg(player)
+        if otherHeadImgs[player] then
+            pcall(function() otherHeadImgs[player].part:Destroy() end)
+            otherHeadImgs[player] = nil
+        end
+    end
+
+    -- Cleanup kalau player keluar
+    Players.PlayerRemoving:Connect(function(p)
+        removeOtherHeadImg(p)
     end)
 
     -- ==========================================
@@ -885,9 +1042,6 @@ local function runSyaaHub()
             task.spawn(function() pcall(function() local src = ""; local StarterGui = game:GetService("StarterGui"); pcall(function() src = game:HttpGet("https://yarhm.mhi.im/scr?channel=afemmax", false) end); if src == "" then StarterGui:SetCore("SendNotification", {Title = "YARHM Outage"; Text = "Using YARHM Offline."; Duration = 5;}); src = game:HttpGet("https://raw.githubusercontent.com/Joystickplays/AFEM/refs/heads/main/max/afemmax.lua", false) end; if src ~= "" then loadstring(src)() end end) end) 
         end)
 
-        -- ==========================================
-        -- TOMBOL LOAD VD (BARU)
-        -- ==========================================
         local vdBtn = Instance.new("TextButton")
         vdBtn.Text = "🔫 Load Violence District"
         vdBtn.Size = UDim2.new(0.92, 0, 0, 30)
@@ -1268,11 +1422,11 @@ local function runSyaaHub()
             spyConn = RunService.RenderStepped:Connect(function()
                 if not spyActive then return end
                 if not spyTarget or not spyTarget.Parent then stopSpy(); return end
-                local char = spyTarget.Character
-                if not char then return end
-                local hrp = char:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
-                local targetPos = hrp.Position + Vector3.new(0, spyCamOffset.Y, 0)
+                local tChar = spyTarget.Character
+                if not tChar then return end
+                local tHrp = tChar:FindFirstChild("HumanoidRootPart")
+                if not tHrp then return end
+                local targetPos = tHrp.Position + Vector3.new(0, spyCamOffset.Y, 0)
                 local yawRad = math.rad(spyOrbitYaw)
                 local pitchRad = math.rad(spyOrbitPitch)
                 local dist = spyZoomDist
@@ -1458,6 +1612,379 @@ local function runSyaaHub()
             end
         end)
 
+        -- ==========================================
+        -- HEAD IMAGE AKSESORI (SELF) - UPDATED
+        -- ==========================================
+        makeSepHdr("🖼️ HEAD IMAGE AKSESORI", tY, pTools); tY = tY + 22
+
+        local headIdInput = Instance.new("TextBox")
+        headIdInput.Size = UDim2.new(0.92, 0, 0, 30)
+        headIdInput.Position = UDim2.new(0.04, 0, 0, tY)
+        headIdInput.BackgroundColor3 = Color3.fromRGB(20, 10, 30)
+        headIdInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+        headIdInput.PlaceholderText = "Masukkan Asset ID Gambar..."
+        headIdInput.Font = Enum.Font.GothamBold
+        headIdInput.TextSize = 11
+        headIdInput.ZIndex = 5
+        headIdInput.Parent = pTools
+        Instance.new("UICorner", headIdInput)
+        Instance.new("UIStroke", headIdInput).Color = Color3.fromRGB(0, 100, 230)
+        tY = tY + 36
+
+        local headImgRow, setHeadImgState, getHeadImgState = makeIosRow("Aktifkan Head Image (Diri Sendiri)", tY, pTools); tY = tY + 36
+
+        local headImgStatusLbl = makeLbl("▸ Ngikutin kepala + animasi emote", tY, pTools, 14, Color3.fromRGB(50, 150, 255))
+        headImgStatusLbl.TextWrapped = true
+        tY = tY + 22
+
+        local headXLab = makeLbl("Kanan/Kiri: 0.0", tY, pTools, 14); tY = tY + 16
+        local headXBg = Instance.new("Frame"); headXBg.Size = UDim2.new(0.88, 0, 0, 4); headXBg.Position = UDim2.new(0.06, 0, 0, tY); headXBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); headXBg.ZIndex = 5; headXBg.Parent = pTools; Instance.new("UICorner", headXBg)
+        local headXFill = Instance.new("Frame"); headXFill.Size = UDim2.new(0.5, 0, 1, 0); headXFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); headXFill.BorderSizePixel = 0; headXFill.ZIndex = 6; headXFill.Parent = headXBg; Instance.new("UICorner", headXFill)
+        local headXKnob = Instance.new("TextButton"); headXKnob.Size = UDim2.new(0, 14, 0, 14); headXKnob.Position = UDim2.new(0.5, -7, 0.5, -7); headXKnob.Text = ""; headXKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); headXKnob.ZIndex = 7; headXKnob.Parent = headXBg; Instance.new("UICorner", headXKnob).CornerRadius = UDim.new(1, 0)
+        tY = tY + 18; local headXSld = false
+        headXKnob.MouseButton1Down:Connect(function() headXSld = true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then headXSld = false end end)
+        UserInputService.InputChanged:Connect(function(i)
+            if headXSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X - headXBg.AbsolutePosition.X) / headXBg.AbsoluteSize.X, 0, 1)
+                headXFill.Size = UDim2.new(pos, 0, 1, 0); headXKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                local val = math.floor((pos * 6 - 3) * 10) / 10
+                headXLab.Text = "Kanan/Kiri: " .. val
+                headImgXOffset = val
+            end
+        end)
+
+        local headYLab = makeLbl("Tinggi: 3.5", tY, pTools, 14); tY = tY + 16
+        local headYBg = Instance.new("Frame"); headYBg.Size = UDim2.new(0.88, 0, 0, 4); headYBg.Position = UDim2.new(0.06, 0, 0, tY); headYBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); headYBg.ZIndex = 5; headYBg.Parent = pTools; Instance.new("UICorner", headYBg)
+        local headYFill = Instance.new("Frame"); headYFill.Size = UDim2.new(0.5, 0, 1, 0); headYFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); headYFill.BorderSizePixel = 0; headYFill.ZIndex = 6; headYFill.Parent = headYBg; Instance.new("UICorner", headYFill)
+        local headYKnob = Instance.new("TextButton"); headYKnob.Size = UDim2.new(0, 14, 0, 14); headYKnob.Position = UDim2.new(0.5, -7, 0.5, -7); headYKnob.Text = ""; headYKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); headYKnob.ZIndex = 7; headYKnob.Parent = headYBg; Instance.new("UICorner", headYKnob).CornerRadius = UDim.new(1, 0)
+        tY = tY + 18; local headYSld = false
+        headYKnob.MouseButton1Down:Connect(function() headYSld = true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then headYSld = false end end)
+        UserInputService.InputChanged:Connect(function(i)
+            if headYSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X - headYBg.AbsolutePosition.X) / headYBg.AbsoluteSize.X, 0, 1)
+                headYFill.Size = UDim2.new(pos, 0, 1, 0); headYKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                local val = math.floor((1 + pos * 7) * 10) / 10
+                headYLab.Text = "Tinggi: " .. val
+                headImgYOffset = val
+            end
+        end)
+
+        local headSzLab = makeLbl("Ukuran: 4", tY, pTools, 14); tY = tY + 16
+        local headSzBg = Instance.new("Frame"); headSzBg.Size = UDim2.new(0.88, 0, 0, 4); headSzBg.Position = UDim2.new(0.06, 0, 0, tY); headSzBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); headSzBg.ZIndex = 5; headSzBg.Parent = pTools; Instance.new("UICorner", headSzBg)
+        local headSzFill = Instance.new("Frame"); headSzFill.Size = UDim2.new(2/8, 0, 1, 0); headSzFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); headSzFill.BorderSizePixel = 0; headSzFill.ZIndex = 6; headSzFill.Parent = headSzBg; Instance.new("UICorner", headSzFill)
+        local headSzKnob = Instance.new("TextButton"); headSzKnob.Size = UDim2.new(0, 14, 0, 14); headSzKnob.Position = UDim2.new(2/8, -7, 0.5, -7); headSzKnob.Text = ""; headSzKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); headSzKnob.ZIndex = 7; headSzKnob.Parent = headSzBg; Instance.new("UICorner", headSzKnob).CornerRadius = UDim.new(1, 0)
+        tY = tY + 18; local headSzSld = false
+        headSzKnob.MouseButton1Down:Connect(function() headSzSld = true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then headSzSld = false end end)
+        UserInputService.InputChanged:Connect(function(i)
+            if headSzSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X - headSzBg.AbsolutePosition.X) / headSzBg.AbsoluteSize.X, 0, 1)
+                headSzFill.Size = UDim2.new(pos, 0, 1, 0); headSzKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                local val = math.floor(2 + pos * 8)
+                headSzLab.Text = "Ukuran: " .. val
+                headImgSize = val
+                if headImgPart and headImgPart.Parent then
+                    headImgPart.Size = Vector3.new(headImgSize, headImgSize, 0.05)
+                end
+            end
+        end)
+
+        headImgRow.MouseButton1Click:Connect(function()
+            headImgActive = not headImgActive
+            setHeadImgState(headImgActive)
+            if headImgActive then
+                local idText = headIdInput.Text:gsub("%D", "")
+                if idText == "" then
+                    headImgActive = false
+                    setHeadImgState(false)
+                    headImgStatusLbl.Text = "▸ ❌ ID kosong! Isi ID asset dulu bro"
+                    headImgStatusLbl.TextColor3 = Color3.fromRGB(255, 80, 80)
+                    return
+                end
+                headImgLastId = idText
+                createHeadImg(idText)
+                headImgStatusLbl.Text = "▸ ✅ AKTIF — ngikutin kepala + emote!"
+                headImgStatusLbl.TextColor3 = Color3.fromRGB(0, 200, 100)
+            else
+                destroyHeadImg()
+                headImgStatusLbl.Text = "▸ Ngikutin kepala + animasi emote"
+                headImgStatusLbl.TextColor3 = Color3.fromRGB(50, 150, 255)
+            end
+        end)
+
+        headIdInput.FocusLost:Connect(function()
+            local idText = headIdInput.Text:gsub("%D", "")
+            if idText ~= "" and headImgActive then
+                headImgLastId = idText
+                createHeadImg(idText)
+                headImgStatusLbl.Text = "▸ ✅ AKTIF — ID diperbarui!"
+                headImgStatusLbl.TextColor3 = Color3.fromRGB(0, 200, 100)
+            end
+        end)
+
+        -- ==========================================
+        -- HEAD IMAGE ON OTHER PLAYERS (BARU)
+        -- ==========================================
+        makeSepHdr("👥 PASANG GAMBAR KE PLAYER LAIN", tY, pTools); tY = tY + 22
+
+        local otherImgIdInput = Instance.new("TextBox")
+        otherImgIdInput.Size = UDim2.new(0.92, 0, 0, 30)
+        otherImgIdInput.Position = UDim2.new(0.04, 0, 0, tY)
+        otherImgIdInput.BackgroundColor3 = Color3.fromRGB(20, 10, 30)
+        otherImgIdInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+        otherImgIdInput.PlaceholderText = "ID Gambar buat player lain..."
+        otherImgIdInput.Font = Enum.Font.GothamBold
+        otherImgIdInput.TextSize = 11
+        otherImgIdInput.ZIndex = 5
+        otherImgIdInput.Parent = pTools
+        Instance.new("UICorner", otherImgIdInput)
+        Instance.new("UIStroke", otherImgIdInput).Color = Color3.fromRGB(0, 100, 230)
+        tY = tY + 36
+
+        local otherImgStatusLbl = makeLbl("▸ Pilih player lalu klik Pasang / Copot", tY, pTools, 14, Color3.fromRGB(50, 150, 255))
+        otherImgStatusLbl.TextWrapped = true
+        tY = tY + 22
+
+        -- Slider ukuran buat player lain
+        local otherSzLab = makeLbl("Ukuran Gambar: 4", tY, pTools, 14); tY = tY + 16
+        local otherSzBg = Instance.new("Frame"); otherSzBg.Size = UDim2.new(0.88, 0, 0, 4); otherSzBg.Position = UDim2.new(0.06, 0, 0, tY); otherSzBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); otherSzBg.ZIndex = 5; otherSzBg.Parent = pTools; Instance.new("UICorner", otherSzBg)
+        local otherSzFill = Instance.new("Frame"); otherSzFill.Size = UDim2.new(2/8, 0, 1, 0); otherSzFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); otherSzFill.BorderSizePixel = 0; otherSzFill.ZIndex = 6; otherSzFill.Parent = otherSzBg; Instance.new("UICorner", otherSzFill)
+        local otherSzKnob = Instance.new("TextButton"); otherSzKnob.Size = UDim2.new(0, 14, 0, 14); otherSzKnob.Position = UDim2.new(2/8, -7, 0.5, -7); otherSzKnob.Text = ""; otherSzKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); otherSzKnob.ZIndex = 7; otherSzKnob.Parent = otherSzBg; Instance.new("UICorner", otherSzKnob).CornerRadius = UDim.new(1, 0)
+        tY = tY + 18
+        local otherImgSize = 4
+        local otherSzSld = false
+        otherSzKnob.MouseButton1Down:Connect(function() otherSzSld = true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then otherSzSld = false end end)
+        UserInputService.InputChanged:Connect(function(i)
+            if otherSzSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X - otherSzBg.AbsolutePosition.X) / otherSzBg.AbsoluteSize.X, 0, 1)
+                otherSzFill.Size = UDim2.new(pos, 0, 1, 0); otherSzKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                otherImgSize = math.floor(2 + pos * 8)
+                otherSzLab.Text = "Ukuran Gambar: " .. otherImgSize
+            end
+        end)
+
+        -- Tombol Copot Semua
+        local removeAllBtn = Instance.new("TextButton")
+        removeAllBtn.Text = "🗑️ Copot Semua Gambar"
+        removeAllBtn.Size = UDim2.new(0.92, 0, 0, 28)
+        removeAllBtn.Position = UDim2.new(0.04, 0, 0, tY)
+        removeAllBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
+        removeAllBtn.BackgroundTransparency = 0.4
+        removeAllBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        removeAllBtn.Font = Enum.Font.GothamBold
+        removeAllBtn.TextSize = 10
+        removeAllBtn.ZIndex = 5
+        removeAllBtn.Parent = pTools
+        Instance.new("UICorner", removeAllBtn).CornerRadius = UDim.new(0, 6)
+        tY = tY + 36
+
+        removeAllBtn.MouseButton1Click:Connect(function()
+            for p, _ in pairs(otherHeadImgs) do
+                removeOtherHeadImg(p)
+            end
+            otherImgStatusLbl.Text = "▸ Semua gambar dicopot 🗑️"
+            otherImgStatusLbl.TextColor3 = Color3.fromRGB(200, 200, 200)
+            -- Refresh list buat update warna
+            task.wait(0.1)
+            -- trigger refresh
+        end)
+
+        -- List player lain
+        local otherRefreshBtn = Instance.new("TextButton")
+        otherRefreshBtn.Text = "↺ Refresh Player List"
+        otherRefreshBtn.Size = UDim2.new(0.92, 0, 0, 26)
+        otherRefreshBtn.Position = UDim2.new(0.04, 0, 0, tY)
+        otherRefreshBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 230)
+        otherRefreshBtn.BackgroundTransparency = 0.5
+        otherRefreshBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        otherRefreshBtn.Font = Enum.Font.GothamBold
+        otherRefreshBtn.TextSize = 10
+        otherRefreshBtn.ZIndex = 5
+        otherRefreshBtn.Parent = pTools
+        Instance.new("UICorner", otherRefreshBtn).CornerRadius = UDim.new(0, 6)
+        tY = tY + 32
+
+        local otherPlayerList = Instance.new("ScrollingFrame")
+        otherPlayerList.Size = UDim2.new(0.92, 0, 0, 130)
+        otherPlayerList.Position = UDim2.new(0.04, 0, 0, tY)
+        otherPlayerList.BackgroundColor3 = Color3.fromRGB(5, 10, 25)
+        otherPlayerList.BackgroundTransparency = 0.4
+        otherPlayerList.ZIndex = 5
+        otherPlayerList.Parent = pTools
+        otherPlayerList.ScrollBarThickness = 2
+        otherPlayerList.ScrollBarImageColor3 = Color3.fromRGB(0, 120, 255)
+        otherPlayerList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        otherPlayerList.ScrollingDirection = Enum.ScrollingDirection.Y
+        Instance.new("UICorner", otherPlayerList)
+        Instance.new("UIStroke", otherPlayerList).Color = Color3.fromRGB(0, 100, 230)
+        local otherListLayout = Instance.new("UIListLayout", otherPlayerList)
+        otherListLayout.Padding = UDim.new(0, 3)
+        tY = tY + 140
+
+        local otherPlayerRows = {}
+
+        local function refreshOtherPlayerList()
+            for _, r in pairs(otherPlayerRows) do pcall(function() r:Destroy() end) end
+            otherPlayerRows = {}
+
+            local list = Players:GetPlayers()
+            local others = {}
+            for _, p in ipairs(list) do
+                if p ~= localPlayer then table.insert(others, p) end
+            end
+
+            if #others == 0 then
+                local el = Instance.new("TextLabel")
+                el.Size = UDim2.new(1, 0, 0, 28)
+                el.BackgroundTransparency = 1
+                el.Text = "Cuma lu doang di server 🗿"
+                el.TextColor3 = Color3.fromRGB(100, 100, 100)
+                el.Font = Enum.Font.Gotham
+                el.TextSize = 10
+                el.ZIndex = 6
+                el.Parent = otherPlayerList
+                table.insert(otherPlayerRows, el)
+                return
+            end
+
+            for _, p in ipairs(others) do
+                local hasPasang = (otherHeadImgs[p] ~= nil)
+
+                local row = Instance.new("Frame")
+                row.Size = UDim2.new(1, 0, 0, 44)
+                row.BackgroundColor3 = hasPasang and Color3.fromRGB(0, 80, 30) or Color3.fromRGB(0, 40, 80)
+                row.BackgroundTransparency = 0.4
+                row.ZIndex = 6
+                row.Parent = otherPlayerList
+                Instance.new("UICorner", row)
+                table.insert(otherPlayerRows, row)
+
+                -- Avatar player
+                local ava = Instance.new("ImageLabel")
+                ava.Size = UDim2.new(0, 32, 0, 32)
+                ava.Position = UDim2.new(0, 4, 0.5, -16)
+                ava.BackgroundTransparency = 1
+                ava.ZIndex = 7
+                ava.Parent = row
+                Instance.new("UICorner", ava).CornerRadius = UDim.new(1, 0)
+                task.spawn(function()
+                    pcall(function()
+                        ava.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
+                    end)
+                end)
+
+                -- Nama
+                local nl = Instance.new("TextLabel")
+                nl.Size = UDim2.new(1, -120, 0, 16)
+                nl.Position = UDim2.new(0, 42, 0, 4)
+                nl.BackgroundTransparency = 1
+                nl.Text = p.DisplayName
+                nl.TextColor3 = Color3.fromRGB(255, 255, 255)
+                nl.Font = Enum.Font.GothamBold
+                nl.TextSize = 10
+                nl.TextXAlignment = Enum.TextXAlignment.Left
+                nl.ZIndex = 7
+                nl.Parent = row
+
+                local un = Instance.new("TextLabel")
+                un.Size = UDim2.new(1, -120, 0, 12)
+                un.Position = UDim2.new(0, 42, 0, 20)
+                un.BackgroundTransparency = 1
+                un.Text = "@" .. p.Name
+                un.TextColor3 = Color3.fromRGB(100, 160, 255)
+                un.Font = Enum.Font.Gotham
+                un.TextSize = 9
+                un.TextXAlignment = Enum.TextXAlignment.Left
+                un.ZIndex = 7
+                un.Parent = row
+
+                -- Tombol Pasang
+                local pasangBtn = Instance.new("TextButton")
+                pasangBtn.Size = UDim2.new(0, 48, 0, 18)
+                pasangBtn.Position = UDim2.new(1, -104, 0, 4)
+                pasangBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 60)
+                pasangBtn.BackgroundTransparency = 0.3
+                pasangBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                pasangBtn.Font = Enum.Font.GothamBold
+                pasangBtn.TextSize = 9
+                pasangBtn.Text = "Pasang"
+                pasangBtn.ZIndex = 8
+                pasangBtn.Parent = row
+                Instance.new("UICorner", pasangBtn).CornerRadius = UDim.new(0, 4)
+
+                -- Tombol Copot
+                local copotBtn = Instance.new("TextButton")
+                copotBtn.Size = UDim2.new(0, 48, 0, 18)
+                copotBtn.Position = UDim2.new(1, -52, 0, 4)
+                copotBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+                copotBtn.BackgroundTransparency = 0.3
+                copotBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                copotBtn.Font = Enum.Font.GothamBold
+                copotBtn.TextSize = 9
+                copotBtn.Text = "Copot"
+                copotBtn.ZIndex = 8
+                copotBtn.Parent = row
+                Instance.new("UICorner", copotBtn).CornerRadius = UDim.new(0, 4)
+
+                -- Status badge
+                local statusLbl = Instance.new("TextLabel")
+                statusLbl.Size = UDim2.new(1, -42, 0, 12)
+                statusLbl.Position = UDim2.new(0, 42, 0, 30)
+                statusLbl.BackgroundTransparency = 1
+                statusLbl.Text = hasPasang and ("✅ ID: " .. (otherHeadImgs[p] and string.sub(otherHeadImgs[p].id, 1, 8) or "?")) or "○ Belum dipasang"
+                statusLbl.TextColor3 = hasPasang and Color3.fromRGB(80, 255, 120) or Color3.fromRGB(130, 130, 130)
+                statusLbl.Font = Enum.Font.Gotham
+                statusLbl.TextSize = 9
+                statusLbl.TextXAlignment = Enum.TextXAlignment.Left
+                statusLbl.ZIndex = 7
+                statusLbl.Parent = row
+
+                pasangBtn.MouseButton1Click:Connect(function()
+                    local idText = otherImgIdInput.Text:gsub("%D", "")
+                    if idText == "" then
+                        otherImgStatusLbl.Text = "▸ ❌ Isi ID gambar dulu bro!"
+                        otherImgStatusLbl.TextColor3 = Color3.fromRGB(255, 80, 80)
+                        return
+                    end
+                    createOtherHeadImg(p, idText, 0, 3.5, otherImgSize)
+                    otherImgStatusLbl.Text = "▸ ✅ Gambar dipasang ke " .. p.DisplayName
+                    otherImgStatusLbl.TextColor3 = Color3.fromRGB(0, 200, 100)
+                    -- Update status badge langsung
+                    statusLbl.Text = "✅ ID: " .. string.sub(idText, 1, 8)
+                    statusLbl.TextColor3 = Color3.fromRGB(80, 255, 120)
+                    row.BackgroundColor3 = Color3.fromRGB(0, 80, 30)
+                end)
+
+                copotBtn.MouseButton1Click:Connect(function()
+                    removeOtherHeadImg(p)
+                    otherImgStatusLbl.Text = "▸ Gambar " .. p.DisplayName .. " dicopot"
+                    otherImgStatusLbl.TextColor3 = Color3.fromRGB(200, 200, 200)
+                    statusLbl.Text = "○ Belum dipasang"
+                    statusLbl.TextColor3 = Color3.fromRGB(130, 130, 130)
+                    row.BackgroundColor3 = Color3.fromRGB(0, 40, 80)
+                end)
+            end
+        end
+
+        otherRefreshBtn.MouseButton1Click:Connect(refreshOtherPlayerList)
+        removeAllBtn.MouseButton1Click:Connect(function()
+            for p, _ in pairs(otherHeadImgs) do removeOtherHeadImg(p) end
+            otherImgStatusLbl.Text = "▸ Semua gambar dicopot 🗑️"
+            otherImgStatusLbl.TextColor3 = Color3.fromRGB(200, 200, 200)
+            task.wait(0.1); refreshOtherPlayerList()
+        end)
+
+        Players.PlayerAdded:Connect(function() task.wait(0.5); refreshOtherPlayerList() end)
+        Players.PlayerRemoving:Connect(function(p)
+            removeOtherHeadImg(p)
+            task.wait(0.1); refreshOtherPlayerList()
+        end)
+
+        task.spawn(function() task.wait(1); refreshOtherPlayerList() end)
+
         local tPad = Instance.new("Frame"); tPad.Size = UDim2.new(1,0,0,40); tPad.Position = UDim2.new(0,0,0,tY); tPad.BackgroundTransparency = 1; tPad.Parent = pTools
     end
 
@@ -1498,132 +2025,107 @@ local function runSyaaHub()
         local sLbl = makeLbl("Smoothness: 50", Y, pFC); Y = Y+16
         local sBg = Instance.new("Frame"); sBg.Size = UDim2.new(0.88,0,0,4); sBg.Position = UDim2.new(0.06,0,0,Y); sBg.BackgroundColor3 = Color3.fromRGB(15,25,50); sBg.ZIndex = 5; sBg.Parent = pFC; Instance.new("UICorner",sBg)
         local sFill = Instance.new("Frame"); sFill.Size = UDim2.new(0.5,0,1,0); sFill.BackgroundColor3 = Color3.fromRGB(0,120,255); sFill.BorderSizePixel = 0; sFill.ZIndex = 6; sFill.Parent = sBg; Instance.new("UICorner",sFill)
-        local sBtn = Instance.new("TextButton"); sBtn.Size = UDim2.new(0,14,0,14); sBtn.Position = UDim2.new(0.5,-7,0.5,-7); sBtn.Text = ""; sBtn.BackgroundColor3 = Color3.fromRGB(255,255,255); sBtn.ZIndex = 7; sBtn.Parent = sBg; Instance.new("UICorner",sBtn).CornerRadius = UDim.new(1,0)
-        Y = Y+18; local sSliding = false
-        sBtn.MouseButton1Down:Connect(function() sSliding=true end)
-        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then sSliding=false end end)
-        UserInputService.InputChanged:Connect(function(i) if sSliding and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X-sBg.AbsolutePosition.X)/sBg.AbsoluteSize.X,0,1); sFill.Size = UDim2.new(pos,0,1,0); sBtn.Position = UDim2.new(pos,-7,0.5,-7); smoothValue = math.floor(pos*100); sLbl.Text = "Smoothness: "..smoothValue end end)
-        local spLbl = makeLbl("Speed: 15", Y, pFC); Y = Y+16
-        local spMinus, spPlus = makeBtn2("−","+",Y,pFC); Y = Y+32
-        spMinus.MouseButton1Click:Connect(function() moveSpeed=math.clamp(moveSpeed-5,1,500); spLbl.Text="Speed: "..moveSpeed end)
-        spPlus.MouseButton1Click:Connect(function() moveSpeed=math.clamp(moveSpeed+5,1,500); spLbl.Text="Speed: "..moveSpeed end)
-        makeSepHdr("Auto-Walk", Y, pFC); Y = Y+18
-        local awSpdLab = makeLbl("AW Speed: 10", Y, pFC, 14); Y = Y+16
-        local awFwd, awStop, awBack = makeBtn3("Maju","Stop","Mundur",Y,pFC); Y = Y+32
-        local awSpdD, _awMid, awSpdU = makeBtn3("−","","＋",Y,pFC); Y = Y+32
-        _awMid.BackgroundTransparency = 1
-        local cOff, cOn = Color3.fromRGB(0,100,230), Color3.fromRGB(50,180,255)
-        awFwd.MouseButton1Click:Connect(function() autoWalkActive, autoWalkDirection = true, 1; awFwd.BackgroundColor3, awStop.BackgroundColor3, awBack.BackgroundColor3 = cOn, cOff, cOff end)
-        awStop.MouseButton1Click:Connect(function() autoWalkActive, autoWalkDirection = false, 0; moveInputs.F, moveInputs.B = 0, 0; awFwd.BackgroundColor3, awStop.BackgroundColor3, awBack.BackgroundColor3 = cOff, Color3.fromRGB(50,50,50), cOff end)
-        awBack.MouseButton1Click:Connect(function() autoWalkActive, autoWalkDirection = true, -1; awFwd.BackgroundColor3, awStop.BackgroundColor3, awBack.BackgroundColor3 = cOff, cOff, cOn end)
-        awSpdD.MouseButton1Click:Connect(function() autoWalkSpeed=math.max(autoWalkSpeed-5,1); awSpdLab.Text="AW Speed: "..autoWalkSpeed end)
-        awSpdU.MouseButton1Click:Connect(function() autoWalkSpeed=math.min(autoWalkSpeed+5,200); awSpdLab.Text="AW Speed: "..autoWalkSpeed end)
-        RunService.Heartbeat:Connect(function() if autoWalkActive and autoWalkDirection~=0 then moveInputs.F, moveInputs.B = math.max(0,autoWalkDirection), math.max(0,-autoWalkDirection) end end)
+        local sKnob = Instance.new("TextButton"); sKnob.Size = UDim2.new(0,14,0,14); sKnob.Position = UDim2.new(0.5,-7,0.5,-7); sKnob.Text = ""; sKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); sKnob.ZIndex = 7; sKnob.Parent = sBg; Instance.new("UICorner",sKnob).CornerRadius = UDim.new(1,0)
+        Y = Y+18; local sSld = false
+        sKnob.MouseButton1Down:Connect(function() sSld=true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then sSld=false end end)
+        UserInputService.InputChanged:Connect(function(i) if sSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos=math.clamp((i.Position.X-sBg.AbsolutePosition.X)/sBg.AbsoluteSize.X,0,1); sFill.Size=UDim2.new(pos,0,1,0); sKnob.Position=UDim2.new(pos,-7,0.5,-7); smoothValue=math.floor(pos*100); sLbl.Text="Smoothness: "..smoothValue end end)
 
-        makeSepHdr("SHIFTLOCK SETTINGS", Y, pFC); Y = Y+22
-        local slRow, setSlState, getSlState = makeIosRow("Show Shiftlock", Y, pFC); Y = Y+36
-        slRow.MouseButton1Click:Connect(function() local s = not getSlState(); setSlState(s); shiftlockBtn.Visible = s end)
-        
-        local slSzLab = makeLbl("Icon Size: 85", Y, pFC, 14); Y = Y+16
-        local slSzBg = Instance.new("Frame"); slSzBg.Size = UDim2.new(0.88,0,0,4); slSzBg.Position = UDim2.new(0.06,0,0,Y); slSzBg.BackgroundColor3 = Color3.fromRGB(15,25,50); slSzBg.ZIndex = 5; slSzBg.Parent = pFC; Instance.new("UICorner",slSzBg)
-        local slSzFill = Instance.new("Frame"); slSzFill.Size = UDim2.new((85-30)/120,0,1,0); slSzFill.BackgroundColor3 = Color3.fromRGB(0,120,255); slSzFill.BorderSizePixel = 0; slSzFill.ZIndex = 6; slSzFill.Parent = slSzBg; Instance.new("UICorner",slSzFill)
-        local slSzBtn = Instance.new("TextButton"); slSzBtn.Size = UDim2.new(0,14,0,14); slSzBtn.Position = UDim2.new((85-30)/120,-7,0.5,-7); slSzBtn.Text = ""; slSzBtn.BackgroundColor3 = Color3.fromRGB(255,255,255); slSzBtn.ZIndex = 7; slSzBtn.Parent = slSzBg; Instance.new("UICorner",slSzBtn).CornerRadius = UDim.new(1,0)
-        Y = Y+18; local slSzSld = false
-        slSzBtn.MouseButton1Down:Connect(function() slSzSld=true end)
-        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then slSzSld=false end end)
-        UserInputService.InputChanged:Connect(function(i) if slSzSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X-slSzBg.AbsolutePosition.X)/slSzBg.AbsoluteSize.X,0,1); slSzFill.Size = UDim2.new(pos,0,1,0); slSzBtn.Position = UDim2.new(pos,-7,0.5,-7); local s = math.floor(30+(pos*120)); slSzLab.Text = "Icon Size: "..s; shiftlockBtn.Size = UDim2.new(0,s,0,s) end end)
+        local msLbl = makeLbl("Move Speed: 15", Y, pFC); Y = Y+16
+        local msBg = Instance.new("Frame"); msBg.Size = UDim2.new(0.88,0,0,4); msBg.Position = UDim2.new(0.06,0,0,Y); msBg.BackgroundColor3 = Color3.fromRGB(15,25,50); msBg.ZIndex = 5; msBg.Parent = pFC; Instance.new("UICorner",msBg)
+        local msFill = Instance.new("Frame"); msFill.Size = UDim2.new(0.15,0,1,0); msFill.BackgroundColor3 = Color3.fromRGB(0,120,255); msFill.BorderSizePixel = 0; msFill.ZIndex = 6; msFill.Parent = msBg; Instance.new("UICorner",msFill)
+        local msKnob = Instance.new("TextButton"); msKnob.Size = UDim2.new(0,14,0,14); msKnob.Position = UDim2.new(0.15,-7,0.5,-7); msKnob.Text = ""; msKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); msKnob.ZIndex = 7; msKnob.Parent = msBg; Instance.new("UICorner",msKnob).CornerRadius = UDim.new(1,0)
+        Y = Y+18; local msSld = false
+        msKnob.MouseButton1Down:Connect(function() msSld=true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then msSld=false end end)
+        UserInputService.InputChanged:Connect(function(i) if msSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos=math.clamp((i.Position.X-msBg.AbsolutePosition.X)/msBg.AbsoluteSize.X,0,1); msFill.Size=UDim2.new(pos,0,1,0); msKnob.Position=UDim2.new(pos,-7,0.5,-7); moveSpeed=math.max(1,math.floor(pos*100)); msLbl.Text="Move Speed: "..moveSpeed end end)
 
-        local slXLab = makeLbl("Posisi X: 0.90", Y, pFC, 14); Y = Y+16
-        local slXBg = Instance.new("Frame"); slXBg.Size = UDim2.new(0.88,0,0,4); slXBg.Position = UDim2.new(0.06,0,0,Y); slXBg.BackgroundColor3 = Color3.fromRGB(15,25,50); slXBg.ZIndex = 5; slXBg.Parent = pFC; Instance.new("UICorner",slXBg)
-        local slXFill = Instance.new("Frame"); slXFill.Size = UDim2.new(0.9,0,1,0); slXFill.BackgroundColor3 = Color3.fromRGB(0,120,255); slXFill.BorderSizePixel = 0; slXFill.ZIndex = 6; slXFill.Parent = slXBg; Instance.new("UICorner",slXFill)
-        local slXBtn = Instance.new("TextButton"); slXBtn.Size = UDim2.new(0,14,0,14); slXBtn.Position = UDim2.new(0.9,-7,0.5,-7); slXBtn.Text = ""; slXBtn.BackgroundColor3 = Color3.fromRGB(255,255,255); slXBtn.ZIndex = 7; slXBtn.Parent = slXBg; Instance.new("UICorner",slXBtn).CornerRadius = UDim.new(1,0)
-        Y = Y+18; local slXSld = false
-        slXBtn.MouseButton1Down:Connect(function() slXSld=true end)
-        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then slXSld=false end end)
-        UserInputService.InputChanged:Connect(function(i) if slXSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X-slXBg.AbsolutePosition.X)/slXBg.AbsoluteSize.X,0,1); slXFill.Size = UDim2.new(pos,0,1,0); slXBtn.Position = UDim2.new(pos,-7,0.5,-7); slXLab.Text = string.format("Posisi X: %.2f",pos); shiftlockBtn.Position = UDim2.new(pos,0,shiftlockBtn.Position.Y.Scale,0) end end)
+        local awFwd, awStop, awBack
+        local cOff = Color3.fromRGB(0,100,230)
+        local function setAutoWalkState(dir)
+            autoWalkActive = (dir ~= 0); autoWalkDirection = dir
+            awFwd.BackgroundColor3 = dir==1 and Color3.fromRGB(0,200,100) or cOff
+            awStop.BackgroundColor3 = dir==0 and Color3.fromRGB(50,50,50) or Color3.fromRGB(50,50,50)
+            awBack.BackgroundColor3 = dir==-1 and Color3.fromRGB(200,50,50) or cOff
+        end
+        makeSepHdr("AUTO WALK", Y, pFC); Y = Y+22
+        awFwd = Instance.new("TextButton"); awFwd.Text = "▲ Maju"; awFwd.Size = UDim2.new(0.29,0,0,26); awFwd.Position = UDim2.new(0.04,0,0,Y); awFwd.BackgroundColor3 = cOff; awFwd.BackgroundTransparency = 0.4; awFwd.TextColor3 = Color3.fromRGB(255,255,255); awFwd.Font = Enum.Font.GothamBold; awFwd.TextSize = 10; awFwd.ZIndex = 5; awFwd.Parent = pFC; Instance.new("UICorner",awFwd).CornerRadius = UDim.new(0,6)
+        awStop = Instance.new("TextButton"); awStop.Text = "■ Stop"; awStop.Size = UDim2.new(0.29,0,0,26); awStop.Position = UDim2.new(0.355,0,0,Y); awStop.BackgroundColor3 = Color3.fromRGB(50,50,50); awStop.BackgroundTransparency = 0.4; awStop.TextColor3 = Color3.fromRGB(255,255,255); awStop.Font = Enum.Font.GothamBold; awStop.TextSize = 10; awStop.ZIndex = 5; awStop.Parent = pFC; Instance.new("UICorner",awStop).CornerRadius = UDim.new(0,6)
+        awBack = Instance.new("TextButton"); awBack.Text = "▼ Mundur"; awBack.Size = UDim2.new(0.29,0,0,26); awBack.Position = UDim2.new(0.67,0,0,Y); awBack.BackgroundColor3 = cOff; awBack.BackgroundTransparency = 0.4; awBack.TextColor3 = Color3.fromRGB(255,255,255); awBack.Font = Enum.Font.GothamBold; awBack.TextSize = 10; awBack.ZIndex = 5; awBack.Parent = pFC; Instance.new("UICorner",awBack).CornerRadius = UDim.new(0,6)
+        Y = Y+32
+        awFwd.MouseButton1Click:Connect(function() setAutoWalkState(1) end)
+        awStop.MouseButton1Click:Connect(function() setAutoWalkState(0) end)
+        awBack.MouseButton1Click:Connect(function() setAutoWalkState(-1) end)
+        RunService.Heartbeat:Connect(function(dt)
+            if autoWalkActive and not isFreecamActive then
+                local char = localPlayer.Character; if not char then return end
+                local hrp = char:FindFirstChild("HumanoidRootPart"); if not hrp then return end
+                local look = hrp.CFrame.LookVector; local flatLook = Vector3.new(look.X, 0, look.Z)
+                if flatLook.Magnitude > 0 then
+                    local vel = flatLook.Unit * autoWalkSpeed * autoWalkDirection
+                    hrp.AssemblyLinearVelocity = Vector3.new(vel.X, hrp.AssemblyLinearVelocity.Y, vel.Z)
+                end
+            end
+        end)
 
-        local slYLab = makeLbl("Posisi Y: 0.50", Y, pFC, 14); Y = Y+16
-        local slYBg = Instance.new("Frame"); slYBg.Size = UDim2.new(0.88,0,0,4); slYBg.Position = UDim2.new(0.06,0,0,Y); slYBg.BackgroundColor3 = Color3.fromRGB(15,25,50); slYBg.ZIndex = 5; slYBg.Parent = pFC; Instance.new("UICorner",slYBg)
-        local slYFill = Instance.new("Frame"); slYFill.Size = UDim2.new(0.5,0,1,0); slYFill.BackgroundColor3 = Color3.fromRGB(0,120,255); slYFill.BorderSizePixel = 0; slYFill.ZIndex = 6; slYFill.Parent = slYBg; Instance.new("UICorner",slYFill)
-        local slYBtn = Instance.new("TextButton"); slYBtn.Size = UDim2.new(0,14,0,14); slYBtn.Position = UDim2.new(0.5,-7,0.5,-7); slYBtn.Text = ""; slYBtn.BackgroundColor3 = Color3.fromRGB(255,255,255); slYBtn.ZIndex = 7; slYBtn.Parent = slYBg; Instance.new("UICorner",slYBtn).CornerRadius = UDim.new(1,0)
-        Y = Y+18; local slYSld = false
-        slYBtn.MouseButton1Down:Connect(function() slYSld=true end)
-        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then slYSld=false end end)
-        UserInputService.InputChanged:Connect(function(i) if slYSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X-slYBg.AbsolutePosition.X)/slYBg.AbsoluteSize.X,0,1); slYFill.Size = UDim2.new(pos,0,1,0); slYBtn.Position = UDim2.new(pos,-7,0.5,-7); slYLab.Text = string.format("Posisi Y: %.2f",pos); shiftlockBtn.Position = UDim2.new(shiftlockBtn.Position.X.Scale,0,pos,0) end end)
+        local awsLbl = makeLbl("Auto Walk Speed: 10", Y, pFC, 14); Y = Y+16
+        local awsBg = Instance.new("Frame"); awsBg.Size = UDim2.new(0.88,0,0,4); awsBg.Position = UDim2.new(0.06,0,0,Y); awsBg.BackgroundColor3 = Color3.fromRGB(15,25,50); awsBg.ZIndex = 5; awsBg.Parent = pFC; Instance.new("UICorner",awsBg)
+        local awsFill = Instance.new("Frame"); awsFill.Size = UDim2.new(10/60,0,1,0); awsFill.BackgroundColor3 = Color3.fromRGB(0,120,255); awsFill.BorderSizePixel = 0; awsFill.ZIndex = 6; awsFill.Parent = awsBg; Instance.new("UICorner",awsFill)
+        local awsKnob = Instance.new("TextButton"); awsKnob.Size = UDim2.new(0,14,0,14); awsKnob.Position = UDim2.new(10/60,-7,0.5,-7); awsKnob.Text = ""; awsKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); awsKnob.ZIndex = 7; awsKnob.Parent = awsBg; Instance.new("UICorner",awsKnob).CornerRadius = UDim.new(1,0)
+        Y = Y+18; local awsSld = false
+        awsKnob.MouseButton1Down:Connect(function() awsSld=true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then awsSld=false end end)
+        UserInputService.InputChanged:Connect(function(i) if awsSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos=math.clamp((i.Position.X-awsBg.AbsolutePosition.X)/awsBg.AbsoluteSize.X,0,1); awsFill.Size=UDim2.new(pos,0,1,0); awsKnob.Position=UDim2.new(pos,-7,0.5,-7); autoWalkSpeed=math.max(1,math.floor(pos*60)); awsLbl.Text="Auto Walk Speed: "..autoWalkSpeed end end)
 
-        makeSepHdr("CUSTOM JUMP BUTTON", Y, pFC); Y = Y + 22
-
-        local jumpRow, setJumpState, getJumpState = makeIosRow("Aktifkan Custom Jump", Y, pFC); Y = Y + 36
-
+        makeSepHdr("CUSTOM JUMP BUTTON", Y, pFC); Y = Y+22
+        local jumpRow, setJumpState, getJumpState = makeIosRow("Custom Jump Button", Y, pFC); Y = Y+36
+        local jumpXLab = makeLbl("Posisi X: 85%", Y, pFC, 14); Y = Y+16
+        local jxBg = Instance.new("Frame"); jxBg.Size = UDim2.new(0.88,0,0,4); jxBg.Position = UDim2.new(0.06,0,0,Y); jxBg.BackgroundColor3 = Color3.fromRGB(15,25,50); jxBg.ZIndex = 5; jxBg.Parent = pFC; Instance.new("UICorner",jxBg)
+        local jxFill = Instance.new("Frame"); jxFill.Size = UDim2.new(0.85,0,1,0); jxFill.BackgroundColor3 = Color3.fromRGB(0,120,255); jxFill.BorderSizePixel = 0; jxFill.ZIndex = 6; jxFill.Parent = jxBg; Instance.new("UICorner",jxFill)
+        local jxKnob = Instance.new("TextButton"); jxKnob.Size = UDim2.new(0,14,0,14); jxKnob.Position = UDim2.new(0.85,-7,0.5,-7); jxKnob.Text = ""; jxKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); jxKnob.ZIndex = 7; jxKnob.Parent = jxBg; Instance.new("UICorner",jxKnob).CornerRadius = UDim.new(1,0)
+        Y = Y+18; local jxSld = false
+        jxKnob.MouseButton1Down:Connect(function() jxSld=true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then jxSld=false end end)
+        UserInputService.InputChanged:Connect(function(i) if jxSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos=math.clamp((i.Position.X-jxBg.AbsolutePosition.X)/jxBg.AbsoluteSize.X,0,1); jxFill.Size=UDim2.new(pos,0,1,0); jxKnob.Position=UDim2.new(pos,-7,0.5,-7); customJumpX=pos; jumpXLab.Text="Posisi X: "..math.floor(pos*100).."%"; updateJumpBtn() end end)
+        local jumpYLab = makeLbl("Posisi Y: 75%", Y, pFC, 14); Y = Y+16
+        local jyBg = Instance.new("Frame"); jyBg.Size = UDim2.new(0.88,0,0,4); jyBg.Position = UDim2.new(0.06,0,0,Y); jyBg.BackgroundColor3 = Color3.fromRGB(15,25,50); jyBg.ZIndex = 5; jyBg.Parent = pFC; Instance.new("UICorner",jyBg)
+        local jyFill = Instance.new("Frame"); jyFill.Size = UDim2.new(0.75,0,1,0); jyFill.BackgroundColor3 = Color3.fromRGB(0,120,255); jyFill.BorderSizePixel = 0; jyFill.ZIndex = 6; jyFill.Parent = jyBg; Instance.new("UICorner",jyFill)
+        local jyKnob = Instance.new("TextButton"); jyKnob.Size = UDim2.new(0,14,0,14); jyKnob.Position = UDim2.new(0.75,-7,0.5,-7); jyKnob.Text = ""; jyKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); jyKnob.ZIndex = 7; jyKnob.Parent = jyBg; Instance.new("UICorner",jyKnob).CornerRadius = UDim.new(1,0)
+        Y = Y+18; local jySld = false
+        jyKnob.MouseButton1Down:Connect(function() jySld=true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then jySld=false end end)
+        UserInputService.InputChanged:Connect(function(i) if jySld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos=math.clamp((i.Position.X-jyBg.AbsolutePosition.X)/jyBg.AbsoluteSize.X,0,1); jyFill.Size=UDim2.new(pos,0,1,0); jyKnob.Position=UDim2.new(pos,-7,0.5,-7); customJumpY=pos; jumpYLab.Text="Posisi Y: "..math.floor(pos*100).."%"; updateJumpBtn() end end)
+        local jumpSzLab = makeLbl("Ukuran: 80", Y, pFC, 14); Y = Y+16
+        local jszBg = Instance.new("Frame"); jszBg.Size = UDim2.new(0.88,0,0,4); jszBg.Position = UDim2.new(0.06,0,0,Y); jszBg.BackgroundColor3 = Color3.fromRGB(15,25,50); jszBg.ZIndex = 5; jszBg.Parent = pFC; Instance.new("UICorner",jszBg)
+        local jszFill = Instance.new("Frame"); jszFill.Size = UDim2.new(80/200,0,1,0); jszFill.BackgroundColor3 = Color3.fromRGB(0,120,255); jszFill.BorderSizePixel = 0; jszFill.ZIndex = 6; jszFill.Parent = jszBg; Instance.new("UICorner",jszFill)
+        local jszKnob = Instance.new("TextButton"); jszKnob.Size = UDim2.new(0,14,0,14); jszKnob.Position = UDim2.new(80/200,-7,0.5,-7); jszKnob.Text = ""; jszKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); jszKnob.ZIndex = 7; jszKnob.Parent = jszBg; Instance.new("UICorner",jszKnob).CornerRadius = UDim.new(1,0)
+        Y = Y+18; local jszSld = false
+        jszKnob.MouseButton1Down:Connect(function() jszSld=true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then jszSld=false end end)
+        UserInputService.InputChanged:Connect(function(i) if jszSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos=math.clamp((i.Position.X-jszBg.AbsolutePosition.X)/jszBg.AbsoluteSize.X,0,1); jszFill.Size=UDim2.new(pos,0,1,0); jszKnob.Position=UDim2.new(pos,-7,0.5,-7); customJumpSize=math.max(40,math.floor(pos*200)); jumpSzLab.Text="Ukuran: "..customJumpSize; updateJumpBtn() end end)
         jumpRow.MouseButton1Click:Connect(function()
-            customJumpActive = not customJumpActive
-            setJumpState(customJumpActive)
+            customJumpActive = not customJumpActive; setJumpState(customJumpActive)
             jumpContainer.Visible = customJumpActive
-            hideOriginalJump(customJumpActive)
-            if customJumpActive then
-                task.spawn(function()
-                    for _ = 1, 10 do
-                        task.wait(0.5)
-                        hideOriginalJump(true)
-                    end
-                end)
-            end
+            if customJumpActive then hideOriginalJump(true) else hideOriginalJump(false) end
         end)
 
-        local jSzLab = makeLbl("Ukuran: 80", Y, pFC, 14); Y = Y + 16
-        local jSzBg = Instance.new("Frame"); jSzBg.Size = UDim2.new(0.88, 0, 0, 4); jSzBg.Position = UDim2.new(0.06, 0, 0, Y); jSzBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); jSzBg.ZIndex = 5; jSzBg.Parent = pFC; Instance.new("UICorner", jSzBg)
-        local jSzFill = Instance.new("Frame"); jSzFill.Size = UDim2.new((80-40)/160, 0, 1, 0); jSzFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); jSzFill.BorderSizePixel = 0; jSzFill.ZIndex = 6; jSzFill.Parent = jSzBg; Instance.new("UICorner", jSzFill)
-        local jSzKnob = Instance.new("TextButton"); jSzKnob.Size = UDim2.new(0, 14, 0, 14); jSzKnob.Position = UDim2.new((80-40)/160, -7, 0.5, -7); jSzKnob.Text = ""; jSzKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); jSzKnob.ZIndex = 7; jSzKnob.Parent = jSzBg; Instance.new("UICorner", jSzKnob).CornerRadius = UDim.new(1, 0)
-        Y = Y + 18; local jSzSld = false
-        jSzKnob.MouseButton1Down:Connect(function() jSzSld = true end)
-        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then jSzSld = false end end)
-        UserInputService.InputChanged:Connect(function(i) if jSzSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X - jSzBg.AbsolutePosition.X) / jSzBg.AbsoluteSize.X, 0, 1); jSzFill.Size = UDim2.new(pos, 0, 1, 0); jSzKnob.Position = UDim2.new(pos, -7, 0.5, -7); customJumpSize = math.floor(40 + pos * 160); jSzLab.Text = "Ukuran: " .. customJumpSize; updateJumpBtn() end end)
-
-        local jXLab = makeLbl("Posisi X: 0.85", Y, pFC, 14); Y = Y + 16
-        local jXBg = Instance.new("Frame"); jXBg.Size = UDim2.new(0.88, 0, 0, 4); jXBg.Position = UDim2.new(0.06, 0, 0, Y); jXBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); jXBg.ZIndex = 5; jXBg.Parent = pFC; Instance.new("UICorner", jXBg)
-        local jXFill = Instance.new("Frame"); jXFill.Size = UDim2.new(0.85, 0, 1, 0); jXFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); jXFill.BorderSizePixel = 0; jXFill.ZIndex = 6; jXFill.Parent = jXBg; Instance.new("UICorner", jXFill)
-        local jXKnob = Instance.new("TextButton"); jXKnob.Size = UDim2.new(0, 14, 0, 14); jXKnob.Position = UDim2.new(0.85, -7, 0.5, -7); jXKnob.Text = ""; jXKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); jXKnob.ZIndex = 7; jXKnob.Parent = jXBg; Instance.new("UICorner", jXKnob).CornerRadius = UDim.new(1, 0)
-        Y = Y + 18; local jXSld = false
-        jXKnob.MouseButton1Down:Connect(function() jXSld = true end)
-        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then jXSld = false end end)
-        UserInputService.InputChanged:Connect(function(i) if jXSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X - jXBg.AbsolutePosition.X) / jXBg.AbsoluteSize.X, 0, 1); jXFill.Size = UDim2.new(pos, 0, 1, 0); jXKnob.Position = UDim2.new(pos, -7, 0.5, -7); customJumpX = pos; jXLab.Text = string.format("Posisi X: %.2f", pos); updateJumpBtn() end end)
-
-        local jYLab = makeLbl("Posisi Y: 0.75", Y, pFC, 14); Y = Y + 16
-        local jYBg = Instance.new("Frame"); jYBg.Size = UDim2.new(0.88, 0, 0, 4); jYBg.Position = UDim2.new(0.06, 0, 0, Y); jYBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); jYBg.ZIndex = 5; jYBg.Parent = pFC; Instance.new("UICorner", jYBg)
-        local jYFill = Instance.new("Frame"); jYFill.Size = UDim2.new(0.75, 0, 1, 0); jYFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); jYFill.BorderSizePixel = 0; jYFill.ZIndex = 6; jYFill.Parent = jYBg; Instance.new("UICorner", jYFill)
-        local jYKnob = Instance.new("TextButton"); jYKnob.Size = UDim2.new(0, 14, 0, 14); jYKnob.Position = UDim2.new(0.75, -7, 0.5, -7); jYKnob.Text = ""; jYKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); jYKnob.ZIndex = 7; jYKnob.Parent = jYBg; Instance.new("UICorner", jYKnob).CornerRadius = UDim.new(1, 0)
-        Y = Y + 18; local jYSld = false
-        jYKnob.MouseButton1Down:Connect(function() jYSld = true end)
-        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then jYSld = false end end)
-        UserInputService.InputChanged:Connect(function(i) if jYSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local pos = math.clamp((i.Position.X - jYBg.AbsolutePosition.X) / jYBg.AbsoluteSize.X, 0, 1); jYFill.Size = UDim2.new(pos, 0, 1, 0); jYKnob.Position = UDim2.new(pos, -7, 0.5, -7); customJumpY = pos; jYLab.Text = string.format("Posisi Y: %.2f", pos); updateJumpBtn() end end)
-
-        makeSepHdr("STABILIZER (Kamera + Karakter)", Y, pFC); Y = Y + 22
-
-        local stabRow, setStabState, getStabState = makeIosRow("Aktifkan Stabilizer", Y, pFC); Y = Y + 36
-        local stabInfoLbl = makeLbl("▸ Stabil saat lompat di tangga/obstacle", Y, pFC, 14, Color3.fromRGB(50, 150, 255)); Y = Y + 18
-
-        local charStabLab = makeLbl("Redam Karakter: 85%", Y, pFC, 14); Y = Y + 16
-        local cStabBg = Instance.new("Frame"); cStabBg.Size = UDim2.new(0.88, 0, 0, 4); cStabBg.Position = UDim2.new(0.06, 0, 0, Y); cStabBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); cStabBg.ZIndex = 5; cStabBg.Parent = pFC; Instance.new("UICorner", cStabBg)
-        local cStabFill = Instance.new("Frame"); cStabFill.Size = UDim2.new(0.85, 0, 1, 0); cStabFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); cStabFill.BorderSizePixel = 0; cStabFill.ZIndex = 6; cStabFill.Parent = cStabBg; Instance.new("UICorner", cStabFill)
-        local cStabKnob = Instance.new("TextButton"); cStabKnob.Size = UDim2.new(0, 14, 0, 14); cStabKnob.Position = UDim2.new(0.85, -7, 0.5, -7); cStabKnob.Text = ""; cStabKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); cStabKnob.ZIndex = 7; cStabKnob.Parent = cStabBg; Instance.new("UICorner", cStabKnob).CornerRadius = UDim.new(1, 0)
-        Y = Y + 18; local cStabSld = false
-        cStabKnob.MouseButton1Down:Connect(function() cStabSld = true end)
-        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then cStabSld = false end end)
-        UserInputService.InputChanged:Connect(function(i)
-            if cStabSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-                local pos = math.clamp((i.Position.X - cStabBg.AbsolutePosition.X) / cStabBg.AbsoluteSize.X, 0, 1)
-                cStabFill.Size = UDim2.new(pos, 0, 1, 0)
-                cStabKnob.Position = UDim2.new(pos, -7, 0.5, -7)
-                CHAR_STAB_STRENGTH = pos * 0.97
-                charStabLab.Text = "Redam Karakter: " .. math.floor(pos * 97) .. "%"
-            end
+        local slRow, setSlState, getSlState = makeIosRow("Shiftlock", Y, pFC); Y = Y+36
+        slRow.MouseButton1Click:Connect(function()
+            isShiftlockActive = not isShiftlockActive; setSlState(isShiftlockActive)
+            shiftlockBtn.Visible = isShiftlockActive
+            if isShiftlockActive then shiftlockBtn.ImageColor3 = Color3.fromRGB(0,170,255); applyShiftlock()
+            else shiftlockBtn.ImageColor3 = Color3.fromRGB(255,255,255); disableShiftlock() end
         end)
 
-        local stabStrLab = makeLbl("Kecepatan Return Kamera: 15%", Y, pFC, 14); Y = Y + 16
-        local stabStrBg = Instance.new("Frame"); stabStrBg.Size = UDim2.new(0.88, 0, 0, 4); stabStrBg.Position = UDim2.new(0.06, 0, 0, Y); stabStrBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); stabStrBg.ZIndex = 5; stabStrBg.Parent = pFC; Instance.new("UICorner", stabStrBg)
-        local stabStrFill = Instance.new("Frame"); stabStrFill.Size = UDim2.new(0.15, 0, 1, 0); stabStrFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); stabStrFill.BorderSizePixel = 0; stabStrFill.ZIndex = 6; stabStrFill.Parent = stabStrBg; Instance.new("UICorner", stabStrFill)
-        local stabStrKnob = Instance.new("TextButton"); stabStrKnob.Size = UDim2.new(0, 14, 0, 14); stabStrKnob.Position = UDim2.new(0.15, -7, 0.5, -7); stabStrKnob.Text = ""; stabStrKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); stabStrKnob.ZIndex = 7; stabStrKnob.Parent = stabStrBg; Instance.new("UICorner", stabStrKnob).CornerRadius = UDim.new(1, 0)
-        Y = Y + 18; local stabStrSld = false
+        makeSepHdr("STABILIZER KAMERA + KARAKTER", Y, pFC); Y = Y+22
+        local stabRow, setStabState, getStabState = makeIosRow("Stabilizer", Y, pFC); Y = Y+36
+        local stabInfoLbl = makeLbl("▸ Stabil saat lompat di tangga/obstacle", Y, pFC, 14, Color3.fromRGB(50, 150, 255)); Y = Y+20
+
+        local stabStrLab = makeLbl("Stabilizer Strength: 0.15", Y, pFC, 14); Y = Y+16
+        local stabStrBg = Instance.new("Frame"); stabStrBg.Size = UDim2.new(0.88,0,0,4); stabStrBg.Position = UDim2.new(0.06,0,0,Y); stabStrBg.BackgroundColor3 = Color3.fromRGB(15,25,50); stabStrBg.ZIndex = 5; stabStrBg.Parent = pFC; Instance.new("UICorner",stabStrBg)
+        local stabStrFill = Instance.new("Frame"); stabStrFill.Size = UDim2.new(0.15,0,1,0); stabStrFill.BackgroundColor3 = Color3.fromRGB(0,120,255); stabStrFill.BorderSizePixel = 0; stabStrFill.ZIndex = 6; stabStrFill.Parent = stabStrBg; Instance.new("UICorner",stabStrFill)
+        local stabStrKnob = Instance.new("TextButton"); stabStrKnob.Size = UDim2.new(0,14,0,14); stabStrKnob.Position = UDim2.new(0.15,-7,0.5,-7); stabStrKnob.Text = ""; stabStrKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); stabStrKnob.ZIndex = 7; stabStrKnob.Parent = stabStrBg; Instance.new("UICorner",stabStrKnob).CornerRadius = UDim.new(1,0)
+        Y = Y+18; local stabStrSld = false
         stabStrKnob.MouseButton1Down:Connect(function() stabStrSld = true end)
         UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then stabStrSld = false end end)
         UserInputService.InputChanged:Connect(function(i)
@@ -1631,15 +2133,16 @@ local function runSyaaHub()
                 local pos = math.clamp((i.Position.X - stabStrBg.AbsolutePosition.X) / stabStrBg.AbsoluteSize.X, 0, 1)
                 stabStrFill.Size = UDim2.new(pos, 0, 1, 0)
                 stabStrKnob.Position = UDim2.new(pos, -7, 0.5, -7)
-                STAB_STRENGTH = math.clamp(pos, 0.01, 1)
-                stabStrLab.Text = "Kecepatan Return Kamera: " .. math.floor(pos * 100) .. "%"
+                local val = math.floor(pos * 100) / 100
+                stabStrLab.Text = "Stabilizer Strength: " .. val
+                STAB_STRENGTH = val
             end
         end)
 
-        local stabDelayLab = makeLbl("Delay Return: 0.8s", Y, pFC, 14); Y = Y + 16
-        local stabDelayBg = Instance.new("Frame"); stabDelayBg.Size = UDim2.new(0.88, 0, 0, 4); stabDelayBg.Position = UDim2.new(0.06, 0, 0, Y); stabDelayBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); stabDelayBg.ZIndex = 5; stabDelayBg.Parent = pFC; Instance.new("UICorner", stabDelayBg)
-        local stabDelayFill = Instance.new("Frame"); stabDelayFill.Size = UDim2.new(0.16, 0, 1, 0); stabDelayFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); stabDelayFill.BorderSizePixel = 0; stabDelayFill.ZIndex = 6; stabDelayFill.Parent = stabDelayBg; Instance.new("UICorner", stabDelayFill)
-        local stabDelayKnob = Instance.new("TextButton"); stabDelayKnob.Size = UDim2.new(0, 14, 0, 14); stabDelayKnob.Position = UDim2.new(0.16, -7, 0.5, -7); stabDelayKnob.Text = ""; stabDelayKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); stabDelayKnob.ZIndex = 7; stabDelayKnob.Parent = stabDelayBg; Instance.new("UICorner", stabDelayKnob).CornerRadius = UDim.new(1, 0)
+        local stabDelayLab = makeLbl("Delay Return: 0.8s", Y, pFC, 14); Y = Y+16
+        local stabDelayBg = Instance.new("Frame"); stabDelayBg.Size = UDim2.new(0.88,0,0,4); stabDelayBg.Position = UDim2.new(0.06,0,0,Y); stabDelayBg.BackgroundColor3 = Color3.fromRGB(15,25,50); stabDelayBg.ZIndex = 5; stabDelayBg.Parent = pFC; Instance.new("UICorner",stabDelayBg)
+        local stabDelayFill = Instance.new("Frame"); stabDelayFill.Size = UDim2.new(0.8/5,0,1,0); stabDelayFill.BackgroundColor3 = Color3.fromRGB(0,120,255); stabDelayFill.BorderSizePixel = 0; stabDelayFill.ZIndex = 6; stabDelayFill.Parent = stabDelayBg; Instance.new("UICorner",stabDelayFill)
+        local stabDelayKnob = Instance.new("TextButton"); stabDelayKnob.Size = UDim2.new(0,14,0,14); stabDelayKnob.Position = UDim2.new(0.8/5,-7,0.5,-7); stabDelayKnob.Text = ""; stabDelayKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); stabDelayKnob.ZIndex = 7; stabDelayKnob.Parent = stabDelayBg; Instance.new("UICorner",stabDelayKnob).CornerRadius = UDim.new(1,0)
         Y = Y + 18; local stabDelaySld = false
         stabDelayKnob.MouseButton1Down:Connect(function() stabDelaySld = true end)
         UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then stabDelaySld = false end end)
