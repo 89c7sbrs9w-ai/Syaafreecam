@@ -87,7 +87,7 @@ local function startLoading(callback)
             TweenService:Create(barFill,TweenInfo.new(0.3),{Size=UDim2.new(progress/100,0,1,0)}):Play(); percentLabel.Text = progress.."%"
             task.wait(math.random(1,3)/10)
         end
-        pLabel.Text = "Selesai 🗿"; task.wait(0.5)
+        pLabel.Text = "Selesai"; task.wait(0.5)
         local closeTween = TweenService:Create(loadBG,TweenInfo.new(0.6,Enum.EasingStyle.Quart,Enum.EasingDirection.InOut),{BackgroundTransparency=1,Size=UDim2.new(0,100,0,50),Position=UDim2.new(0.5,-50,0.5,-25)})
         TweenService:Create(strokeL,TweenInfo.new(0.5),{Transparency=1}):Play()
         TweenService:Create(titleL,TweenInfo.new(0.3),{ImageTransparency=1}):Play()
@@ -113,7 +113,7 @@ local function startLoading(callback)
             iconLbl.Font = Enum.Font.GothamBold; iconLbl.ZIndex = 5; iconLbl.Parent = updFrame
 
             local updTitle = Instance.new("TextLabel")
-            updTitle.Text = "SYAA HUB V8.0"; updTitle.Size = UDim2.new(1, -55, 0, 22)
+            updTitle.Text = "SYAA HUB V9.1"; updTitle.Size = UDim2.new(1, -55, 0, 22)
             updTitle.Position = UDim2.new(0, 55, 0, 10)
             updTitle.BackgroundTransparency = 1; updTitle.TextColor3 = Color3.fromRGB(0, 185, 255)
             updTitle.Font = Enum.Font.GothamBold; updTitle.TextSize = 13
@@ -1066,7 +1066,7 @@ local function runSyaaHub()
         local hY = 2
         makeSepHdr("INFO SCRIPT", hY, pHome); hY = hY + 22
         
-        local infoText = makeLbl("Syaa Hub V8.0\nIni adalah Script Multi-Fungsi yang khusus dikembangkan oleh Syaa untuk mempermudah gameplay lu broo 🗿.", hY, pHome, 40, Color3.fromRGB(200, 200, 200))
+        local infoText = makeLbl("Syaa Hub V9.1\nIni adalah Script Multi-Fungsi yang khusus dikembangkan oleh Syaa gunakan dengan bijak,jika ada error lapor ke contac di bawah", hY, pHome, 40, Color3.fromRGB(200, 200, 200))
         infoText.TextWrapped = true; infoText.TextYAlignment = Enum.TextYAlignment.Top
         hY = hY + 46
 
