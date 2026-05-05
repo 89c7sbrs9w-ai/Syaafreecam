@@ -144,7 +144,7 @@ local function runSyaaHub()
     openIcon.Size = UDim2.new(0, 0, 0, 0)
     openIcon.Position = UDim2.new(0, 30, 0.5, -32.5)
     openIcon.BackgroundTransparency = 1
-    openIcon.Image = "rbxassetid://87411882585742"
+    openIcon.Image = "rbxassetid://126841164963744"
     openIcon.ImageColor3 = Color3.fromRGB(0, 155, 255)
     openIcon.Visible = true 
     openIcon.Parent = screenGui
