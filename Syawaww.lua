@@ -78,7 +78,7 @@ local function startLoading(callback)
     local percentLabel = Instance.new("TextLabel"); percentLabel.Text = "0%"; percentLabel.Size = UDim2.new(1,0,0,20); percentLabel.Position = UDim2.new(0,0,0,60); percentLabel.TextColor3 = Color3.fromRGB(50,155,255); percentLabel.Font = Enum.Font.Code; percentLabel.TextSize = 13; percentLabel.BackgroundTransparency = 1; percentLabel.ZIndex = 5; percentLabel.Parent = loadBG
     local barOutline = Instance.new("Frame"); barOutline.Size = UDim2.new(0.7,0,0,4); barOutline.Position = UDim2.new(0.15,0,0,85); barOutline.BackgroundColor3 = Color3.fromRGB(20,20,20); barOutline.ZIndex = 5; barOutline.Parent = loadBG; Instance.new("UICorner",barOutline)
     local barFill = Instance.new("Frame"); barFill.Size = UDim2.new(0,0,1,0); barFill.BackgroundColor3 = Color3.fromRGB(0,155,255); barFill.BorderSizePixel = 0; barFill.ZIndex = 6; barFill.Parent = barOutline; Instance.new("UICorner",barFill)
-    local pLabel = Instance.new("TextLabel"); pLabel.Text = "Menyiapkan UI Syaa..."; pLabel.Size = UDim2.new(1,0,0,25); pLabel.Position = UDim2.new(0,0,0,100); pLabel.TextColor3 = Color3.fromRGB(255,255,255); pLabel.Font = Enum.Font.GothamBold; pLabel.TextSize = 10; pLabel.BackgroundTransparency = 1; pLabel.ZIndex = 5; pLabel.Parent = loadBG
+    local pLabel = Instance.new("TextLabel"); pLabel.Text = "Menyiapkan UI..."; pLabel.Size = UDim2.new(1,0,0,25); pLabel.Position = UDim2.new(0,0,0,100); pLabel.TextColor3 = Color3.fromRGB(255,255,255); pLabel.Font = Enum.Font.GothamBold; pLabel.TextSize = 10; pLabel.BackgroundTransparency = 1; pLabel.ZIndex = 5; pLabel.Parent = loadBG
     
     task.spawn(function()
         local progress = 0
@@ -145,21 +145,13 @@ local function runSyaaHub()
     openIcon.Position = UDim2.new(0, 30, 0.5, -32.5)
     openIcon.BackgroundTransparency = 1
     openIcon.Image = "rbxassetid://126841164963744"
-    openIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
     openIcon.Visible = true 
     openIcon.Parent = screenGui
 
-    TweenService:Create(openIcon, TweenInfo.new(0.5, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), {Size = UDim2.new(0, 65, 0, 65)}):Play()
+    TweenService:Create(openIcon, TweenInfo.new(0.5, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), {Size = UDim2.new(0, 79, 0, 79)}):Play()
 
-    local rainbowColor = Color3.fromRGB(0,155,255)
-    task.spawn(function()
-        while true do 
-            local hue=tick()%5/5; rainbowColor=Color3.fromHSV(hue,0.8,1)
-            openIcon.ImageColor3 = rainbowColor
-            task.wait() 
-        end
-    end)
-
+    local rainbowColor = Color3.fromRGB(255,255,255)
+    
     local dragIcon, dragInputIcon, dragStartIcon, startPosIcon
     openIcon.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -871,7 +863,7 @@ local function runSyaaHub()
             tw:Play()
             tw.Completed:Connect(function()
                 mainFrame.Visible = false; openIcon.Visible = true; openIcon.Size = UDim2.new(0, 0, 0, 0)
-                TweenService:Create(openIcon, TweenInfo.new(0.5, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), {Size = UDim2.new(0, 65, 0, 65)}):Play()
+                TweenService:Create(openIcon, TweenInfo.new(0.5, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), {Size = UDim2.new(0, 79, 0, 79)}):Play()
             end)
         end
     end
