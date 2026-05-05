@@ -120,7 +120,7 @@ local function startLoading(callback)
             updTitle.TextXAlignment = Enum.TextXAlignment.Left; updTitle.ZIndex = 5; updTitle.Parent = updFrame
 
             local updDesc = Instance.new("TextLabel")
-            updDesc.Text = "Stabilizer + Senter + Mode Good 🔦🛡️🚀"; updDesc.Size = UDim2.new(1, -60, 0, 28)
+            updDesc.Text = "fitur baru Mode Good🛡️"; updDesc.Size = UDim2.new(1, -60, 0, 28)
             updDesc.Position = UDim2.new(0, 55, 0, 34)
             updDesc.BackgroundTransparency = 1; updDesc.TextColor3 = Color3.fromRGB(200, 200, 200)
             updDesc.Font = Enum.Font.Gotham; updDesc.TextSize = 10
