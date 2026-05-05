@@ -34,7 +34,7 @@ end)
 local BG_ASSET = "rbxassetid://97700878005683"
 
 local function applyBg(frame, radius, overlayTransparency)
-    frame.BackgroundTransparency = 1
+    frame.BackgroundTransparency = 5
     local bgImg = Instance.new("ImageLabel")
     bgImg.Size = UDim2.new(1,0,1,0)
     bgImg.Position = UDim2.new(0,0,0,0)
