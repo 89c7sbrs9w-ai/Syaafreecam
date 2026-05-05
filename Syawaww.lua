@@ -31,7 +31,7 @@ task.spawn(function()
     end)
 end)
 
-local BG_ASSET = "rbxassetid://125175277769083"
+local BG_ASSET = "rbxassetid://97700878005683"
 
 local function applyBg(frame, radius, overlayTransparency)
     frame.BackgroundTransparency = 1
@@ -62,14 +62,22 @@ local function startLoading(callback)
     loadBG.Size = UDim2.new(0,280,0,140)
     loadBG.Position = UDim2.new(0.5,-140,0.5,-70)
     loadBG.Parent = screenGui
-    applyBg(loadBG, 15, 0.1)
+    applyBg(loadBG, 15, 0.15)
     Instance.new("UICorner",loadBG).CornerRadius = UDim.new(0,15)
-    local strokeL = Instance.new("UIStroke",loadBG); strokeL.Color = Color3.fromRGB(0,100,230); strokeL.Thickness = 2
+    local strokeL = Instance.new("UIStroke",loadBG); strokeL.Color = Color3.fromRGB(0,155,255); strokeL.Thickness = 2
     
-    local titleL = Instance.new("TextLabel"); titleL.Text = "SYAA"; titleL.Size = UDim2.new(1,0,0,40); titleL.Position = UDim2.new(0,0,0,15); titleL.TextColor3 = Color3.fromRGB(255,255,255); titleL.Font = Enum.Font.GothamBold; titleL.TextSize = 32; titleL.BackgroundTransparency = 1; titleL.ZIndex = 5; titleL.Parent = loadBG
-    local percentLabel = Instance.new("TextLabel"); percentLabel.Text = "0%"; percentLabel.Size = UDim2.new(1,0,0,20); percentLabel.Position = UDim2.new(0,0,0,60); percentLabel.TextColor3 = Color3.fromRGB(50,150,255); percentLabel.Font = Enum.Font.Code; percentLabel.TextSize = 13; percentLabel.BackgroundTransparency = 1; percentLabel.ZIndex = 5; percentLabel.Parent = loadBG
+    local titleL = Instance.new("ImageLabel")
+    titleL.Image = "rbxassetid://110739638891198"
+    titleL.Size = UDim2.new(0,130,0,48)
+    titleL.Position = UDim2.new(0.5,-65,0,8)
+    titleL.BackgroundTransparency = 1
+    titleL.ScaleType = Enum.ScaleType.Fit
+    titleL.ZIndex = 5
+    titleL.Parent = loadBG
+
+    local percentLabel = Instance.new("TextLabel"); percentLabel.Text = "0%"; percentLabel.Size = UDim2.new(1,0,0,20); percentLabel.Position = UDim2.new(0,0,0,60); percentLabel.TextColor3 = Color3.fromRGB(50,155,255); percentLabel.Font = Enum.Font.Code; percentLabel.TextSize = 13; percentLabel.BackgroundTransparency = 1; percentLabel.ZIndex = 5; percentLabel.Parent = loadBG
     local barOutline = Instance.new("Frame"); barOutline.Size = UDim2.new(0.7,0,0,4); barOutline.Position = UDim2.new(0.15,0,0,85); barOutline.BackgroundColor3 = Color3.fromRGB(20,20,20); barOutline.ZIndex = 5; barOutline.Parent = loadBG; Instance.new("UICorner",barOutline)
-    local barFill = Instance.new("Frame"); barFill.Size = UDim2.new(0,0,1,0); barFill.BackgroundColor3 = Color3.fromRGB(0,120,255); barFill.BorderSizePixel = 0; barFill.ZIndex = 6; barFill.Parent = barOutline; Instance.new("UICorner",barFill)
+    local barFill = Instance.new("Frame"); barFill.Size = UDim2.new(0,0,1,0); barFill.BackgroundColor3 = Color3.fromRGB(0,155,255); barFill.BorderSizePixel = 0; barFill.ZIndex = 6; barFill.Parent = barOutline; Instance.new("UICorner",barFill)
     local pLabel = Instance.new("TextLabel"); pLabel.Text = "Menyiapkan UI Syaa..."; pLabel.Size = UDim2.new(1,0,0,25); pLabel.Position = UDim2.new(0,0,0,100); pLabel.TextColor3 = Color3.fromRGB(255,255,255); pLabel.Font = Enum.Font.GothamBold; pLabel.TextSize = 10; pLabel.BackgroundTransparency = 1; pLabel.ZIndex = 5; pLabel.Parent = loadBG
     
     task.spawn(function()
@@ -82,7 +90,7 @@ local function startLoading(callback)
         pLabel.Text = "Selesai 🗿"; task.wait(0.5)
         local closeTween = TweenService:Create(loadBG,TweenInfo.new(0.6,Enum.EasingStyle.Quart,Enum.EasingDirection.InOut),{BackgroundTransparency=1,Size=UDim2.new(0,100,0,50),Position=UDim2.new(0.5,-50,0.5,-25)})
         TweenService:Create(strokeL,TweenInfo.new(0.5),{Transparency=1}):Play()
-        TweenService:Create(titleL,TweenInfo.new(0.3),{TextTransparency=1}):Play()
+        TweenService:Create(titleL,TweenInfo.new(0.3),{ImageTransparency=1}):Play()
         TweenService:Create(percentLabel,TweenInfo.new(0.3),{TextTransparency=1}):Play()
         TweenService:Create(pLabel,TweenInfo.new(0.3),{TextTransparency=1}):Play()
         TweenService:Create(barFill,TweenInfo.new(0.3),{BackgroundTransparency=1}):Play()
@@ -94,9 +102,9 @@ local function startLoading(callback)
             updFrame.Size = UDim2.new(0, 280, 0, 70)
             updFrame.Position = UDim2.new(1, 20, 1, -175)
             updFrame.Parent = screenGui
-            applyBg(updFrame, 10, 0.2)
+            applyBg(updFrame, 10, 0.15)
             Instance.new("UICorner", updFrame).CornerRadius = UDim.new(0, 10)
-            local updStroke = Instance.new("UIStroke", updFrame); updStroke.Color = Color3.fromRGB(0, 120, 255); updStroke.Thickness = 1.5
+            local updStroke = Instance.new("UIStroke", updFrame); updStroke.Color = Color3.fromRGB(0, 155, 255); updStroke.Thickness = 1.5
 
             local iconLbl = Instance.new("TextLabel")
             iconLbl.Text = "🔔"; iconLbl.Size = UDim2.new(0, 40, 0, 40)
@@ -107,12 +115,12 @@ local function startLoading(callback)
             local updTitle = Instance.new("TextLabel")
             updTitle.Text = "SYAA HUB V8.0"; updTitle.Size = UDim2.new(1, -55, 0, 22)
             updTitle.Position = UDim2.new(0, 55, 0, 10)
-            updTitle.BackgroundTransparency = 1; updTitle.TextColor3 = Color3.fromRGB(0, 180, 255)
+            updTitle.BackgroundTransparency = 1; updTitle.TextColor3 = Color3.fromRGB(0, 185, 255)
             updTitle.Font = Enum.Font.GothamBold; updTitle.TextSize = 13
             updTitle.TextXAlignment = Enum.TextXAlignment.Left; updTitle.ZIndex = 5; updTitle.Parent = updFrame
 
             local updDesc = Instance.new("TextLabel")
-            updDesc.Text = "Stabilizer + Senter Baru 🔦🚀"; updDesc.Size = UDim2.new(1, -60, 0, 28)
+            updDesc.Text = "Stabilizer + Senter + Mode Good 🔦🛡️🚀"; updDesc.Size = UDim2.new(1, -60, 0, 28)
             updDesc.Position = UDim2.new(0, 55, 0, 34)
             updDesc.BackgroundTransparency = 1; updDesc.TextColor3 = Color3.fromRGB(200, 200, 200)
             updDesc.Font = Enum.Font.Gotham; updDesc.TextSize = 10
@@ -137,13 +145,13 @@ local function runSyaaHub()
     openIcon.Position = UDim2.new(0, 30, 0.5, -32.5)
     openIcon.BackgroundTransparency = 1
     openIcon.Image = "rbxassetid://87411882585742"
-    openIcon.ImageColor3 = Color3.fromRGB(0, 150, 255)
+    openIcon.ImageColor3 = Color3.fromRGB(0, 155, 255)
     openIcon.Visible = true 
     openIcon.Parent = screenGui
 
     TweenService:Create(openIcon, TweenInfo.new(0.5, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), {Size = UDim2.new(0, 65, 0, 65)}):Play()
 
-    local rainbowColor = Color3.fromRGB(0,120,255)
+    local rainbowColor = Color3.fromRGB(0,155,255)
     task.spawn(function()
         while true do 
             local hue=tick()%5/5; rainbowColor=Color3.fromHSV(hue,0.8,1)
@@ -178,9 +186,9 @@ local function runSyaaHub()
         notifFrame.Size = UDim2.new(0, 280, 0, 75)
         notifFrame.Position = UDim2.new(1, 20, 1, -90) 
         notifFrame.Parent = screenGui
-        applyBg(notifFrame, 10, 0.2)
+        applyBg(notifFrame, 10, 0.15)
         Instance.new("UICorner", notifFrame).CornerRadius = UDim.new(0, 10)
-        Instance.new("UIStroke", notifFrame).Color = Color3.fromRGB(0, 120, 255)
+        Instance.new("UIStroke", notifFrame).Color = Color3.fromRGB(0, 155, 255)
 
         local ava = Instance.new("ImageLabel")
         ava.Size = UDim2.new(0, 55, 0, 55)
@@ -207,7 +215,7 @@ local function runSyaaHub()
         titleLbl.Text = "Developer"
         titleLbl.Size = UDim2.new(0, 100, 0, 15)
         titleLbl.Position = UDim2.new(0, 75, 0, 30)
-        titleLbl.TextColor3 = Color3.fromRGB(0, 120, 255)
+        titleLbl.TextColor3 = Color3.fromRGB(0, 155, 255)
         titleLbl.Font = Enum.Font.GothamBold
         titleLbl.TextSize = 11
         titleLbl.BackgroundTransparency = 1
@@ -271,6 +279,10 @@ local function runSyaaHub()
     local senterRange = 60
     local senterAngle = 45
 
+    -- MODE GOOD VARIABLES
+    local modeGoodActive = false
+    local modeGoodConn = nil
+
     -- HEAD IMAGE VARIABLES (SELF)
     local headImgActive = false
     local headImgPart = nil
@@ -280,7 +292,6 @@ local function runSyaaHub()
     local headImgSize = 4
 
     -- HEAD IMAGE ON OTHER PLAYERS
-    -- otherHeadImgs = { [player] = { part=Part, id=string } }
     local otherHeadImgs = {}
 
     -- ==========================================
@@ -323,7 +334,7 @@ local function runSyaaHub()
     end)
 
     -- ==========================================
-    -- HEAD IMAGE SELF - RENDER LOOP (NGIKUTIN KEPALA)
+    -- HEAD IMAGE SELF - RENDER LOOP
     -- ==========================================
     RunService.RenderStepped:Connect(function()
         if not headImgActive then return end
@@ -332,17 +343,12 @@ local function runSyaaHub()
         if not char then return end
         local head = char:FindFirstChild("Head")
         if not head then return end
-
-        -- Pake Head CFrame biar ngikutin semua animasi (emote, lompat, dll)
         local headCF = head.CFrame
-        -- Arah depan dari kepala tapi flatten Y biar gambar tetap tegak
         local look = headCF.LookVector
         local flatLook = Vector3.new(look.X, 0, look.Z)
         if flatLook.Magnitude < 0.01 then flatLook = Vector3.new(0, 0, -1) end
         flatLook = flatLook.Unit
         local right = Vector3.new(flatLook.Z, 0, -flatLook.X)
-
-        -- Posisi: tepat di atas kepala + ikut Y dari Head (bukan HRP)
         local pos = headCF.Position + Vector3.new(0, headImgYOffset, 0) + right * headImgXOffset
         headImgPart.CFrame = CFrame.lookAt(pos, pos + flatLook)
         headImgPart.Size = Vector3.new(headImgSize, headImgSize, 0.05)
@@ -423,7 +429,51 @@ local function runSyaaHub()
             task.wait(0.5)
             createSenter()
         end
+        if modeGoodActive then
+            task.wait(0.5)
+            local char = localPlayer.Character
+            if not char then return end
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.MaxHealth = math.huge
+                hum.Health = math.huge
+            end
+        end
     end)
+
+    -- ==========================================
+    -- MODE GOOD HELPER
+    -- ==========================================
+    local function startModeGood()
+        modeGoodActive = true
+        if modeGoodConn then modeGoodConn:Disconnect() end
+        modeGoodConn = RunService.Heartbeat:Connect(function()
+            if not modeGoodActive then return end
+            local char = localPlayer.Character
+            if not char then return end
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if not hum then return end
+            if hum.MaxHealth ~= math.huge then
+                hum.MaxHealth = math.huge
+            end
+            if hum.Health < hum.MaxHealth then
+                hum.Health = hum.Health + 5
+            end
+        end)
+    end
+
+    local function stopModeGood()
+        modeGoodActive = false
+        if modeGoodConn then modeGoodConn:Disconnect(); modeGoodConn = nil end
+        local char = localPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.MaxHealth = 100
+                hum.Health = 100
+            end
+        end
+    end
 
     -- ==========================================
     -- HEAD IMAGE SELF - HELPER FUNCTIONS
@@ -467,7 +517,6 @@ local function runSyaaHub()
     -- HEAD IMAGE OTHER PLAYERS - HELPER FUNCTIONS
     -- ==========================================
     local function createOtherHeadImg(player, imgId, xOffset, yOffset, size)
-        -- Hapus yang lama kalau ada
         if otherHeadImgs[player] then
             pcall(function() otherHeadImgs[player].part:Destroy() end)
             otherHeadImgs[player] = nil
@@ -510,7 +559,6 @@ local function runSyaaHub()
         end
     end
 
-    -- Cleanup kalau player keluar
     Players.PlayerRemoving:Connect(function(p)
         removeOtherHeadImg(p)
     end)
@@ -597,7 +645,7 @@ local function runSyaaHub()
             local targetY = centerY + math.sin(angle) * dist - pSize/2
 
             local stroke = Instance.new("UIStroke", particle)
-            stroke.Color = Color3.fromRGB(0, 180, 255)
+            stroke.Color = Color3.fromRGB(0, 185, 255)
             stroke.Thickness = 1.5
             stroke.Transparency = 0
 
@@ -622,7 +670,7 @@ local function runSyaaHub()
         ring.Parent = screenGui
         Instance.new("UICorner", ring).CornerRadius = UDim.new(1, 0)
         local ringStroke = Instance.new("UIStroke", ring)
-        ringStroke.Color = Color3.fromRGB(0, 150, 255)
+        ringStroke.Color = Color3.fromRGB(0, 155, 255)
         ringStroke.Thickness = 3
         ringStroke.Transparency = 0.2
 
@@ -724,7 +772,7 @@ local function runSyaaHub()
     shiftlockBtn.MouseButton1Click:Connect(function()
         isShiftlockActive = not isShiftlockActive
         if isShiftlockActive then
-            shiftlockBtn.ImageColor3 = Color3.fromRGB(0,170,255)
+            shiftlockBtn.ImageColor3 = Color3.fromRGB(0,185,255)
             applyShiftlock()
         else
             shiftlockBtn.ImageColor3 = Color3.fromRGB(255,255,255)
@@ -749,10 +797,10 @@ local function runSyaaHub()
     mainFrame.Parent = screenGui
     mainFrame.ClipsDescendants = false 
     Instance.new("UICorner",mainFrame).CornerRadius = UDim.new(0,12)
-    applyBg(mainFrame, 12, 0.15)
+    applyBg(mainFrame, 12, 0.1)
     
     local mainStroke = Instance.new("UIStroke",mainFrame); mainStroke.Thickness = 2.5
-    local themeColors = {Color3.fromRGB(0,120,255), Color3.fromRGB(0,0,0), Color3.fromRGB(255,255,255)}
+    local themeColors = {Color3.fromRGB(0,155,255), Color3.fromRGB(0,0,0), Color3.fromRGB(255,255,255)}
     task.spawn(function()
         local cIdx = 1
         mainStroke.Color = themeColors[1]
@@ -864,21 +912,21 @@ local function runSyaaHub()
     sidebar.Size = UDim2.new(0, 42, 0, 180) 
     sidebar.Position = UDim2.new(0, -52, 0.5, -90)
     sidebar.Parent = mainFrame
-    applyBg(sidebar, 12, 0.15)
+    applyBg(sidebar, 12, 0.1)
     Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 12)
-    Instance.new("UIStroke", sidebar).Color = Color3.fromRGB(0,100,230)
+    Instance.new("UIStroke", sidebar).Color = Color3.fromRGB(0,130,250)
 
     local function makeSidebarIcon(assetId, yPos, tabName, customSize)
         local btn = Instance.new("ImageButton")
         btn.Size = customSize; btn.Position = UDim2.new(0.5, -(btn.Size.X.Offset/2), 0, yPos)
-        btn.BackgroundTransparency = 1; btn.Image = assetId; btn.ImageColor3 = Color3.fromRGB(0, 120, 255)
+        btn.BackgroundTransparency = 1; btn.Image = assetId; btn.ImageColor3 = Color3.fromRGB(0, 155, 255)
         btn.ZIndex = 5
         btn.Parent = sidebar
         sidebarIconsData[tabName] = {btn = btn, baseSize = customSize, yPos = yPos}
         task.spawn(function()
             while true do
                 TweenService:Create(btn, TweenInfo.new(1.5), {ImageColor3 = Color3.fromRGB(255,255,255)}):Play(); task.wait(1.5)
-                TweenService:Create(btn, TweenInfo.new(1.5), {ImageColor3 = Color3.fromRGB(0,120,255)}):Play(); task.wait(1.5)
+                TweenService:Create(btn, TweenInfo.new(1.5), {ImageColor3 = Color3.fromRGB(0,155,255)}):Play(); task.wait(1.5)
             end
         end)
         btn.MouseButton1Click:Connect(function() setTab(tabName) end)
@@ -892,7 +940,7 @@ local function runSyaaHub()
     local function createPanel(name)
         local panel = Instance.new("ScrollingFrame")
         panel.Name = "Panel_"..name; panel.Size = UDim2.new(1,-20,1,-45); panel.Position = UDim2.new(0,10,0,40)
-        panel.BackgroundTransparency = 1; panel.ScrollBarThickness = 3; panel.ScrollBarImageColor3 = Color3.fromRGB(0,120,255)
+        panel.BackgroundTransparency = 1; panel.ScrollBarThickness = 3; panel.ScrollBarImageColor3 = Color3.fromRGB(0,155,255)
         panel.ScrollBarImageTransparency = 0.2; panel.AutomaticCanvasSize = Enum.AutomaticSize.Y
         panel.CanvasSize = UDim2.new(0,0,0,0); panel.ScrollingDirection = Enum.ScrollingDirection.Y
         panel.Visible = false; panel.ZIndex = 4; panel.Parent = mainFrame
@@ -907,8 +955,8 @@ local function runSyaaHub()
 
     -- HELPERS
     local function makeIosRow(labelTxt, yOff, parent)
-        local onColor = Color3.fromRGB(0,120,255)
-        local row = Instance.new("TextButton"); row.Size = UDim2.new(1,-8,0,30); row.Position = UDim2.new(0,4,0,yOff); row.BackgroundColor3 = Color3.fromRGB(0,100,230); row.BackgroundTransparency = 0.6; row.Text = ""; row.AutoButtonColor = false; row.ZIndex = 5; row.Parent = parent
+        local onColor = Color3.fromRGB(0,155,255)
+        local row = Instance.new("TextButton"); row.Size = UDim2.new(1,-8,0,30); row.Position = UDim2.new(0,4,0,yOff); row.BackgroundColor3 = Color3.fromRGB(0,130,250); row.BackgroundTransparency = 0.6; row.Text = ""; row.AutoButtonColor = false; row.ZIndex = 5; row.Parent = parent
         Instance.new("UICorner",row).CornerRadius = UDim.new(0,8)
         local lbl = Instance.new("TextLabel"); lbl.Text = labelTxt; lbl.Size = UDim2.new(1,-50,1,0); lbl.Position = UDim2.new(0,10,0,0); lbl.BackgroundTransparency = 1; lbl.TextColor3 = Color3.fromRGB(255,255,255); lbl.Font = Enum.Font.GothamBold; lbl.TextSize = 10; lbl.TextXAlignment = Enum.TextXAlignment.Left; lbl.ZIndex = 6; lbl.Parent = row
         local track = Instance.new("Frame"); track.Size = UDim2.new(0,36,0,18); track.Position = UDim2.new(1,-42,0.5,-9); track.BackgroundColor3 = Color3.fromRGB(5,10,25); track.ZIndex = 6; track.Parent = row; Instance.new("UICorner",track).CornerRadius = UDim.new(1,0); Instance.new("UIStroke",track).Color = Color3.fromRGB(20,60,140)
@@ -926,17 +974,17 @@ local function runSyaaHub()
     end
     local function makeSepHdr(txt,yOff,parent)
         local sep = Instance.new("Frame"); sep.Size = UDim2.new(0.92,0,0,1); sep.Position = UDim2.new(0.04,0,0,yOff-2); sep.BackgroundColor3 = Color3.fromRGB(20,60,140); sep.BorderSizePixel = 0; sep.ZIndex = 5; sep.Parent = parent
-        return makeLbl(txt,yOff+2,parent,12,Color3.fromRGB(50,150,255))
+        return makeLbl(txt,yOff+2,parent,12,Color3.fromRGB(50,185,255))
     end
     local function makeBtn2(tA,tB,yOff,parent)
         local function b(txt,xS)
-            local btn = Instance.new("TextButton"); btn.Text = txt; btn.Size = UDim2.new(0.44,0,0,26); btn.Position = UDim2.new(xS,0,0,yOff); btn.BackgroundColor3 = Color3.fromRGB(0,100,230); btn.BackgroundTransparency = 0.5; btn.TextColor3 = Color3.fromRGB(255,255,255); btn.Font = Enum.Font.GothamBold; btn.TextSize = 10; btn.ZIndex = 5; btn.Parent = parent; Instance.new("UICorner",btn).CornerRadius = UDim.new(0,6); return btn
+            local btn = Instance.new("TextButton"); btn.Text = txt; btn.Size = UDim2.new(0.44,0,0,26); btn.Position = UDim2.new(xS,0,0,yOff); btn.BackgroundColor3 = Color3.fromRGB(0,130,250); btn.BackgroundTransparency = 0.5; btn.TextColor3 = Color3.fromRGB(255,255,255); btn.Font = Enum.Font.GothamBold; btn.TextSize = 10; btn.ZIndex = 5; btn.Parent = parent; Instance.new("UICorner",btn).CornerRadius = UDim.new(0,6); return btn
         end
         return b(tA,0.04), b(tB,0.52)
     end
     local function makeBtn3(tA,tB,tC,yOff,parent)
         local function b(txt,xS)
-            local btn = Instance.new("TextButton"); btn.Text = txt; btn.Size = UDim2.new(0.29,0,0,26); btn.Position = UDim2.new(xS,0,0,yOff); btn.BackgroundColor3 = Color3.fromRGB(0,100,230); btn.BackgroundTransparency = 0.5; btn.TextColor3 = Color3.fromRGB(255,255,255); btn.Font = Enum.Font.GothamBold; btn.TextSize = 10; btn.ZIndex = 5; btn.Parent = parent; Instance.new("UICorner",btn).CornerRadius = UDim.new(0,6); return btn
+            local btn = Instance.new("TextButton"); btn.Text = txt; btn.Size = UDim2.new(0.29,0,0,26); btn.Position = UDim2.new(xS,0,0,yOff); btn.BackgroundColor3 = Color3.fromRGB(0,130,250); btn.BackgroundTransparency = 0.5; btn.TextColor3 = Color3.fromRGB(255,255,255); btn.Font = Enum.Font.GothamBold; btn.TextSize = 10; btn.ZIndex = 5; btn.Parent = parent; Instance.new("UICorner",btn).CornerRadius = UDim.new(0,6); return btn
         end
         return b(tA,0.04), b(tB,0.355), b(tC,0.67)
     end
@@ -971,7 +1019,7 @@ local function runSyaaHub()
 
     local titleMode = 1
     local tColors = {
-        {n="Ungu", c=Color3.fromRGB(0,120,255)}, {n="Biru", c=Color3.fromRGB(50,150,255)},
+        {n="Ungu", c=Color3.fromRGB(0,155,255)}, {n="Biru", c=Color3.fromRGB(50,185,255)},
         {n="Pink", c=Color3.fromRGB(255,100,200)}, {n="Merah", c=Color3.fromRGB(255,50,50)},
         {n="Kuning", c=Color3.fromRGB(255,200,50)}, {n="Hijau", c=Color3.fromRGB(50,255,100)},
         {n="Cyan", c=Color3.fromRGB(50,255,255)}, {n="Putih", c=Color3.fromRGB(255,255,255)},
@@ -1024,19 +1072,19 @@ local function runSyaaHub()
 
         makeSepHdr("LOAD SCRIPTS (Auto Minimize)", hY, pHome); hY = hY + 22
         
-        local flyBtn = Instance.new("TextButton"); flyBtn.Text = "🚀 Load Fly"; flyBtn.Size = UDim2.new(0.92,0,0,30); flyBtn.Position = UDim2.new(0.04,0,0,hY); flyBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); flyBtn.BackgroundTransparency = 0.5; flyBtn.TextColor3 = Color3.fromRGB(255,255,255); flyBtn.Font = Enum.Font.GothamBold; flyBtn.TextSize = 10; flyBtn.ZIndex = 5; flyBtn.Parent = pHome; Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
+        local flyBtn = Instance.new("TextButton"); flyBtn.Text = "🚀 Load Fly"; flyBtn.Size = UDim2.new(0.92,0,0,30); flyBtn.Position = UDim2.new(0.04,0,0,hY); flyBtn.BackgroundColor3 = Color3.fromRGB(0,130,250); flyBtn.BackgroundTransparency = 0.5; flyBtn.TextColor3 = Color3.fromRGB(255,255,255); flyBtn.Font = Enum.Font.GothamBold; flyBtn.TextSize = 10; flyBtn.ZIndex = 5; flyBtn.Parent = pHome; Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
         flyBtn.MouseButton1Click:Connect(function() 
             toggleMainFrame(false)
             pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/89c7sbrs9w-ai/Syaafreecam/main/fly.lua"))() end) 
         end)
 
-        local copyAvaBtn = Instance.new("TextButton"); copyAvaBtn.Text = "👥 Copy Avatar"; copyAvaBtn.Size = UDim2.new(0.92,0,0,30); copyAvaBtn.Position = UDim2.new(0.04,0,0,hY); copyAvaBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); copyAvaBtn.BackgroundTransparency = 0.5; copyAvaBtn.TextColor3 = Color3.fromRGB(255,255,255); copyAvaBtn.Font = Enum.Font.GothamBold; copyAvaBtn.TextSize = 10; copyAvaBtn.ZIndex = 5; copyAvaBtn.Parent = pHome; Instance.new("UICorner", copyAvaBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
+        local copyAvaBtn = Instance.new("TextButton"); copyAvaBtn.Text = "👥 Copy Avatar"; copyAvaBtn.Size = UDim2.new(0.92,0,0,30); copyAvaBtn.Position = UDim2.new(0.04,0,0,hY); copyAvaBtn.BackgroundColor3 = Color3.fromRGB(0,130,250); copyAvaBtn.BackgroundTransparency = 0.5; copyAvaBtn.TextColor3 = Color3.fromRGB(255,255,255); copyAvaBtn.Font = Enum.Font.GothamBold; copyAvaBtn.TextSize = 10; copyAvaBtn.ZIndex = 5; copyAvaBtn.Parent = pHome; Instance.new("UICorner", copyAvaBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
         copyAvaBtn.MouseButton1Click:Connect(function() 
             toggleMainFrame(false) 
             pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/89c7sbrs9w-ai/Syaafreecam/main/coppy%20avatar.lua"))() end) 
         end)
 
-        local emoteBtn = Instance.new("TextButton"); emoteBtn.Text = "🕺 Load Emote"; emoteBtn.Size = UDim2.new(0.92,0,0,30); emoteBtn.Position = UDim2.new(0.04,0,0,hY); emoteBtn.BackgroundColor3 = Color3.fromRGB(0,100,230); emoteBtn.BackgroundTransparency = 0.5; emoteBtn.TextColor3 = Color3.fromRGB(255,255,255); emoteBtn.Font = Enum.Font.GothamBold; emoteBtn.TextSize = 10; emoteBtn.ZIndex = 5; emoteBtn.Parent = pHome; Instance.new("UICorner", emoteBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
+        local emoteBtn = Instance.new("TextButton"); emoteBtn.Text = "🕺 Load Emote"; emoteBtn.Size = UDim2.new(0.92,0,0,30); emoteBtn.Position = UDim2.new(0.04,0,0,hY); emoteBtn.BackgroundColor3 = Color3.fromRGB(0,130,250); emoteBtn.BackgroundTransparency = 0.5; emoteBtn.TextColor3 = Color3.fromRGB(255,255,255); emoteBtn.Font = Enum.Font.GothamBold; emoteBtn.TextSize = 10; emoteBtn.ZIndex = 5; emoteBtn.Parent = pHome; Instance.new("UICorner", emoteBtn).CornerRadius = UDim.new(0,6); hY = hY + 36
         emoteBtn.MouseButton1Click:Connect(function() 
             toggleMainFrame(false) 
             task.spawn(function() pcall(function() local src = ""; local StarterGui = game:GetService("StarterGui"); pcall(function() src = game:HttpGet("https://yarhm.mhi.im/scr?channel=afemmax", false) end); if src == "" then StarterGui:SetCore("SendNotification", {Title = "YARHM Outage"; Text = "Using YARHM Offline."; Duration = 5;}); src = game:HttpGet("https://raw.githubusercontent.com/Joystickplays/AFEM/refs/heads/main/max/afemmax.lua", false) end; if src ~= "" then loadstring(src)() end end) end) 
@@ -1090,9 +1138,73 @@ local function runSyaaHub()
     local function buildToolsPanel()
         local tY = 2
 
+        -- ==========================================
+        -- MODE GOOD (GOD MODE + AUTO REGEN)
+        -- ==========================================
+        makeSepHdr("🛡️ MODE GOOD", tY, pTools); tY = tY + 22
+
+        local modeGoodRow, setModeGoodState, getModeGoodState = makeIosRow("Mode Good (Kebal + Auto Regen)", tY, pTools); tY = tY + 36
+
+        local modeGoodInfoLbl = makeLbl("▸ Kebal damage + regen HP otomatis deras", tY, pTools, 14, Color3.fromRGB(50, 185, 255))
+        modeGoodInfoLbl.TextWrapped = true
+        tY = tY + 18
+
+        local regenSpeedLab = makeLbl("Kecepatan Regen: 5 HP/tick", tY, pTools, 14); tY = tY + 16
+        local regenVal = 5
+        local regenBg = Instance.new("Frame"); regenBg.Size = UDim2.new(0.88, 0, 0, 4); regenBg.Position = UDim2.new(0.06, 0, 0, tY); regenBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); regenBg.ZIndex = 5; regenBg.Parent = pTools; Instance.new("UICorner", regenBg)
+        local regenFill = Instance.new("Frame"); regenFill.Size = UDim2.new(5/50, 0, 1, 0); regenFill.BackgroundColor3 = Color3.fromRGB(0, 200, 100); regenFill.BorderSizePixel = 0; regenFill.ZIndex = 6; regenFill.Parent = regenBg; Instance.new("UICorner", regenFill)
+        local regenKnob = Instance.new("TextButton"); regenKnob.Size = UDim2.new(0, 14, 0, 14); regenKnob.Position = UDim2.new(5/50, -7, 0.5, -7); regenKnob.Text = ""; regenKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); regenKnob.ZIndex = 7; regenKnob.Parent = regenBg; Instance.new("UICorner", regenKnob).CornerRadius = UDim.new(1, 0)
+        tY = tY + 18
+        local regenSld = false
+        regenKnob.MouseButton1Down:Connect(function() regenSld = true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then regenSld = false end end)
+        UserInputService.InputChanged:Connect(function(i)
+            if regenSld and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X - regenBg.AbsolutePosition.X) / regenBg.AbsoluteSize.X, 0, 1)
+                regenFill.Size = UDim2.new(pos, 0, 1, 0); regenKnob.Position = UDim2.new(pos, -7, 0.5, -7)
+                regenVal = math.max(1, math.floor(pos * 50))
+                regenSpeedLab.Text = "Kecepatan Regen: " .. regenVal .. " HP/tick"
+            end
+        end)
+
+        modeGoodRow.MouseButton1Click:Connect(function()
+            modeGoodActive = not modeGoodActive
+            setModeGoodState(modeGoodActive)
+            if modeGoodActive then
+                if modeGoodConn then modeGoodConn:Disconnect() end
+                modeGoodConn = RunService.Heartbeat:Connect(function()
+                    if not modeGoodActive then return end
+                    local char = localPlayer.Character
+                    if not char then return end
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if not hum then return end
+                    if hum.MaxHealth ~= math.huge then
+                        hum.MaxHealth = math.huge
+                    end
+                    if hum.Health < hum.MaxHealth then
+                        hum.Health = hum.Health + regenVal
+                    end
+                end)
+                modeGoodInfoLbl.Text = "▸ ✅ AKTIF 🛡️ Kebal + Regen " .. regenVal .. " HP/tick!"
+                modeGoodInfoLbl.TextColor3 = Color3.fromRGB(0, 220, 100)
+            else
+                if modeGoodConn then modeGoodConn:Disconnect(); modeGoodConn = nil end
+                local char = localPlayer.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        hum.MaxHealth = 100
+                        hum.Health = 100
+                    end
+                end
+                modeGoodInfoLbl.Text = "▸ Kebal damage + regen HP otomatis deras"
+                modeGoodInfoLbl.TextColor3 = Color3.fromRGB(50, 185, 255)
+            end
+        end)
+
         makeSepHdr("CUSTOM TITLE KEPALA", tY, pTools); tY = tY+22
 
-        local titleInput = Instance.new("TextBox"); titleInput.Size = UDim2.new(0.92, 0, 0, 30); titleInput.Position = UDim2.new(0.04, 0, 0, tY); titleInput.BackgroundColor3 = Color3.fromRGB(20, 10, 30); titleInput.TextColor3 = Color3.fromRGB(255, 255, 255); titleInput.PlaceholderText = "Tulis Title di sini..."; titleInput.Text = "SYAA HUB"; titleInput.Font = Enum.Font.GothamBold; titleInput.TextSize = 11; titleInput.ZIndex = 5; titleInput.Parent = pTools; Instance.new("UICorner", titleInput); Instance.new("UIStroke", titleInput).Color = Color3.fromRGB(0,100,230)
+        local titleInput = Instance.new("TextBox"); titleInput.Size = UDim2.new(0.92, 0, 0, 30); titleInput.Position = UDim2.new(0.04, 0, 0, tY); titleInput.BackgroundColor3 = Color3.fromRGB(20, 10, 30); titleInput.TextColor3 = Color3.fromRGB(255, 255, 255); titleInput.PlaceholderText = "Tulis Title di sini..."; titleInput.Text = "SYAA HUB"; titleInput.Font = Enum.Font.GothamBold; titleInput.TextSize = 11; titleInput.ZIndex = 5; titleInput.Parent = pTools; Instance.new("UICorner", titleInput); Instance.new("UIStroke", titleInput).Color = Color3.fromRGB(0,130,250)
         tY = tY + 36
         titleInput.FocusLost:Connect(function() cTitleLbl.Text = titleInput.Text end)
 
@@ -1127,7 +1239,7 @@ local function runSyaaHub()
 
         local tsLab = makeLbl("Ukuran Title: 4.0", tY, pTools, 14); tY = tY+16
         local tsBg = Instance.new("Frame"); tsBg.Size = UDim2.new(0.88,0,0,4); tsBg.Position = UDim2.new(0.06,0,0,tY); tsBg.BackgroundColor3 = Color3.fromRGB(15,25,50); tsBg.ZIndex = 5; tsBg.Parent = pTools; Instance.new("UICorner",tsBg)
-        local tsFill = Instance.new("Frame"); tsFill.Size = UDim2.new(0.33,0,1,0); tsFill.BackgroundColor3 = Color3.fromRGB(0,120,255); tsFill.BorderSizePixel = 0; tsFill.ZIndex = 6; tsFill.Parent = tsBg; Instance.new("UICorner",tsFill)
+        local tsFill = Instance.new("Frame"); tsFill.Size = UDim2.new(0.33,0,1,0); tsFill.BackgroundColor3 = Color3.fromRGB(0,155,255); tsFill.BorderSizePixel = 0; tsFill.ZIndex = 6; tsFill.Parent = tsBg; Instance.new("UICorner",tsFill)
         local tsKnob = Instance.new("TextButton"); tsKnob.Size = UDim2.new(0,14,0,14); tsKnob.Position = UDim2.new(0.33,-7,0.5,-7); tsKnob.Text = ""; tsKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); tsKnob.ZIndex = 7; tsKnob.Parent = tsBg; Instance.new("UICorner",tsKnob).CornerRadius = UDim.new(1,0)
         tY = tY+18; local tsSld = false
         tsKnob.MouseButton1Down:Connect(function() tsSld=true end)
@@ -1136,7 +1248,7 @@ local function runSyaaHub()
 
         local tyLab = makeLbl("Posisi Tinggi: 2.0", tY, pTools, 14); tY = tY+16
         local tyBg = Instance.new("Frame"); tyBg.Size = UDim2.new(0.88,0,0,4); tyBg.Position = UDim2.new(0.06,0,0,tY); tyBg.BackgroundColor3 = Color3.fromRGB(15,25,50); tyBg.ZIndex = 5; tyBg.Parent = pTools; Instance.new("UICorner",tyBg)
-        local tyFill = Instance.new("Frame"); tyFill.Size = UDim2.new(0.2,0,1,0); tyFill.BackgroundColor3 = Color3.fromRGB(0,120,255); tyFill.BorderSizePixel = 0; tyFill.ZIndex = 6; tyFill.Parent = tyBg; Instance.new("UICorner",tyFill)
+        local tyFill = Instance.new("Frame"); tyFill.Size = UDim2.new(0.2,0,1,0); tyFill.BackgroundColor3 = Color3.fromRGB(0,155,255); tyFill.BorderSizePixel = 0; tyFill.ZIndex = 6; tyFill.Parent = tyBg; Instance.new("UICorner",tyFill)
         local tyKnob = Instance.new("TextButton"); tyKnob.Size = UDim2.new(0,14,0,14); tyKnob.Position = UDim2.new(0.2,-7,0.5,-7); tyKnob.Text = ""; tyKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); tyKnob.ZIndex = 7; tyKnob.Parent = tyBg; Instance.new("UICorner",tyKnob).CornerRadius = UDim.new(1,0)
         tY = tY+18; local tySld = false
         tyKnob.MouseButton1Down:Connect(function() tySld=true end)
@@ -1146,7 +1258,7 @@ local function runSyaaHub()
         makeSepHdr("PLAYER MODS", tY, pTools); tY = tY+22
 
         local noclipRow, setNoclipState = makeIosRow("Noclip (Tembus Tembok)", tY, pTools); tY = tY+36
-        local noclipInfo = makeLbl("▸ Tembus tembok, tidak tembus tanah", tY, pTools, 14, Color3.fromRGB(50, 150, 255)); tY = tY+20
+        local noclipInfo = makeLbl("▸ Tembus tembok, tidak tembus tanah", tY, pTools, 14, Color3.fromRGB(50, 185, 255)); tY = tY+20
 
         local isNoclipOn = false
         RunService.RenderStepped:Connect(function()
@@ -1168,7 +1280,7 @@ local function runSyaaHub()
                 noclipInfo.TextColor3 = Color3.fromRGB(0, 200, 100)
             else
                 noclipInfo.Text = "▸ Tembus tembok, tidak tembus tanah"
-                noclipInfo.TextColor3 = Color3.fromRGB(50, 150, 255)
+                noclipInfo.TextColor3 = Color3.fromRGB(50, 185, 255)
             end
         end)
 
@@ -1180,7 +1292,7 @@ local function runSyaaHub()
         local wsRow, setWsState = makeIosRow("Enable WalkSpeed", tY, pTools); tY = tY+36
         local wsVal = 16; local wsLab = makeLbl("Speed: 16", tY, pTools, 14); tY = tY+16
         local wsBg = Instance.new("Frame"); wsBg.Size = UDim2.new(0.88,0,0,4); wsBg.Position = UDim2.new(0.06,0,0,tY); wsBg.BackgroundColor3 = Color3.fromRGB(15,25,50); wsBg.ZIndex = 5; wsBg.Parent = pTools; Instance.new("UICorner",wsBg)
-        local wsFill = Instance.new("Frame"); wsFill.Size = UDim2.new((16/200),0,1,0); wsFill.BackgroundColor3 = Color3.fromRGB(0,120,255); wsFill.BorderSizePixel = 0; wsFill.ZIndex = 6; wsFill.Parent = wsBg; Instance.new("UICorner",wsFill)
+        local wsFill = Instance.new("Frame"); wsFill.Size = UDim2.new((16/200),0,1,0); wsFill.BackgroundColor3 = Color3.fromRGB(0,155,255); wsFill.BorderSizePixel = 0; wsFill.ZIndex = 6; wsFill.Parent = wsBg; Instance.new("UICorner",wsFill)
         local wsKnob = Instance.new("TextButton"); wsKnob.Size = UDim2.new(0,14,0,14); wsKnob.Position = UDim2.new((16/200),-7,0.5,-7); wsKnob.Text = ""; wsKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); wsKnob.ZIndex = 7; wsKnob.Parent = wsBg; Instance.new("UICorner",wsKnob).CornerRadius = UDim.new(1,0)
         tY = tY+18; local wsSld = false
         wsKnob.MouseButton1Down:Connect(function() wsSld=true end)
@@ -1191,24 +1303,24 @@ local function runSyaaHub()
         RunService.Heartbeat:Connect(function() if isWsEnabled and localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then localPlayer.Character.Humanoid.WalkSpeed = wsVal end end)
 
         makeSepHdr("TELEPORT PLAYER", tY, pTools); tY = tY+22
-        local tpRefresh = Instance.new("TextButton"); tpRefresh.Text = "↺ Refresh List"; tpRefresh.Size = UDim2.new(0.92,0,0,26); tpRefresh.Position = UDim2.new(0.04,0,0,tY); tpRefresh.BackgroundColor3 = Color3.fromRGB(0,100,230); tpRefresh.BackgroundTransparency = 0.5; tpRefresh.TextColor3 = Color3.fromRGB(255,255,255); tpRefresh.Font = Enum.Font.GothamBold; tpRefresh.TextSize = 10; tpRefresh.ZIndex = 5; tpRefresh.Parent = pTools; Instance.new("UICorner",tpRefresh).CornerRadius = UDim.new(0,6)
+        local tpRefresh = Instance.new("TextButton"); tpRefresh.Text = "↺ Refresh List"; tpRefresh.Size = UDim2.new(0.92,0,0,26); tpRefresh.Position = UDim2.new(0.04,0,0,tY); tpRefresh.BackgroundColor3 = Color3.fromRGB(0,130,250); tpRefresh.BackgroundTransparency = 0.5; tpRefresh.TextColor3 = Color3.fromRGB(255,255,255); tpRefresh.Font = Enum.Font.GothamBold; tpRefresh.TextSize = 10; tpRefresh.ZIndex = 5; tpRefresh.Parent = pTools; Instance.new("UICorner",tpRefresh).CornerRadius = UDim.new(0,6)
         tY = tY+32
-        local tpFrame = Instance.new("ScrollingFrame"); tpFrame.Size = UDim2.new(0.92,0,0,80); tpFrame.Position = UDim2.new(0.04,0,0,tY); tpFrame.BackgroundColor3 = Color3.fromRGB(5,10,25); tpFrame.BackgroundTransparency = 0.5; tpFrame.ZIndex = 5; tpFrame.Parent = pTools; tpFrame.ScrollBarThickness = 2; tpFrame.ScrollBarImageColor3 = Color3.fromRGB(0,120,255); tpFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y; tpFrame.ScrollingDirection = Enum.ScrollingDirection.Y; Instance.new("UICorner",tpFrame); Instance.new("UIStroke",tpFrame).Color = Color3.fromRGB(20,60,140)
+        local tpFrame = Instance.new("ScrollingFrame"); tpFrame.Size = UDim2.new(0.92,0,0,80); tpFrame.Position = UDim2.new(0.04,0,0,tY); tpFrame.BackgroundColor3 = Color3.fromRGB(5,10,25); tpFrame.BackgroundTransparency = 0.5; tpFrame.ZIndex = 5; tpFrame.Parent = pTools; tpFrame.ScrollBarThickness = 2; tpFrame.ScrollBarImageColor3 = Color3.fromRGB(0,155,255); tpFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y; tpFrame.ScrollingDirection = Enum.ScrollingDirection.Y; Instance.new("UICorner",tpFrame); Instance.new("UIStroke",tpFrame).Color = Color3.fromRGB(20,60,140)
         local tpLayout = Instance.new("UIListLayout",tpFrame); tpLayout.Padding = UDim.new(0,2); tpLayout.SortOrder = Enum.SortOrder.Name
         tY = tY+90
         local tpRows = {}
         local function refreshTpList() for _,r in pairs(tpRows) do pcall(function() r:Destroy() end) end; tpRows = {}; local list = Players:GetPlayers(); if #list <= 1 then local el = Instance.new("TextLabel"); el.Size = UDim2.new(1,0,0,24); el.BackgroundTransparency = 1; el.Text = "Cuma lu doang 🗿"; el.TextColor3 = Color3.fromRGB(100,100,100); el.Font = Enum.Font.Gotham; el.TextSize = 10; el.ZIndex = 6; el.Parent = tpFrame; table.insert(tpRows,el); return end
-            for _,p in ipairs(list) do if p ~= localPlayer then local row = Instance.new("TextButton"); row.Size = UDim2.new(1,0,0,30); row.BackgroundColor3 = Color3.fromRGB(0,100,230); row.BackgroundTransparency = 0.6; row.Text = ""; row.AutoButtonColor = false; row.ZIndex = 6; row.Parent = tpFrame; Instance.new("UICorner",row); local ava = Instance.new("ImageLabel"); ava.Size = UDim2.new(0, 24, 0, 24); ava.Position = UDim2.new(0, 4, 0.5, -12); ava.BackgroundTransparency = 1; ava.ZIndex = 7; ava.Parent = row; Instance.new("UICorner",ava).CornerRadius = UDim.new(1,0); task.spawn(function() pcall(function() ava.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48) end) end)
+            for _,p in ipairs(list) do if p ~= localPlayer then local row = Instance.new("TextButton"); row.Size = UDim2.new(1,0,0,30); row.BackgroundColor3 = Color3.fromRGB(0,130,250); row.BackgroundTransparency = 0.6; row.Text = ""; row.AutoButtonColor = false; row.ZIndex = 6; row.Parent = tpFrame; Instance.new("UICorner",row); local ava = Instance.new("ImageLabel"); ava.Size = UDim2.new(0, 24, 0, 24); ava.Position = UDim2.new(0, 4, 0.5, -12); ava.BackgroundTransparency = 1; ava.ZIndex = 7; ava.Parent = row; Instance.new("UICorner",ava).CornerRadius = UDim.new(1,0); task.spawn(function() pcall(function() ava.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48) end) end)
                     local nl = Instance.new("TextLabel"); nl.Size = UDim2.new(1,-36,1,0); nl.Position = UDim2.new(0,32,0,0); nl.BackgroundTransparency = 1; nl.Text = p.DisplayName.." (@"..p.Name..")"; nl.TextColor3 = Color3.fromRGB(220,220,220); nl.Font = Enum.Font.GothamBold; nl.TextSize = 10; nl.TextXAlignment = Enum.TextXAlignment.Left; nl.ZIndex = 7; nl.Parent = row
                     row.MouseButton1Click:Connect(function() if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then localPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame end end); table.insert(tpRows,row) end end end
         tpRefresh.MouseButton1Click:Connect(refreshTpList); task.spawn(function() task.wait(1) refreshTpList() end)
 
         makeSepHdr("3D IMAGE SPAWNER", tY, pTools); tY = tY+22
-        local imgInput = Instance.new("TextBox"); imgInput.Size = UDim2.new(0.92, 0, 0, 30); imgInput.Position = UDim2.new(0.04, 0, 0, tY); imgInput.BackgroundColor3 = Color3.fromRGB(20, 10, 30); imgInput.TextColor3 = Color3.fromRGB(255, 255, 255); imgInput.PlaceholderText = "Masukkan ID Gambar..."; imgInput.Font = Enum.Font.GothamBold; imgInput.TextSize = 11; imgInput.ZIndex = 5; imgInput.Parent = pTools; Instance.new("UICorner", imgInput); Instance.new("UIStroke", imgInput).Color = Color3.fromRGB(0,100,230)
+        local imgInput = Instance.new("TextBox"); imgInput.Size = UDim2.new(0.92, 0, 0, 30); imgInput.Position = UDim2.new(0.04, 0, 0, tY); imgInput.BackgroundColor3 = Color3.fromRGB(20, 10, 30); imgInput.TextColor3 = Color3.fromRGB(255, 255, 255); imgInput.PlaceholderText = "Masukkan ID Gambar..."; imgInput.Font = Enum.Font.GothamBold; imgInput.TextSize = 11; imgInput.ZIndex = 5; imgInput.Parent = pTools; Instance.new("UICorner", imgInput); Instance.new("UIStroke", imgInput).Color = Color3.fromRGB(0,130,250)
         tY = tY + 36
         local spwBtn, saveBtn = makeBtn2("Spawn 3D", "Save (Unselect)", tY, pTools); tY = tY + 32
         makeLbl("Daftar Gambar (Klik buat ngedit):", tY, pTools, 12); tY = tY+16
-        local imgListFrame = Instance.new("ScrollingFrame"); imgListFrame.Size = UDim2.new(0.92,0,0,70); imgListFrame.Position = UDim2.new(0.04,0,0,tY); imgListFrame.BackgroundColor3 = Color3.fromRGB(5,10,25); imgListFrame.BackgroundTransparency = 0.5; imgListFrame.ZIndex = 5; imgListFrame.Parent = pTools; imgListFrame.ScrollBarThickness = 2; imgListFrame.ScrollBarImageColor3 = Color3.fromRGB(0,120,255); imgListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y; imgListFrame.ScrollingDirection = Enum.ScrollingDirection.Y; Instance.new("UICorner",imgListFrame); Instance.new("UIStroke",imgListFrame).Color = Color3.fromRGB(20,60,140)
+        local imgListFrame = Instance.new("ScrollingFrame"); imgListFrame.Size = UDim2.new(0.92,0,0,70); imgListFrame.Position = UDim2.new(0.04,0,0,tY); imgListFrame.BackgroundColor3 = Color3.fromRGB(5,10,25); imgListFrame.BackgroundTransparency = 0.5; imgListFrame.ZIndex = 5; imgListFrame.Parent = pTools; imgListFrame.ScrollBarThickness = 2; imgListFrame.ScrollBarImageColor3 = Color3.fromRGB(0,155,255); imgListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y; imgListFrame.ScrollingDirection = Enum.ScrollingDirection.Y; Instance.new("UICorner",imgListFrame); Instance.new("UIStroke",imgListFrame).Color = Color3.fromRGB(20,60,140)
         local ilLayout = Instance.new("UIListLayout",imgListFrame); ilLayout.Padding = UDim.new(0,2)
         tY = tY + 80
         local btnScaleUp, btnScaleDown, clrBtn = makeBtn3("Besarin (+)", "Kecilin (-)", "Hapus", tY, pTools); tY = tY + 32
@@ -1237,14 +1349,14 @@ local function runSyaaHub()
         makeSepHdr("SPY CAM", tY, pTools); tY = tY + 22
 
         local spyRow, setSpyState, getSpyState = makeIosRow("Aktifkan Spy Cam", tY, pTools); tY = tY + 36
-        local infoLbl = makeLbl("▸ Pilih player yang mau dipantau:", tY, pTools, 14, Color3.fromRGB(50, 150, 255)); tY = tY + 18
+        local infoLbl = makeLbl("▸ Pilih player yang mau dipantau:", tY, pTools, 14, Color3.fromRGB(50, 185, 255)); tY = tY + 18
         local targetLbl = makeLbl("Target: Belum dipilih", tY, pTools, 14, Color3.fromRGB(200, 200, 200)); tY = tY + 16
 
         local refreshSpyBtn = Instance.new("TextButton")
         refreshSpyBtn.Text = "↺ Refresh Player List"
         refreshSpyBtn.Size = UDim2.new(0.92, 0, 0, 26)
         refreshSpyBtn.Position = UDim2.new(0.04, 0, 0, tY)
-        refreshSpyBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 230)
+        refreshSpyBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 250)
         refreshSpyBtn.BackgroundTransparency = 0.5
         refreshSpyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         refreshSpyBtn.Font = Enum.Font.GothamBold
@@ -1262,11 +1374,11 @@ local function runSyaaHub()
         spyListFrame.ZIndex = 5
         spyListFrame.Parent = pTools
         spyListFrame.ScrollBarThickness = 2
-        spyListFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 120, 255)
+        spyListFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 155, 255)
         spyListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
         spyListFrame.ScrollingDirection = Enum.ScrollingDirection.Y
         Instance.new("UICorner", spyListFrame)
-        Instance.new("UIStroke", spyListFrame).Color = Color3.fromRGB(0, 100, 230)
+        Instance.new("UIStroke", spyListFrame).Color = Color3.fromRGB(0, 130, 250)
         local spyLayout = Instance.new("UIListLayout", spyListFrame)
         spyLayout.Padding = UDim.new(0, 3)
         spyLayout.SortOrder = Enum.SortOrder.Name
@@ -1276,7 +1388,7 @@ local function runSyaaHub()
 
         local offYLab = makeLbl("Tinggi (Y): 2", tY, pTools, 14); tY = tY + 16
         local offYBg = Instance.new("Frame"); offYBg.Size = UDim2.new(0.88, 0, 0, 4); offYBg.Position = UDim2.new(0.06, 0, 0, tY); offYBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); offYBg.ZIndex = 5; offYBg.Parent = pTools; Instance.new("UICorner", offYBg)
-        local offYFill = Instance.new("Frame"); offYFill.Size = UDim2.new(2/10, 0, 1, 0); offYFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); offYFill.BorderSizePixel = 0; offYFill.ZIndex = 6; offYFill.Parent = offYBg; Instance.new("UICorner", offYFill)
+        local offYFill = Instance.new("Frame"); offYFill.Size = UDim2.new(2/10, 0, 1, 0); offYFill.BackgroundColor3 = Color3.fromRGB(0, 155, 255); offYFill.BorderSizePixel = 0; offYFill.ZIndex = 6; offYFill.Parent = offYBg; Instance.new("UICorner", offYFill)
         local offYKnob = Instance.new("TextButton"); offYKnob.Size = UDim2.new(0, 14, 0, 14); offYKnob.Position = UDim2.new(2/10, -7, 0.5, -7); offYKnob.Text = ""; offYKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); offYKnob.ZIndex = 7; offYKnob.Parent = offYBg; Instance.new("UICorner", offYKnob).CornerRadius = UDim.new(1, 0)
         tY = tY + 18; local offYSld = false
         offYKnob.MouseButton1Down:Connect(function() offYSld = true end)
@@ -1285,7 +1397,7 @@ local function runSyaaHub()
 
         local offZLab = makeLbl("Jarak (Z): 5", tY, pTools, 14); tY = tY + 16
         local offZBg = Instance.new("Frame"); offZBg.Size = UDim2.new(0.88, 0, 0, 4); offZBg.Position = UDim2.new(0.06, 0, 0, tY); offZBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); offZBg.ZIndex = 5; offZBg.Parent = pTools; Instance.new("UICorner", offZBg)
-        local offZFill = Instance.new("Frame"); offZFill.Size = UDim2.new(5/25, 0, 1, 0); offZFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); offZFill.BorderSizePixel = 0; offZFill.ZIndex = 6; offZFill.Parent = offZBg; Instance.new("UICorner", offZFill)
+        local offZFill = Instance.new("Frame"); offZFill.Size = UDim2.new(5/25, 0, 1, 0); offZFill.BackgroundColor3 = Color3.fromRGB(0, 155, 255); offZFill.BorderSizePixel = 0; offZFill.ZIndex = 6; offZFill.Parent = offZBg; Instance.new("UICorner", offZFill)
         local offZKnob = Instance.new("TextButton"); offZKnob.Size = UDim2.new(0, 14, 0, 14); offZKnob.Position = UDim2.new(5/25, -7, 0.5, -7); offZKnob.Text = ""; offZKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); offZKnob.ZIndex = 7; offZKnob.Parent = offZBg; Instance.new("UICorner", offZKnob).CornerRadius = UDim.new(1, 0)
         tY = tY + 18; local offZSld = false
         offZKnob.MouseButton1Down:Connect(function() offZSld = true end)
@@ -1466,7 +1578,7 @@ local function runSyaaHub()
                 local isSelected = (spyTarget == p)
                 local row = Instance.new("TextButton")
                 row.Size = UDim2.new(1, 0, 0, 34)
-                row.BackgroundColor3 = isSelected and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(0, 60, 140)
+                row.BackgroundColor3 = isSelected and Color3.fromRGB(0, 155, 255) or Color3.fromRGB(0, 60, 140)
                 row.BackgroundTransparency = 0.4
                 row.Text = ""
                 row.AutoButtonColor = false
@@ -1501,7 +1613,7 @@ local function runSyaaHub()
                 un.Position = UDim2.new(0, 36, 0, 18)
                 un.BackgroundTransparency = 1
                 un.Text = "@" .. p.Name
-                un.TextColor3 = Color3.fromRGB(100, 160, 255)
+                un.TextColor3 = Color3.fromRGB(100, 185, 255)
                 un.Font = Enum.Font.Gotham
                 un.TextSize = 9
                 un.TextXAlignment = Enum.TextXAlignment.Left
@@ -1545,11 +1657,11 @@ local function runSyaaHub()
 
         local senterRow, setSenterState, getSenterState = makeIosRow("Aktifkan Senter", tY, pTools); tY = tY + 36
 
-        local senterInfoLbl = makeLbl("▸ Cahaya putih mengikuti arah kamera", tY, pTools, 14, Color3.fromRGB(50, 150, 255)); tY = tY + 18
+        local senterInfoLbl = makeLbl("▸ Cahaya putih mengikuti arah kamera", tY, pTools, 14, Color3.fromRGB(50, 185, 255)); tY = tY + 18
 
         local senBriLab = makeLbl("Brightness: 5", tY, pTools, 14); tY = tY + 16
         local senBriBg = Instance.new("Frame"); senBriBg.Size = UDim2.new(0.88, 0, 0, 4); senBriBg.Position = UDim2.new(0.06, 0, 0, tY); senBriBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); senBriBg.ZIndex = 5; senBriBg.Parent = pTools; Instance.new("UICorner", senBriBg)
-        local senBriFill = Instance.new("Frame"); senBriFill.Size = UDim2.new(5/10, 0, 1, 0); senBriFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); senBriFill.BorderSizePixel = 0; senBriFill.ZIndex = 6; senBriFill.Parent = senBriBg; Instance.new("UICorner", senBriFill)
+        local senBriFill = Instance.new("Frame"); senBriFill.Size = UDim2.new(5/10, 0, 1, 0); senBriFill.BackgroundColor3 = Color3.fromRGB(0, 155, 255); senBriFill.BorderSizePixel = 0; senBriFill.ZIndex = 6; senBriFill.Parent = senBriBg; Instance.new("UICorner", senBriFill)
         local senBriKnob = Instance.new("TextButton"); senBriKnob.Size = UDim2.new(0, 14, 0, 14); senBriKnob.Position = UDim2.new(5/10, -7, 0.5, -7); senBriKnob.Text = ""; senBriKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); senBriKnob.ZIndex = 7; senBriKnob.Parent = senBriBg; Instance.new("UICorner", senBriKnob).CornerRadius = UDim.new(1, 0)
         tY = tY + 18; local senBriSld = false
         senBriKnob.MouseButton1Down:Connect(function() senBriSld = true end)
@@ -1566,7 +1678,7 @@ local function runSyaaHub()
 
         local senRangeLab = makeLbl("Range: 60", tY, pTools, 14); tY = tY + 16
         local senRangeBg = Instance.new("Frame"); senRangeBg.Size = UDim2.new(0.88, 0, 0, 4); senRangeBg.Position = UDim2.new(0.06, 0, 0, tY); senRangeBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); senRangeBg.ZIndex = 5; senRangeBg.Parent = pTools; Instance.new("UICorner", senRangeBg)
-        local senRangeFill = Instance.new("Frame"); senRangeFill.Size = UDim2.new(60/120, 0, 1, 0); senRangeFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); senRangeFill.BorderSizePixel = 0; senRangeFill.ZIndex = 6; senRangeFill.Parent = senRangeBg; Instance.new("UICorner", senRangeFill)
+        local senRangeFill = Instance.new("Frame"); senRangeFill.Size = UDim2.new(60/120, 0, 1, 0); senRangeFill.BackgroundColor3 = Color3.fromRGB(0, 155, 255); senRangeFill.BorderSizePixel = 0; senRangeFill.ZIndex = 6; senRangeFill.Parent = senRangeBg; Instance.new("UICorner", senRangeFill)
         local senRangeKnob = Instance.new("TextButton"); senRangeKnob.Size = UDim2.new(0, 14, 0, 14); senRangeKnob.Position = UDim2.new(60/120, -7, 0.5, -7); senRangeKnob.Text = ""; senRangeKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); senRangeKnob.ZIndex = 7; senRangeKnob.Parent = senRangeBg; Instance.new("UICorner", senRangeKnob).CornerRadius = UDim.new(1, 0)
         tY = tY + 18; local senRangeSld = false
         senRangeKnob.MouseButton1Down:Connect(function() senRangeSld = true end)
@@ -1583,7 +1695,7 @@ local function runSyaaHub()
 
         local senAngleLab = makeLbl("Sudut Sinar: 45°", tY, pTools, 14); tY = tY + 16
         local senAngleBg = Instance.new("Frame"); senAngleBg.Size = UDim2.new(0.88, 0, 0, 4); senAngleBg.Position = UDim2.new(0.06, 0, 0, tY); senAngleBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); senAngleBg.ZIndex = 5; senAngleBg.Parent = pTools; Instance.new("UICorner", senAngleBg)
-        local senAngleFill = Instance.new("Frame"); senAngleFill.Size = UDim2.new(45/90, 0, 1, 0); senAngleFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); senAngleFill.BorderSizePixel = 0; senAngleFill.ZIndex = 6; senAngleFill.Parent = senAngleBg; Instance.new("UICorner", senAngleFill)
+        local senAngleFill = Instance.new("Frame"); senAngleFill.Size = UDim2.new(45/90, 0, 1, 0); senAngleFill.BackgroundColor3 = Color3.fromRGB(0, 155, 255); senAngleFill.BorderSizePixel = 0; senAngleFill.ZIndex = 6; senAngleFill.Parent = senAngleBg; Instance.new("UICorner", senAngleFill)
         local senAngleKnob = Instance.new("TextButton"); senAngleKnob.Size = UDim2.new(0, 14, 0, 14); senAngleKnob.Position = UDim2.new(45/90, -7, 0.5, -7); senAngleKnob.Text = ""; senAngleKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); senAngleKnob.ZIndex = 7; senAngleKnob.Parent = senAngleBg; Instance.new("UICorner", senAngleKnob).CornerRadius = UDim.new(1, 0)
         tY = tY + 18; local senAngleSld = false
         senAngleKnob.MouseButton1Down:Connect(function() senAngleSld = true end)
@@ -1608,12 +1720,12 @@ local function runSyaaHub()
             else
                 destroySenter()
                 senterInfoLbl.Text = "▸ Cahaya putih mengikuti arah kamera"
-                senterInfoLbl.TextColor3 = Color3.fromRGB(50, 150, 255)
+                senterInfoLbl.TextColor3 = Color3.fromRGB(50, 185, 255)
             end
         end)
 
         -- ==========================================
-        -- HEAD IMAGE AKSESORI (SELF) - UPDATED
+        -- HEAD IMAGE AKSESORI (SELF)
         -- ==========================================
         makeSepHdr("🖼️ HEAD IMAGE AKSESORI", tY, pTools); tY = tY + 22
 
@@ -1628,18 +1740,18 @@ local function runSyaaHub()
         headIdInput.ZIndex = 5
         headIdInput.Parent = pTools
         Instance.new("UICorner", headIdInput)
-        Instance.new("UIStroke", headIdInput).Color = Color3.fromRGB(0, 100, 230)
+        Instance.new("UIStroke", headIdInput).Color = Color3.fromRGB(0, 130, 250)
         tY = tY + 36
 
         local headImgRow, setHeadImgState, getHeadImgState = makeIosRow("Aktifkan Head Image (Diri Sendiri)", tY, pTools); tY = tY + 36
 
-        local headImgStatusLbl = makeLbl("▸ Ngikutin kepala + animasi emote", tY, pTools, 14, Color3.fromRGB(50, 150, 255))
+        local headImgStatusLbl = makeLbl("▸ Ngikutin kepala + animasi emote", tY, pTools, 14, Color3.fromRGB(50, 185, 255))
         headImgStatusLbl.TextWrapped = true
         tY = tY + 22
 
         local headXLab = makeLbl("Kanan/Kiri: 0.0", tY, pTools, 14); tY = tY + 16
         local headXBg = Instance.new("Frame"); headXBg.Size = UDim2.new(0.88, 0, 0, 4); headXBg.Position = UDim2.new(0.06, 0, 0, tY); headXBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); headXBg.ZIndex = 5; headXBg.Parent = pTools; Instance.new("UICorner", headXBg)
-        local headXFill = Instance.new("Frame"); headXFill.Size = UDim2.new(0.5, 0, 1, 0); headXFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); headXFill.BorderSizePixel = 0; headXFill.ZIndex = 6; headXFill.Parent = headXBg; Instance.new("UICorner", headXFill)
+        local headXFill = Instance.new("Frame"); headXFill.Size = UDim2.new(0.5, 0, 1, 0); headXFill.BackgroundColor3 = Color3.fromRGB(0, 155, 255); headXFill.BorderSizePixel = 0; headXFill.ZIndex = 6; headXFill.Parent = headXBg; Instance.new("UICorner", headXFill)
         local headXKnob = Instance.new("TextButton"); headXKnob.Size = UDim2.new(0, 14, 0, 14); headXKnob.Position = UDim2.new(0.5, -7, 0.5, -7); headXKnob.Text = ""; headXKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); headXKnob.ZIndex = 7; headXKnob.Parent = headXBg; Instance.new("UICorner", headXKnob).CornerRadius = UDim.new(1, 0)
         tY = tY + 18; local headXSld = false
         headXKnob.MouseButton1Down:Connect(function() headXSld = true end)
@@ -1656,7 +1768,7 @@ local function runSyaaHub()
 
         local headYLab = makeLbl("Tinggi: 3.5", tY, pTools, 14); tY = tY + 16
         local headYBg = Instance.new("Frame"); headYBg.Size = UDim2.new(0.88, 0, 0, 4); headYBg.Position = UDim2.new(0.06, 0, 0, tY); headYBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); headYBg.ZIndex = 5; headYBg.Parent = pTools; Instance.new("UICorner", headYBg)
-        local headYFill = Instance.new("Frame"); headYFill.Size = UDim2.new(0.5, 0, 1, 0); headYFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); headYFill.BorderSizePixel = 0; headYFill.ZIndex = 6; headYFill.Parent = headYBg; Instance.new("UICorner", headYFill)
+        local headYFill = Instance.new("Frame"); headYFill.Size = UDim2.new(0.5, 0, 1, 0); headYFill.BackgroundColor3 = Color3.fromRGB(0, 155, 255); headYFill.BorderSizePixel = 0; headYFill.ZIndex = 6; headYFill.Parent = headYBg; Instance.new("UICorner", headYFill)
         local headYKnob = Instance.new("TextButton"); headYKnob.Size = UDim2.new(0, 14, 0, 14); headYKnob.Position = UDim2.new(0.5, -7, 0.5, -7); headYKnob.Text = ""; headYKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); headYKnob.ZIndex = 7; headYKnob.Parent = headYBg; Instance.new("UICorner", headYKnob).CornerRadius = UDim.new(1, 0)
         tY = tY + 18; local headYSld = false
         headYKnob.MouseButton1Down:Connect(function() headYSld = true end)
@@ -1673,7 +1785,7 @@ local function runSyaaHub()
 
         local headSzLab = makeLbl("Ukuran: 4", tY, pTools, 14); tY = tY + 16
         local headSzBg = Instance.new("Frame"); headSzBg.Size = UDim2.new(0.88, 0, 0, 4); headSzBg.Position = UDim2.new(0.06, 0, 0, tY); headSzBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); headSzBg.ZIndex = 5; headSzBg.Parent = pTools; Instance.new("UICorner", headSzBg)
-        local headSzFill = Instance.new("Frame"); headSzFill.Size = UDim2.new(2/8, 0, 1, 0); headSzFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); headSzFill.BorderSizePixel = 0; headSzFill.ZIndex = 6; headSzFill.Parent = headSzBg; Instance.new("UICorner", headSzFill)
+        local headSzFill = Instance.new("Frame"); headSzFill.Size = UDim2.new(2/8, 0, 1, 0); headSzFill.BackgroundColor3 = Color3.fromRGB(0, 155, 255); headSzFill.BorderSizePixel = 0; headSzFill.ZIndex = 6; headSzFill.Parent = headSzBg; Instance.new("UICorner", headSzFill)
         local headSzKnob = Instance.new("TextButton"); headSzKnob.Size = UDim2.new(0, 14, 0, 14); headSzKnob.Position = UDim2.new(2/8, -7, 0.5, -7); headSzKnob.Text = ""; headSzKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); headSzKnob.ZIndex = 7; headSzKnob.Parent = headSzBg; Instance.new("UICorner", headSzKnob).CornerRadius = UDim.new(1, 0)
         tY = tY + 18; local headSzSld = false
         headSzKnob.MouseButton1Down:Connect(function() headSzSld = true end)
@@ -1710,7 +1822,7 @@ local function runSyaaHub()
             else
                 destroyHeadImg()
                 headImgStatusLbl.Text = "▸ Ngikutin kepala + animasi emote"
-                headImgStatusLbl.TextColor3 = Color3.fromRGB(50, 150, 255)
+                headImgStatusLbl.TextColor3 = Color3.fromRGB(50, 185, 255)
             end
         end)
 
@@ -1725,7 +1837,7 @@ local function runSyaaHub()
         end)
 
         -- ==========================================
-        -- HEAD IMAGE ON OTHER PLAYERS (BARU)
+        -- HEAD IMAGE ON OTHER PLAYERS
         -- ==========================================
         makeSepHdr("👥 PASANG GAMBAR KE PLAYER LAIN", tY, pTools); tY = tY + 22
 
@@ -1740,17 +1852,16 @@ local function runSyaaHub()
         otherImgIdInput.ZIndex = 5
         otherImgIdInput.Parent = pTools
         Instance.new("UICorner", otherImgIdInput)
-        Instance.new("UIStroke", otherImgIdInput).Color = Color3.fromRGB(0, 100, 230)
+        Instance.new("UIStroke", otherImgIdInput).Color = Color3.fromRGB(0, 130, 250)
         tY = tY + 36
 
-        local otherImgStatusLbl = makeLbl("▸ Pilih player lalu klik Pasang / Copot", tY, pTools, 14, Color3.fromRGB(50, 150, 255))
+        local otherImgStatusLbl = makeLbl("▸ Pilih player lalu klik Pasang / Copot", tY, pTools, 14, Color3.fromRGB(50, 185, 255))
         otherImgStatusLbl.TextWrapped = true
         tY = tY + 22
 
-        -- Slider ukuran buat player lain
         local otherSzLab = makeLbl("Ukuran Gambar: 4", tY, pTools, 14); tY = tY + 16
         local otherSzBg = Instance.new("Frame"); otherSzBg.Size = UDim2.new(0.88, 0, 0, 4); otherSzBg.Position = UDim2.new(0.06, 0, 0, tY); otherSzBg.BackgroundColor3 = Color3.fromRGB(15, 25, 50); otherSzBg.ZIndex = 5; otherSzBg.Parent = pTools; Instance.new("UICorner", otherSzBg)
-        local otherSzFill = Instance.new("Frame"); otherSzFill.Size = UDim2.new(2/8, 0, 1, 0); otherSzFill.BackgroundColor3 = Color3.fromRGB(0, 120, 255); otherSzFill.BorderSizePixel = 0; otherSzFill.ZIndex = 6; otherSzFill.Parent = otherSzBg; Instance.new("UICorner", otherSzFill)
+        local otherSzFill = Instance.new("Frame"); otherSzFill.Size = UDim2.new(2/8, 0, 1, 0); otherSzFill.BackgroundColor3 = Color3.fromRGB(0, 155, 255); otherSzFill.BorderSizePixel = 0; otherSzFill.ZIndex = 6; otherSzFill.Parent = otherSzBg; Instance.new("UICorner", otherSzFill)
         local otherSzKnob = Instance.new("TextButton"); otherSzKnob.Size = UDim2.new(0, 14, 0, 14); otherSzKnob.Position = UDim2.new(2/8, -7, 0.5, -7); otherSzKnob.Text = ""; otherSzKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); otherSzKnob.ZIndex = 7; otherSzKnob.Parent = otherSzBg; Instance.new("UICorner", otherSzKnob).CornerRadius = UDim.new(1, 0)
         tY = tY + 18
         local otherImgSize = 4
@@ -1766,7 +1877,6 @@ local function runSyaaHub()
             end
         end)
 
-        -- Tombol Copot Semua
         local removeAllBtn = Instance.new("TextButton")
         removeAllBtn.Text = "🗑️ Copot Semua Gambar"
         removeAllBtn.Size = UDim2.new(0.92, 0, 0, 28)
@@ -1781,23 +1891,11 @@ local function runSyaaHub()
         Instance.new("UICorner", removeAllBtn).CornerRadius = UDim.new(0, 6)
         tY = tY + 36
 
-        removeAllBtn.MouseButton1Click:Connect(function()
-            for p, _ in pairs(otherHeadImgs) do
-                removeOtherHeadImg(p)
-            end
-            otherImgStatusLbl.Text = "▸ Semua gambar dicopot 🗑️"
-            otherImgStatusLbl.TextColor3 = Color3.fromRGB(200, 200, 200)
-            -- Refresh list buat update warna
-            task.wait(0.1)
-            -- trigger refresh
-        end)
-
-        -- List player lain
         local otherRefreshBtn = Instance.new("TextButton")
         otherRefreshBtn.Text = "↺ Refresh Player List"
         otherRefreshBtn.Size = UDim2.new(0.92, 0, 0, 26)
         otherRefreshBtn.Position = UDim2.new(0.04, 0, 0, tY)
-        otherRefreshBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 230)
+        otherRefreshBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 250)
         otherRefreshBtn.BackgroundTransparency = 0.5
         otherRefreshBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         otherRefreshBtn.Font = Enum.Font.GothamBold
@@ -1815,11 +1913,11 @@ local function runSyaaHub()
         otherPlayerList.ZIndex = 5
         otherPlayerList.Parent = pTools
         otherPlayerList.ScrollBarThickness = 2
-        otherPlayerList.ScrollBarImageColor3 = Color3.fromRGB(0, 120, 255)
+        otherPlayerList.ScrollBarImageColor3 = Color3.fromRGB(0, 155, 255)
         otherPlayerList.AutomaticCanvasSize = Enum.AutomaticSize.Y
         otherPlayerList.ScrollingDirection = Enum.ScrollingDirection.Y
         Instance.new("UICorner", otherPlayerList)
-        Instance.new("UIStroke", otherPlayerList).Color = Color3.fromRGB(0, 100, 230)
+        Instance.new("UIStroke", otherPlayerList).Color = Color3.fromRGB(0, 130, 250)
         local otherListLayout = Instance.new("UIListLayout", otherPlayerList)
         otherListLayout.Padding = UDim.new(0, 3)
         tY = tY + 140
@@ -1862,7 +1960,6 @@ local function runSyaaHub()
                 Instance.new("UICorner", row)
                 table.insert(otherPlayerRows, row)
 
-                -- Avatar player
                 local ava = Instance.new("ImageLabel")
                 ava.Size = UDim2.new(0, 32, 0, 32)
                 ava.Position = UDim2.new(0, 4, 0.5, -16)
@@ -1876,7 +1973,6 @@ local function runSyaaHub()
                     end)
                 end)
 
-                -- Nama
                 local nl = Instance.new("TextLabel")
                 nl.Size = UDim2.new(1, -120, 0, 16)
                 nl.Position = UDim2.new(0, 42, 0, 4)
@@ -1894,14 +1990,13 @@ local function runSyaaHub()
                 un.Position = UDim2.new(0, 42, 0, 20)
                 un.BackgroundTransparency = 1
                 un.Text = "@" .. p.Name
-                un.TextColor3 = Color3.fromRGB(100, 160, 255)
+                un.TextColor3 = Color3.fromRGB(100, 185, 255)
                 un.Font = Enum.Font.Gotham
                 un.TextSize = 9
                 un.TextXAlignment = Enum.TextXAlignment.Left
                 un.ZIndex = 7
                 un.Parent = row
 
-                -- Tombol Pasang
                 local pasangBtn = Instance.new("TextButton")
                 pasangBtn.Size = UDim2.new(0, 48, 0, 18)
                 pasangBtn.Position = UDim2.new(1, -104, 0, 4)
@@ -1915,7 +2010,6 @@ local function runSyaaHub()
                 pasangBtn.Parent = row
                 Instance.new("UICorner", pasangBtn).CornerRadius = UDim.new(0, 4)
 
-                -- Tombol Copot
                 local copotBtn = Instance.new("TextButton")
                 copotBtn.Size = UDim2.new(0, 48, 0, 18)
                 copotBtn.Position = UDim2.new(1, -52, 0, 4)
@@ -1929,7 +2023,6 @@ local function runSyaaHub()
                 copotBtn.Parent = row
                 Instance.new("UICorner", copotBtn).CornerRadius = UDim.new(0, 4)
 
-                -- Status badge
                 local statusLbl = Instance.new("TextLabel")
                 statusLbl.Size = UDim2.new(1, -42, 0, 12)
                 statusLbl.Position = UDim2.new(0, 42, 0, 30)
@@ -1952,7 +2045,6 @@ local function runSyaaHub()
                     createOtherHeadImg(p, idText, 0, 3.5, otherImgSize)
                     otherImgStatusLbl.Text = "▸ ✅ Gambar dipasang ke " .. p.DisplayName
                     otherImgStatusLbl.TextColor3 = Color3.fromRGB(0, 200, 100)
-                    -- Update status badge langsung
                     statusLbl.Text = "✅ ID: " .. string.sub(idText, 1, 8)
                     statusLbl.TextColor3 = Color3.fromRGB(80, 255, 120)
                     row.BackgroundColor3 = Color3.fromRGB(0, 80, 30)
@@ -2003,7 +2095,7 @@ local function runSyaaHub()
         makeSepHdr("DISPLAY SETTINGS", oY, pOR); oY = oY+22
         local briLab = makeLbl("Brightness: 1.0",oY,pOR,14); oY = oY+16
         local brBg = Instance.new("Frame"); brBg.Size, brBg.Position, brBg.BackgroundColor3, brBg.ZIndex, brBg.Parent = UDim2.new(0.88,0,0,4), UDim2.new(0.06,0,0,oY), Color3.fromRGB(15,25,50), 5, pOR; Instance.new("UICorner",brBg)
-        local brFill = Instance.new("Frame"); brFill.Size, brFill.BackgroundColor3, brFill.BorderSizePixel, brFill.ZIndex, brFill.Parent = UDim2.new(0.5,0,1,0), Color3.fromRGB(0,120,255), 0, 6, brBg; Instance.new("UICorner",brFill)
+        local brFill = Instance.new("Frame"); brFill.Size, brFill.BackgroundColor3, brFill.BorderSizePixel, brFill.ZIndex, brFill.Parent = UDim2.new(0.5,0,1,0), Color3.fromRGB(0,155,255), 0, 6, brBg; Instance.new("UICorner",brFill)
         local brBtn = Instance.new("TextButton"); brBtn.Size, brBtn.Position, brBtn.Text, brBtn.BackgroundColor3, brBtn.ZIndex, brBtn.Parent = UDim2.new(0,14,0,14), UDim2.new(0.5,-7,0.5,-7), "", Color3.fromRGB(255,255,255), 7, brBg; Instance.new("UICorner",brBtn)
         oY=oY+18; local briSld = false
         brBtn.MouseButton1Down:Connect(function() briSld=true end)
@@ -2024,7 +2116,7 @@ local function runSyaaHub()
         local lockRow, setLockState, getLockState = makeIosRow("Lock Target", Y, pFC); Y = Y+36
         local sLbl = makeLbl("Smoothness: 50", Y, pFC); Y = Y+16
         local sBg = Instance.new("Frame"); sBg.Size = UDim2.new(0.88,0,0,4); sBg.Position = UDim2.new(0.06,0,0,Y); sBg.BackgroundColor3 = Color3.fromRGB(15,25,50); sBg.ZIndex = 5; sBg.Parent = pFC; Instance.new("UICorner",sBg)
-        local sFill = Instance.new("Frame"); sFill.Size = UDim2.new(0.5,0,1,0); sFill.BackgroundColor3 = Color3.fromRGB(0,120,255); sFill.BorderSizePixel = 0; sFill.ZIndex = 6; sFill.Parent = sBg; Instance.new("UICorner",sFill)
+        local sFill = Instance.new("Frame"); sFill.Size = UDim2.new(0.5,0,1,0); sFill.BackgroundColor3 = Color3.fromRGB(0,155,255); sFill.BorderSizePixel = 0; sFill.ZIndex = 6; sFill.Parent = sBg; Instance.new("UICorner",sFill)
         local sKnob = Instance.new("TextButton"); sKnob.Size = UDim2.new(0,14,0,14); sKnob.Position = UDim2.new(0.5,-7,0.5,-7); sKnob.Text = ""; sKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); sKnob.ZIndex = 7; sKnob.Parent = sBg; Instance.new("UICorner",sKnob).CornerRadius = UDim.new(1,0)
         Y = Y+18; local sSld = false
         sKnob.MouseButton1Down:Connect(function() sSld=true end)
@@ -2033,7 +2125,7 @@ local function runSyaaHub()
 
         local msLbl = makeLbl("Move Speed: 15", Y, pFC); Y = Y+16
         local msBg = Instance.new("Frame"); msBg.Size = UDim2.new(0.88,0,0,4); msBg.Position = UDim2.new(0.06,0,0,Y); msBg.BackgroundColor3 = Color3.fromRGB(15,25,50); msBg.ZIndex = 5; msBg.Parent = pFC; Instance.new("UICorner",msBg)
-        local msFill = Instance.new("Frame"); msFill.Size = UDim2.new(0.15,0,1,0); msFill.BackgroundColor3 = Color3.fromRGB(0,120,255); msFill.BorderSizePixel = 0; msFill.ZIndex = 6; msFill.Parent = msBg; Instance.new("UICorner",msFill)
+        local msFill = Instance.new("Frame"); msFill.Size = UDim2.new(0.15,0,1,0); msFill.BackgroundColor3 = Color3.fromRGB(0,155,255); msFill.BorderSizePixel = 0; msFill.ZIndex = 6; msFill.Parent = msBg; Instance.new("UICorner",msFill)
         local msKnob = Instance.new("TextButton"); msKnob.Size = UDim2.new(0,14,0,14); msKnob.Position = UDim2.new(0.15,-7,0.5,-7); msKnob.Text = ""; msKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); msKnob.ZIndex = 7; msKnob.Parent = msBg; Instance.new("UICorner",msKnob).CornerRadius = UDim.new(1,0)
         Y = Y+18; local msSld = false
         msKnob.MouseButton1Down:Connect(function() msSld=true end)
@@ -2041,7 +2133,7 @@ local function runSyaaHub()
         UserInputService.InputChanged:Connect(function(i) if msSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos=math.clamp((i.Position.X-msBg.AbsolutePosition.X)/msBg.AbsoluteSize.X,0,1); msFill.Size=UDim2.new(pos,0,1,0); msKnob.Position=UDim2.new(pos,-7,0.5,-7); moveSpeed=math.max(1,math.floor(pos*100)); msLbl.Text="Move Speed: "..moveSpeed end end)
 
         local awFwd, awStop, awBack
-        local cOff = Color3.fromRGB(0,100,230)
+        local cOff = Color3.fromRGB(0,130,250)
         local function setAutoWalkState(dir)
             autoWalkActive = (dir ~= 0); autoWalkDirection = dir
             awFwd.BackgroundColor3 = dir==1 and Color3.fromRGB(0,200,100) or cOff
@@ -2070,7 +2162,7 @@ local function runSyaaHub()
 
         local awsLbl = makeLbl("Auto Walk Speed: 10", Y, pFC, 14); Y = Y+16
         local awsBg = Instance.new("Frame"); awsBg.Size = UDim2.new(0.88,0,0,4); awsBg.Position = UDim2.new(0.06,0,0,Y); awsBg.BackgroundColor3 = Color3.fromRGB(15,25,50); awsBg.ZIndex = 5; awsBg.Parent = pFC; Instance.new("UICorner",awsBg)
-        local awsFill = Instance.new("Frame"); awsFill.Size = UDim2.new(10/60,0,1,0); awsFill.BackgroundColor3 = Color3.fromRGB(0,120,255); awsFill.BorderSizePixel = 0; awsFill.ZIndex = 6; awsFill.Parent = awsBg; Instance.new("UICorner",awsFill)
+        local awsFill = Instance.new("Frame"); awsFill.Size = UDim2.new(10/60,0,1,0); awsFill.BackgroundColor3 = Color3.fromRGB(0,155,255); awsFill.BorderSizePixel = 0; awsFill.ZIndex = 6; awsFill.Parent = awsBg; Instance.new("UICorner",awsFill)
         local awsKnob = Instance.new("TextButton"); awsKnob.Size = UDim2.new(0,14,0,14); awsKnob.Position = UDim2.new(10/60,-7,0.5,-7); awsKnob.Text = ""; awsKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); awsKnob.ZIndex = 7; awsKnob.Parent = awsBg; Instance.new("UICorner",awsKnob).CornerRadius = UDim.new(1,0)
         Y = Y+18; local awsSld = false
         awsKnob.MouseButton1Down:Connect(function() awsSld=true end)
@@ -2081,7 +2173,7 @@ local function runSyaaHub()
         local jumpRow, setJumpState, getJumpState = makeIosRow("Custom Jump Button", Y, pFC); Y = Y+36
         local jumpXLab = makeLbl("Posisi X: 85%", Y, pFC, 14); Y = Y+16
         local jxBg = Instance.new("Frame"); jxBg.Size = UDim2.new(0.88,0,0,4); jxBg.Position = UDim2.new(0.06,0,0,Y); jxBg.BackgroundColor3 = Color3.fromRGB(15,25,50); jxBg.ZIndex = 5; jxBg.Parent = pFC; Instance.new("UICorner",jxBg)
-        local jxFill = Instance.new("Frame"); jxFill.Size = UDim2.new(0.85,0,1,0); jxFill.BackgroundColor3 = Color3.fromRGB(0,120,255); jxFill.BorderSizePixel = 0; jxFill.ZIndex = 6; jxFill.Parent = jxBg; Instance.new("UICorner",jxFill)
+        local jxFill = Instance.new("Frame"); jxFill.Size = UDim2.new(0.85,0,1,0); jxFill.BackgroundColor3 = Color3.fromRGB(0,155,255); jxFill.BorderSizePixel = 0; jxFill.ZIndex = 6; jxFill.Parent = jxBg; Instance.new("UICorner",jxFill)
         local jxKnob = Instance.new("TextButton"); jxKnob.Size = UDim2.new(0,14,0,14); jxKnob.Position = UDim2.new(0.85,-7,0.5,-7); jxKnob.Text = ""; jxKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); jxKnob.ZIndex = 7; jxKnob.Parent = jxBg; Instance.new("UICorner",jxKnob).CornerRadius = UDim.new(1,0)
         Y = Y+18; local jxSld = false
         jxKnob.MouseButton1Down:Connect(function() jxSld=true end)
@@ -2089,7 +2181,7 @@ local function runSyaaHub()
         UserInputService.InputChanged:Connect(function(i) if jxSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos=math.clamp((i.Position.X-jxBg.AbsolutePosition.X)/jxBg.AbsoluteSize.X,0,1); jxFill.Size=UDim2.new(pos,0,1,0); jxKnob.Position=UDim2.new(pos,-7,0.5,-7); customJumpX=pos; jumpXLab.Text="Posisi X: "..math.floor(pos*100).."%"; updateJumpBtn() end end)
         local jumpYLab = makeLbl("Posisi Y: 75%", Y, pFC, 14); Y = Y+16
         local jyBg = Instance.new("Frame"); jyBg.Size = UDim2.new(0.88,0,0,4); jyBg.Position = UDim2.new(0.06,0,0,Y); jyBg.BackgroundColor3 = Color3.fromRGB(15,25,50); jyBg.ZIndex = 5; jyBg.Parent = pFC; Instance.new("UICorner",jyBg)
-        local jyFill = Instance.new("Frame"); jyFill.Size = UDim2.new(0.75,0,1,0); jyFill.BackgroundColor3 = Color3.fromRGB(0,120,255); jyFill.BorderSizePixel = 0; jyFill.ZIndex = 6; jyFill.Parent = jyBg; Instance.new("UICorner",jyFill)
+        local jyFill = Instance.new("Frame"); jyFill.Size = UDim2.new(0.75,0,1,0); jyFill.BackgroundColor3 = Color3.fromRGB(0,155,255); jyFill.BorderSizePixel = 0; jyFill.ZIndex = 6; jyFill.Parent = jyBg; Instance.new("UICorner",jyFill)
         local jyKnob = Instance.new("TextButton"); jyKnob.Size = UDim2.new(0,14,0,14); jyKnob.Position = UDim2.new(0.75,-7,0.5,-7); jyKnob.Text = ""; jyKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); jyKnob.ZIndex = 7; jyKnob.Parent = jyBg; Instance.new("UICorner",jyKnob).CornerRadius = UDim.new(1,0)
         Y = Y+18; local jySld = false
         jyKnob.MouseButton1Down:Connect(function() jySld=true end)
@@ -2097,7 +2189,7 @@ local function runSyaaHub()
         UserInputService.InputChanged:Connect(function(i) if jySld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos=math.clamp((i.Position.X-jyBg.AbsolutePosition.X)/jyBg.AbsoluteSize.X,0,1); jyFill.Size=UDim2.new(pos,0,1,0); jyKnob.Position=UDim2.new(pos,-7,0.5,-7); customJumpY=pos; jumpYLab.Text="Posisi Y: "..math.floor(pos*100).."%"; updateJumpBtn() end end)
         local jumpSzLab = makeLbl("Ukuran: 80", Y, pFC, 14); Y = Y+16
         local jszBg = Instance.new("Frame"); jszBg.Size = UDim2.new(0.88,0,0,4); jszBg.Position = UDim2.new(0.06,0,0,Y); jszBg.BackgroundColor3 = Color3.fromRGB(15,25,50); jszBg.ZIndex = 5; jszBg.Parent = pFC; Instance.new("UICorner",jszBg)
-        local jszFill = Instance.new("Frame"); jszFill.Size = UDim2.new(80/200,0,1,0); jszFill.BackgroundColor3 = Color3.fromRGB(0,120,255); jszFill.BorderSizePixel = 0; jszFill.ZIndex = 6; jszFill.Parent = jszBg; Instance.new("UICorner",jszFill)
+        local jszFill = Instance.new("Frame"); jszFill.Size = UDim2.new(80/200,0,1,0); jszFill.BackgroundColor3 = Color3.fromRGB(0,155,255); jszFill.BorderSizePixel = 0; jszFill.ZIndex = 6; jszFill.Parent = jszBg; Instance.new("UICorner",jszFill)
         local jszKnob = Instance.new("TextButton"); jszKnob.Size = UDim2.new(0,14,0,14); jszKnob.Position = UDim2.new(80/200,-7,0.5,-7); jszKnob.Text = ""; jszKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); jszKnob.ZIndex = 7; jszKnob.Parent = jszBg; Instance.new("UICorner",jszKnob).CornerRadius = UDim.new(1,0)
         Y = Y+18; local jszSld = false
         jszKnob.MouseButton1Down:Connect(function() jszSld=true end)
@@ -2113,17 +2205,17 @@ local function runSyaaHub()
         slRow.MouseButton1Click:Connect(function()
             isShiftlockActive = not isShiftlockActive; setSlState(isShiftlockActive)
             shiftlockBtn.Visible = isShiftlockActive
-            if isShiftlockActive then shiftlockBtn.ImageColor3 = Color3.fromRGB(0,170,255); applyShiftlock()
+            if isShiftlockActive then shiftlockBtn.ImageColor3 = Color3.fromRGB(0,185,255); applyShiftlock()
             else shiftlockBtn.ImageColor3 = Color3.fromRGB(255,255,255); disableShiftlock() end
         end)
 
         makeSepHdr("STABILIZER KAMERA + KARAKTER", Y, pFC); Y = Y+22
         local stabRow, setStabState, getStabState = makeIosRow("Stabilizer", Y, pFC); Y = Y+36
-        local stabInfoLbl = makeLbl("▸ Stabil saat lompat di tangga/obstacle", Y, pFC, 14, Color3.fromRGB(50, 150, 255)); Y = Y+20
+        local stabInfoLbl = makeLbl("▸ Stabil saat lompat di tangga/obstacle", Y, pFC, 14, Color3.fromRGB(50, 185, 255)); Y = Y+20
 
         local stabStrLab = makeLbl("Stabilizer Strength: 0.15", Y, pFC, 14); Y = Y+16
         local stabStrBg = Instance.new("Frame"); stabStrBg.Size = UDim2.new(0.88,0,0,4); stabStrBg.Position = UDim2.new(0.06,0,0,Y); stabStrBg.BackgroundColor3 = Color3.fromRGB(15,25,50); stabStrBg.ZIndex = 5; stabStrBg.Parent = pFC; Instance.new("UICorner",stabStrBg)
-        local stabStrFill = Instance.new("Frame"); stabStrFill.Size = UDim2.new(0.15,0,1,0); stabStrFill.BackgroundColor3 = Color3.fromRGB(0,120,255); stabStrFill.BorderSizePixel = 0; stabStrFill.ZIndex = 6; stabStrFill.Parent = stabStrBg; Instance.new("UICorner",stabStrFill)
+        local stabStrFill = Instance.new("Frame"); stabStrFill.Size = UDim2.new(0.15,0,1,0); stabStrFill.BackgroundColor3 = Color3.fromRGB(0,155,255); stabStrFill.BorderSizePixel = 0; stabStrFill.ZIndex = 6; stabStrFill.Parent = stabStrBg; Instance.new("UICorner",stabStrFill)
         local stabStrKnob = Instance.new("TextButton"); stabStrKnob.Size = UDim2.new(0,14,0,14); stabStrKnob.Position = UDim2.new(0.15,-7,0.5,-7); stabStrKnob.Text = ""; stabStrKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); stabStrKnob.ZIndex = 7; stabStrKnob.Parent = stabStrBg; Instance.new("UICorner",stabStrKnob).CornerRadius = UDim.new(1,0)
         Y = Y+18; local stabStrSld = false
         stabStrKnob.MouseButton1Down:Connect(function() stabStrSld = true end)
@@ -2141,7 +2233,7 @@ local function runSyaaHub()
 
         local stabDelayLab = makeLbl("Delay Return: 0.8s", Y, pFC, 14); Y = Y+16
         local stabDelayBg = Instance.new("Frame"); stabDelayBg.Size = UDim2.new(0.88,0,0,4); stabDelayBg.Position = UDim2.new(0.06,0,0,Y); stabDelayBg.BackgroundColor3 = Color3.fromRGB(15,25,50); stabDelayBg.ZIndex = 5; stabDelayBg.Parent = pFC; Instance.new("UICorner",stabDelayBg)
-        local stabDelayFill = Instance.new("Frame"); stabDelayFill.Size = UDim2.new(0.8/5,0,1,0); stabDelayFill.BackgroundColor3 = Color3.fromRGB(0,120,255); stabDelayFill.BorderSizePixel = 0; stabDelayFill.ZIndex = 6; stabDelayFill.Parent = stabDelayBg; Instance.new("UICorner",stabDelayFill)
+        local stabDelayFill = Instance.new("Frame"); stabDelayFill.Size = UDim2.new(0.8/5,0,1,0); stabDelayFill.BackgroundColor3 = Color3.fromRGB(0,155,255); stabDelayFill.BorderSizePixel = 0; stabDelayFill.ZIndex = 6; stabDelayFill.Parent = stabDelayBg; Instance.new("UICorner",stabDelayFill)
         local stabDelayKnob = Instance.new("TextButton"); stabDelayKnob.Size = UDim2.new(0,14,0,14); stabDelayKnob.Position = UDim2.new(0.8/5,-7,0.5,-7); stabDelayKnob.Text = ""; stabDelayKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); stabDelayKnob.ZIndex = 7; stabDelayKnob.Parent = stabDelayBg; Instance.new("UICorner",stabDelayKnob).CornerRadius = UDim.new(1,0)
         Y = Y + 18; local stabDelaySld = false
         stabDelayKnob.MouseButton1Down:Connect(function() stabDelaySld = true end)
@@ -2161,7 +2253,7 @@ local function runSyaaHub()
         lockDirBtn.Text = "📌 Lock Arah Kamera Sekarang"
         lockDirBtn.Size = UDim2.new(0.92, 0, 0, 28)
         lockDirBtn.Position = UDim2.new(0.04, 0, 0, Y)
-        lockDirBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 230)
+        lockDirBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 250)
         lockDirBtn.BackgroundTransparency = 0.4
         lockDirBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         lockDirBtn.Font = Enum.Font.GothamBold
@@ -2190,14 +2282,14 @@ local function runSyaaHub()
                 stabInfoLbl.TextColor3 = Color3.fromRGB(0, 200, 100)
             else
                 stabInfoLbl.Text = "▸ Stabil saat lompat di tangga/obstacle"
-                stabInfoLbl.TextColor3 = Color3.fromRGB(50, 150, 255)
+                stabInfoLbl.TextColor3 = Color3.fromRGB(50, 185, 255)
             end
         end)
 
         local bPadFC = Instance.new("Frame"); bPadFC.Size = UDim2.new(1,0,0,20); bPadFC.Position = UDim2.new(0,0,0,Y); bPadFC.BackgroundTransparency = 1; bPadFC.Parent = pFC
 
         local hud = Instance.new("Frame"); hud.Size, hud.BackgroundTransparency, hud.Visible, hud.Parent = UDim2.new(1,0,1,0), 1, false, screenGui
-        local function bHUD(t,p,k,type) local b = Instance.new("TextButton"); b.Text, b.Size, b.Position, b.BackgroundColor3, b.BackgroundTransparency, b.TextColor3, b.Font, b.Parent = t, UDim2.new(0,50,0,50), p, Color3.fromRGB(10,20,45), 0.3, Color3.fromRGB(50,150,255), Enum.Font.GothamBold, hud; Instance.new("UICorner",b).CornerRadius = UDim.new(1,0)
+        local function bHUD(t,p,k,type) local b = Instance.new("TextButton"); b.Text, b.Size, b.Position, b.BackgroundColor3, b.BackgroundTransparency, b.TextColor3, b.Font, b.Parent = t, UDim2.new(0,50,0,50), p, Color3.fromRGB(10,20,45), 0.3, Color3.fromRGB(50,185,255), Enum.Font.GothamBold, hud; Instance.new("UICorner",b).CornerRadius = UDim.new(1,0)
             b.InputBegan:Connect(function() if type=="m" then moveInputs[k]=1 else zoomInputs[k]=1 end end); b.InputEnded:Connect(function() if type=="m" then moveInputs[k]=0 else zoomInputs[k]=0 end end) end
         bHUD("W",UDim2.new(0,80,1,-150),"F","m"); bHUD("S",UDim2.new(0,80,1,-80),"B","m"); bHUD("A",UDim2.new(0,15,1,-80),"L","m"); bHUD("D",UDim2.new(0,145,1,-80),"R","m"); bHUD("UP",UDim2.new(1,-140,1,-150),"U","m"); bHUD("DN",UDim2.new(1,-140,1,-80),"D","m"); bHUD("+",UDim2.new(1,-70,1,-150),"In","z"); bHUD("-",UDim2.new(1,-70,1,-80),"Out","z")
 
