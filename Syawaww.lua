@@ -238,18 +238,35 @@ local function runSyaaHub()
 
     -- ENGINE VARIABLES
     local isFreecamActive = false
-    local lockTarget = nil
+    local lockTargets = {}            -- multi-target lock (array of Player, 1-10)
     local isLockOn = false
     local moveSpeed = 15
     local targetFov = 70
     local targetYaw, targetPitch = 0, 0
     local displayYaw, displayPitch = 0, 0
+    -- Camera velocity (kept for compat, inertia removed for crisp feel)
+    local camVelYaw, camVelPitch = 0, 0
+    -- Lock-mode orbit angles (so joystick X/Y orbit around locked targets)
+    local lockOrbitYaw, lockOrbitPitch = 0, 30
+    -- Smoothed camera position for lock mode (prevents random offset / underground clipping)
+    local lockSmoothPos = Vector3.new(0, 0, 0)
+    local lockSmoothPosInit = false
+    -- Smoothed center & distance to prevent jitter when targets move
+    local lockSmoothCenter = Vector3.new(0, 0, 0)
+    local lockSmoothDist   = 20
+    -- User-controlled distance offset (joystick F/B maju mundur), terpisah dari auto-fit
+    local lockUserDistOffset = 0
+    -- Auto-visibility lock: lock semua player yang keliatan di frame (no cap)
     local moveInputs = {F=0,B=0,L=0,R=0,U=0,D=0}
     local zoomInputs = {In=0,Out=0}
     local smoothValue = 50
     local autoWalkActive = false
     local autoWalkDirection = 0
     local autoWalkSpeed = 10
+    local lockSmoothSpeed = 5         -- dedicated lock smoothing (1-15)
+    local joystickX, joystickY = 0, 0 -- virtual joystick output
+    -- Track which touch IDs belong to joystick so camera swipe ignores them
+    local joystickTouchIds = {}        -- set of active touch inputObjects on joystick
     local PlayerModule = require(localPlayer.PlayerScripts:WaitForChild("PlayerModule")):GetControls()
 
     -- STABILIZER VARIABLES
@@ -2105,7 +2122,226 @@ local function runSyaaHub()
         local Y = 2
         local camRow, setCamState, getCamState = makeIosRow("Camera", Y, pFC); Y = Y+36
         local hudRow, setHudState, getHudState = makeIosRow("Show HUD", Y, pFC); Y = Y+36
-        local lockRow, setLockState, getLockState = makeIosRow("Lock Target", Y, pFC); Y = Y+36
+        local lockRow, setLockState, getLockState = makeIosRow("Lock Target (1-10 player)", Y, pFC); Y = Y+36
+
+        -- LOCK SMOOTH SPEED SLIDER
+        local lsLbl = makeLbl("Lock Smooth Speed: 5", Y, pFC); Y = Y+16
+        local lsBg = Instance.new("Frame"); lsBg.Size = UDim2.new(0.88,0,0,4); lsBg.Position = UDim2.new(0.06,0,0,Y); lsBg.BackgroundColor3 = Color3.fromRGB(15,25,50); lsBg.ZIndex = 5; lsBg.Parent = pFC; Instance.new("UICorner",lsBg)
+        local lsFill = Instance.new("Frame"); lsFill.Size = UDim2.new(5/15,0,1,0); lsFill.BackgroundColor3 = Color3.fromRGB(0,200,100); lsFill.BorderSizePixel = 0; lsFill.ZIndex = 6; lsFill.Parent = lsBg; Instance.new("UICorner",lsFill)
+        local lsKnob = Instance.new("TextButton"); lsKnob.Size = UDim2.new(0,14,0,14); lsKnob.Position = UDim2.new(5/15,-7,0.5,-7); lsKnob.Text = ""; lsKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); lsKnob.ZIndex = 7; lsKnob.Parent = lsBg; Instance.new("UICorner",lsKnob).CornerRadius = UDim.new(1,0)
+        Y = Y+18; local lsSld = false
+        lsKnob.MouseButton1Down:Connect(function() lsSld=true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then lsSld=false end end)
+        UserInputService.InputChanged:Connect(function(i) if lsSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local pos=math.clamp((i.Position.X-lsBg.AbsolutePosition.X)/lsBg.AbsoluteSize.X,0,1); lsFill.Size=UDim2.new(pos,0,1,0); lsKnob.Position=UDim2.new(pos,-7,0.5,-7); lockSmoothSpeed=math.max(1,math.floor(pos*15)); lsLbl.Text="Lock Smooth Speed: "..lockSmoothSpeed end end)
+
+        -- ==========================================
+        -- MULTI-TARGET LOCK — AUTO / MANUAL MODE
+        -- ==========================================
+        makeSepHdr("MULTI-TARGET LOCK", Y, pFC); Y = Y+22
+
+        -- Mode state: true = Auto, false = Manual
+        local lockModeAuto = true
+
+        -- Tab buttons: AUTO | MANUAL
+        local tabAuto = Instance.new("TextButton")
+        tabAuto.Size = UDim2.new(0.44,0,0,28); tabAuto.Position = UDim2.new(0.04,0,0,Y)
+        tabAuto.Text = "⚡ Auto"; tabAuto.Font = Enum.Font.GothamBold; tabAuto.TextSize = 11
+        tabAuto.TextColor3 = Color3.fromRGB(255,255,255); tabAuto.ZIndex = 5; tabAuto.Parent = pFC
+        tabAuto.BackgroundColor3 = Color3.fromRGB(0,155,80); tabAuto.BackgroundTransparency = 0.2
+        Instance.new("UICorner",tabAuto).CornerRadius = UDim.new(0,7)
+        Instance.new("UIStroke",tabAuto).Color = Color3.fromRGB(0,220,110)
+
+        local tabManual = Instance.new("TextButton")
+        tabManual.Size = UDim2.new(0.44,0,0,28); tabManual.Position = UDim2.new(0.52,0,0,Y)
+        tabManual.Text = "👆 Manual"; tabManual.Font = Enum.Font.GothamBold; tabManual.TextSize = 11
+        tabManual.TextColor3 = Color3.fromRGB(180,180,180); tabManual.ZIndex = 5; tabManual.Parent = pFC
+        tabManual.BackgroundColor3 = Color3.fromRGB(20,40,80); tabManual.BackgroundTransparency = 0.4
+        Instance.new("UICorner",tabManual).CornerRadius = UDim.new(0,7)
+        Instance.new("UIStroke",tabManual).Color = Color3.fromRGB(40,80,160)
+        Y = Y+34
+
+        local lockInfoLbl = makeLbl("▸ Auto-lock semua player yang keliatan di frame", Y, pFC, 14, Color3.fromRGB(50,185,255))
+        lockInfoLbl.TextWrapped = true; Y = Y+24
+
+        -- Tombol Refresh + Clear (hanya keliatan di Manual)
+        local lockRefreshBtn = Instance.new("TextButton"); lockRefreshBtn.Text = "↺ Refresh"; lockRefreshBtn.Size = UDim2.new(0.44,0,0,26); lockRefreshBtn.Position = UDim2.new(0.04,0,0,Y); lockRefreshBtn.BackgroundColor3 = Color3.fromRGB(0,130,250); lockRefreshBtn.BackgroundTransparency = 0.5; lockRefreshBtn.TextColor3 = Color3.fromRGB(255,255,255); lockRefreshBtn.Font = Enum.Font.GothamBold; lockRefreshBtn.TextSize = 10; lockRefreshBtn.ZIndex = 5; lockRefreshBtn.Parent = pFC; Instance.new("UICorner",lockRefreshBtn).CornerRadius = UDim.new(0,6)
+        local lockClearBtn = Instance.new("TextButton"); lockClearBtn.Text = "🗑️ Clear All"; lockClearBtn.Size = UDim2.new(0.44,0,0,26); lockClearBtn.Position = UDim2.new(0.52,0,0,Y); lockClearBtn.BackgroundColor3 = Color3.fromRGB(180,30,30); lockClearBtn.BackgroundTransparency = 0.4; lockClearBtn.TextColor3 = Color3.fromRGB(255,255,255); lockClearBtn.Font = Enum.Font.GothamBold; lockClearBtn.TextSize = 10; lockClearBtn.ZIndex = 5; lockClearBtn.Parent = pFC; Instance.new("UICorner",lockClearBtn).CornerRadius = UDim.new(0,6)
+        Y = Y+32
+
+        local lockListFrame = Instance.new("ScrollingFrame"); lockListFrame.Size = UDim2.new(0.92,0,0,110); lockListFrame.Position = UDim2.new(0.04,0,0,Y); lockListFrame.BackgroundColor3 = Color3.fromRGB(5,10,25); lockListFrame.BackgroundTransparency = 0.4; lockListFrame.ZIndex = 5; lockListFrame.Parent = pFC; lockListFrame.ScrollBarThickness = 2; lockListFrame.ScrollBarImageColor3 = Color3.fromRGB(0,155,255); lockListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y; lockListFrame.ScrollingDirection = Enum.ScrollingDirection.Y; Instance.new("UICorner",lockListFrame); Instance.new("UIStroke",lockListFrame).Color = Color3.fromRGB(0,130,250)
+        local lockListLayout = Instance.new("UIListLayout",lockListFrame); lockListLayout.Padding = UDim.new(0,3); lockListLayout.SortOrder = Enum.SortOrder.Name
+        Y = Y+120
+
+        local lockPlayerRows = {}
+
+        local function isPlayerLocked(p)
+            for _, t in ipairs(lockTargets) do if t == p then return true end end
+            return false
+        end
+        local function addLockTarget(p)
+            if not isPlayerLocked(p) then table.insert(lockTargets, p) end
+        end
+        local function removeLockTarget(p)
+            for i, t in ipairs(lockTargets) do if t == p then table.remove(lockTargets, i); return end end
+        end
+
+        local function refreshLockList()
+            for _, r in pairs(lockPlayerRows) do pcall(function() r:Destroy() end) end
+            lockPlayerRows = {}
+
+            if lockModeAuto then
+                lockInfoLbl.Text = #lockTargets > 0
+                    and ("▸ ⚡ AUTO — 🔒 " .. #lockTargets .. " player terkunci")
+                    or  "▸ ⚡ AUTO — mencari player di frame..."
+                lockInfoLbl.TextColor3 = #lockTargets > 0 and Color3.fromRGB(0,220,110) or Color3.fromRGB(50,185,255)
+                -- Di auto mode, list tetap tampil tapi read-only (cuma info siapa yang ke-lock)
+                local others = {}
+                for _, p in ipairs(Players:GetPlayers()) do if p ~= localPlayer then table.insert(others, p) end end
+                if #others == 0 then
+                    local el = Instance.new("TextLabel"); el.Size = UDim2.new(1,0,0,28); el.BackgroundTransparency = 1; el.Text = "Cuma lu doang di server 🗿"; el.TextColor3 = Color3.fromRGB(100,100,100); el.Font = Enum.Font.Gotham; el.TextSize = 10; el.ZIndex = 6; el.Parent = lockListFrame; table.insert(lockPlayerRows, el); return
+                end
+                for _, p in ipairs(others) do
+                    local isLocked = isPlayerLocked(p)
+                    local row = Instance.new("Frame")
+                    row.Size = UDim2.new(1,0,0,30); row.BackgroundColor3 = isLocked and Color3.fromRGB(0,100,50) or Color3.fromRGB(10,20,50)
+                    row.BackgroundTransparency = 0.5; row.ZIndex = 6; row.Parent = lockListFrame
+                    Instance.new("UICorner", row)
+                    local ava = Instance.new("ImageLabel"); ava.Size = UDim2.new(0,22,0,22); ava.Position = UDim2.new(0,4,0.5,-11); ava.BackgroundTransparency = 1; ava.ZIndex = 7; ava.Parent = row
+                    Instance.new("UICorner",ava).CornerRadius = UDim.new(1,0)
+                    task.spawn(function() pcall(function() ava.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48) end) end)
+                    local statusIcon = isLocked and "🔒 " or "👁 "
+                    local nl = Instance.new("TextLabel"); nl.Size = UDim2.new(1,-34,1,0); nl.Position = UDim2.new(0,30,0,0); nl.BackgroundTransparency = 1
+                    nl.Text = statusIcon .. p.DisplayName .. " (@"..p.Name..")"
+                    nl.TextColor3 = isLocked and Color3.fromRGB(80,255,130) or Color3.fromRGB(150,150,150)
+                    nl.Font = Enum.Font.GothamBold; nl.TextSize = 10; nl.TextXAlignment = Enum.TextXAlignment.Left; nl.ZIndex = 7; nl.Parent = row
+                    table.insert(lockPlayerRows, row)
+                end
+            else
+                -- MANUAL MODE — bisa tap ava untuk lock/unlock
+                lockInfoLbl.Text = #lockTargets > 0
+                    and ("▸ 👆 MANUAL — 🔒 " .. #lockTargets .. " player terkunci")
+                    or  "▸ 👆 MANUAL — tap ava untuk lock/unlock"
+                lockInfoLbl.TextColor3 = #lockTargets > 0 and Color3.fromRGB(255,200,0) or Color3.fromRGB(50,185,255)
+                local others = {}
+                for _, p in ipairs(Players:GetPlayers()) do if p ~= localPlayer then table.insert(others, p) end end
+                if #others == 0 then
+                    local el = Instance.new("TextLabel"); el.Size = UDim2.new(1,0,0,28); el.BackgroundTransparency = 1; el.Text = "Cuma lu doang di server 🗿"; el.TextColor3 = Color3.fromRGB(100,100,100); el.Font = Enum.Font.Gotham; el.TextSize = 10; el.ZIndex = 6; el.Parent = lockListFrame; table.insert(lockPlayerRows, el); return
+                end
+                for _, p in ipairs(others) do
+                    local isLocked = isPlayerLocked(p)
+                    local row = Instance.new("TextButton")
+                    row.Size = UDim2.new(1,0,0,34); row.BackgroundColor3 = isLocked and Color3.fromRGB(0,120,60) or Color3.fromRGB(0,60,140)
+                    row.BackgroundTransparency = 0.3; row.Text = ""; row.AutoButtonColor = false; row.ZIndex = 6; row.Parent = lockListFrame
+                    Instance.new("UICorner",row)
+                    if isLocked then
+                        local stroke = Instance.new("UIStroke",row); stroke.Color = Color3.fromRGB(0,220,100); stroke.Thickness = 1.5
+                    end
+                    local ava = Instance.new("ImageLabel"); ava.Size = UDim2.new(0,26,0,26); ava.Position = UDim2.new(0,4,0.5,-13); ava.BackgroundTransparency = 1; ava.ZIndex = 7; ava.Parent = row
+                    Instance.new("UICorner",ava).CornerRadius = UDim.new(1,0)
+                    task.spawn(function() pcall(function() ava.Image = Players:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48) end) end)
+                    local checkMark = isLocked and "☑ " or "☐ "
+                    local nl = Instance.new("TextLabel"); nl.Size = UDim2.new(1,-38,1,0); nl.Position = UDim2.new(0,34,0,0); nl.BackgroundTransparency = 1
+                    nl.Text = checkMark .. p.DisplayName .. " (@"..p.Name..")"
+                    nl.TextColor3 = isLocked and Color3.fromRGB(100,255,150) or Color3.fromRGB(210,210,210)
+                    nl.Font = Enum.Font.GothamBold; nl.TextSize = 10; nl.TextXAlignment = Enum.TextXAlignment.Left; nl.ZIndex = 7; nl.Parent = row
+                    row.MouseButton1Click:Connect(function()
+                        if isPlayerLocked(p) then removeLockTarget(p) else addLockTarget(p) end
+                        refreshLockList()
+                    end)
+                    table.insert(lockPlayerRows, row)
+                end
+            end
+        end
+
+        -- Update tampilan tab (active/inactive)
+        local function updateTabVisual()
+            if lockModeAuto then
+                tabAuto.BackgroundColor3 = Color3.fromRGB(0,155,80); tabAuto.BackgroundTransparency = 0.1
+                tabAuto.TextColor3 = Color3.fromRGB(255,255,255)
+                tabManual.BackgroundColor3 = Color3.fromRGB(20,40,80); tabManual.BackgroundTransparency = 0.5
+                tabManual.TextColor3 = Color3.fromRGB(150,150,150)
+                lockRefreshBtn.Visible = false; lockClearBtn.Visible = false
+            else
+                tabManual.BackgroundColor3 = Color3.fromRGB(200,140,0); tabManual.BackgroundTransparency = 0.1
+                tabManual.TextColor3 = Color3.fromRGB(255,255,255)
+                tabAuto.BackgroundColor3 = Color3.fromRGB(20,40,80); tabAuto.BackgroundTransparency = 0.5
+                tabAuto.TextColor3 = Color3.fromRGB(150,150,150)
+                lockRefreshBtn.Visible = true; lockClearBtn.Visible = true
+            end
+        end
+
+        tabAuto.MouseButton1Click:Connect(function()
+            if lockModeAuto then return end
+            lockModeAuto = true
+            lockTargets = {}  -- reset dulu waktu switch ke auto
+            updateTabVisual()
+            refreshLockList()
+        end)
+        tabManual.MouseButton1Click:Connect(function()
+            if not lockModeAuto then return end
+            lockModeAuto = false
+            lockTargets = {}  -- reset waktu switch ke manual
+            updateTabVisual()
+            refreshLockList()
+        end)
+
+        lockRefreshBtn.MouseButton1Click:Connect(refreshLockList)
+        lockClearBtn.MouseButton1Click:Connect(function() lockTargets = {}; refreshLockList() end)
+        Players.PlayerRemoving:Connect(function(p) removeLockTarget(p); task.wait(0.1); refreshLockList() end)
+        updateTabVisual()
+        task.spawn(function() task.wait(1); refreshLockList() end)
+
+        -- ==========================================
+        -- AUTO-VISIBILITY LOCK / UNLOCK (hanya aktif kalau lockModeAuto = true)
+        -- ==========================================
+        local visCheckAccum = 0
+        local VIS_CHECK_INTERVAL = 0.08
+
+        local function isPlayerVisibleInCamera(player)
+            if not player.Character then return false end
+            local checkParts = {"HumanoidRootPart", "Head", "UpperTorso", "Torso"}
+            local checkPos = nil
+            for _, partName in ipairs(checkParts) do
+                local part = player.Character:FindFirstChild(partName)
+                if part then checkPos = part.Position; break end
+            end
+            if not checkPos then return false end
+            local screenPos, onScreen = Camera:WorldToViewportPoint(checkPos)
+            if not onScreen then return false end
+            local camPos = Camera.CFrame.Position
+            local toTarget = checkPos - camPos
+            local dist = toTarget.Magnitude
+            if dist < 0.5 then return true end
+            local excludeList = {}
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p.Character then table.insert(excludeList, p.Character) end
+            end
+            local rParams = RaycastParams.new()
+            rParams.FilterType = Enum.RaycastFilterType.Exclude
+            rParams.FilterDescendantsInstances = excludeList
+            local hit = workspace:Raycast(camPos, toTarget.Unit * dist, rParams)
+            if hit then return false end
+            return true
+        end
+
+        local autoLockConn = RunService.Heartbeat:Connect(function(dt)
+            if not isFreecamActive or not isLockOn or not lockModeAuto then return end
+            visCheckAccum = visCheckAccum + dt
+            if visCheckAccum < VIS_CHECK_INTERVAL then return end
+            visCheckAccum = 0
+            local listChanged = false
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p == localPlayer then continue end
+                local visible = isPlayerVisibleInCamera(p)
+                local locked  = isPlayerLocked(p)
+                if visible and not locked then
+                    addLockTarget(p); listChanged = true
+                elseif not visible and locked then
+                    removeLockTarget(p); listChanged = true
+                end
+            end
+            if listChanged then refreshLockList() end
+        end)
         local sLbl = makeLbl("Smoothness: 50", Y, pFC); Y = Y+16
         local sBg = Instance.new("Frame"); sBg.Size = UDim2.new(0.88,0,0,4); sBg.Position = UDim2.new(0.06,0,0,Y); sBg.BackgroundColor3 = Color3.fromRGB(15,25,50); sBg.ZIndex = 5; sBg.Parent = pFC; Instance.new("UICorner",sBg)
         local sFill = Instance.new("Frame"); sFill.Size = UDim2.new(0.5,0,1,0); sFill.BackgroundColor3 = Color3.fromRGB(0,155,255); sFill.BorderSizePixel = 0; sFill.ZIndex = 6; sFill.Parent = sBg; Instance.new("UICorner",sFill)
@@ -2283,61 +2519,472 @@ local function runSyaaHub()
         local hud = Instance.new("Frame"); hud.Size, hud.BackgroundTransparency, hud.Visible, hud.Parent = UDim2.new(1,0,1,0), 1, false, screenGui
         local function bHUD(t,p,k,type) local b = Instance.new("TextButton"); b.Text, b.Size, b.Position, b.BackgroundColor3, b.BackgroundTransparency, b.TextColor3, b.Font, b.Parent = t, UDim2.new(0,50,0,50), p, Color3.fromRGB(10,20,45), 0.3, Color3.fromRGB(50,185,255), Enum.Font.GothamBold, hud; Instance.new("UICorner",b).CornerRadius = UDim.new(1,0)
             b.InputBegan:Connect(function() if type=="m" then moveInputs[k]=1 else zoomInputs[k]=1 end end); b.InputEnded:Connect(function() if type=="m" then moveInputs[k]=0 else zoomInputs[k]=0 end end) end
-        bHUD("W",UDim2.new(0,80,1,-150),"F","m"); bHUD("S",UDim2.new(0,80,1,-80),"B","m"); bHUD("A",UDim2.new(0,15,1,-80),"L","m"); bHUD("D",UDim2.new(0,145,1,-80),"R","m"); bHUD("UP",UDim2.new(1,-140,1,-150),"U","m"); bHUD("DN",UDim2.new(1,-140,1,-80),"D","m"); bHUD("+",UDim2.new(1,-70,1,-150),"In","z"); bHUD("-",UDim2.new(1,-70,1,-80),"Out","z")
+        bHUD("UP",UDim2.new(1,-140,1,-150),"U","m"); bHUD("DN",UDim2.new(1,-140,1,-80),"D","m"); bHUD("+",UDim2.new(1,-70,1,-150),"In","z"); bHUD("-",UDim2.new(1,-70,1,-80),"Out","z")
 
-        camRow.MouseButton1Click:Connect(function() isFreecamActive = not isFreecamActive; setCamState(isFreecamActive); hud.Visible = (isFreecamActive and getHudState())
-            if isFreecamActive then PlayerModule:Disable(); Camera.CameraType = Enum.CameraType.Scriptable
-            else PlayerModule:Enable(); Camera.CameraType = Enum.CameraType.Custom; lockTarget, isLockOn, autoWalkActive, autoWalkDirection = nil, false, false, 0; setLockState(false); moveInputs.F, moveInputs.B = 0, 0; awFwd.BackgroundColor3, awStop.BackgroundColor3, awBack.BackgroundColor3, hud.Visible = cOff, Color3.fromRGB(50,50,50), cOff, false end end)
-        setHudState(true); hudRow.MouseButton1Click:Connect(function() local newState = not getHudState(); setHudState(newState); if isFreecamActive then hud.Visible=newState end end); lockRow.MouseButton1Click:Connect(function() isLockOn = not isLockOn; setLockState(isLockOn); if not isLockOn then lockTarget=nil end end)
+        -- ==========================================
+        -- VIRTUAL JOYSTICK (replaces WASD buttons)
+        -- ==========================================
+        local jsRadius = 55
+        local jsKnobRadius = 22
+        local jsOuter = Instance.new("Frame")
+        jsOuter.Name = "FreecamJoystick"
+        jsOuter.Size = UDim2.new(0, jsRadius*2, 0, jsRadius*2)
+        jsOuter.Position = UDim2.new(0, 25, 1, -(jsRadius*2) - 30)
+        jsOuter.BackgroundColor3 = Color3.fromRGB(10, 20, 45)
+        jsOuter.BackgroundTransparency = 0.4
+        jsOuter.BorderSizePixel = 0
+        jsOuter.ZIndex = 10
+        jsOuter.Parent = hud
+        Instance.new("UICorner", jsOuter).CornerRadius = UDim.new(1, 0)
+        local jsOuterStroke = Instance.new("UIStroke", jsOuter)
+        jsOuterStroke.Color = Color3.fromRGB(0, 130, 250)
+        jsOuterStroke.Thickness = 2
+        jsOuterStroke.Transparency = 0.3
 
-        RunService:BindToRenderStep("SyaaaEngine", Enum.RenderPriority.Camera.Value+1, function(dt)
-            if not isFreecamActive then return end
-            local rotAlpha = math.clamp(dt*((101-smoothValue)/10),0.01,1)
-            local rawMove = Vector3.new(moveInputs.R-moveInputs.L, moveInputs.U-moveInputs.D, moveInputs.B-moveInputs.F)
-            if zoomInputs.In == 1 then if targetFov > 1 then targetFov = math.clamp(targetFov - 1.5, 1, 170) else rawMove = rawMove + Vector3.new(0, 0, -1.5) end end
-            if zoomInputs.Out == 1 then if targetFov < 170 then targetFov = math.clamp(targetFov + 1.5, 1, 170) else rawMove = rawMove + Vector3.new(0, 0, 1.5) end end
-            Camera.FieldOfView = Camera.FieldOfView + (targetFov-Camera.FieldOfView)*rotAlpha
-            local mVec = rawMove; if mVec.Magnitude > 0 then mVec = mVec.Unit end
-            if lockTarget then
-                local tPos = (lockTarget:IsA("BasePart") and lockTarget.Position) or (lockTarget:IsA("Model") and lockTarget:GetPivot().Position) or lockTarget
-                local nextPos = Camera.CFrame.Position + Camera.CFrame:VectorToWorldSpace(mVec*moveSpeed*dt)
-                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(nextPos,tPos),rotAlpha)
-            else
-                if stabilizerActive then
-                    local timeSinceSwipe = tick() - lastSwipeTime
-                    if timeSinceSwipe > STAB_RETURN_DELAY then
-                        targetYaw = targetYaw + (stabYaw - targetYaw) * math.clamp(STAB_STRENGTH, 0.01, 1)
-                        targetPitch = targetPitch + (stabPitch - targetPitch) * math.clamp(STAB_STRENGTH, 0.01, 1)
-                    end
-                end
-                displayYaw = displayYaw + (targetYaw - displayYaw) * rotAlpha
-                displayPitch = displayPitch + (targetPitch - displayPitch) * rotAlpha
-                local newCamRot = CFrame.Angles(0, math.rad(displayYaw), 0) * CFrame.Angles(math.rad(displayPitch), 0, 0)
-                local nextPos = Camera.CFrame.Position + newCamRot:VectorToWorldSpace(mVec*moveSpeed*dt)
-                Camera.CFrame = CFrame.new(nextPos) * newCamRot
+        local jsKnob = Instance.new("Frame")
+        jsKnob.Name = "JoystickKnob"
+        jsKnob.Size = UDim2.new(0, jsKnobRadius*2, 0, jsKnobRadius*2)
+        jsKnob.Position = UDim2.new(0.5, -jsKnobRadius, 0.5, -jsKnobRadius)
+        jsKnob.BackgroundColor3 = Color3.fromRGB(50, 185, 255)
+        jsKnob.BackgroundTransparency = 0.2
+        jsKnob.BorderSizePixel = 0
+        jsKnob.ZIndex = 11
+        jsKnob.Parent = jsOuter
+        Instance.new("UICorner", jsKnob).CornerRadius = UDim.new(1, 0)
+        local jsKnobStroke = Instance.new("UIStroke", jsKnob)
+        jsKnobStroke.Color = Color3.fromRGB(255, 255, 255)
+        jsKnobStroke.Thickness = 1.5
+        jsKnobStroke.Transparency = 0.4
+
+        -- Joystick arrow indicators
+        local function makeArrow(txt, posX, posY)
+            local a = Instance.new("TextLabel")
+            a.Text = txt; a.Size = UDim2.new(0,16,0,16)
+            a.Position = UDim2.new(0.5, posX - 8, 0.5, posY - 8)
+            a.BackgroundTransparency = 1; a.TextColor3 = Color3.fromRGB(255,255,255)
+            a.TextTransparency = 0.5; a.Font = Enum.Font.GothamBold; a.TextSize = 12
+            a.ZIndex = 10; a.Parent = jsOuter
+        end
+        makeArrow("▲", 0, -(jsRadius-10))
+        makeArrow("▼", 0, (jsRadius-10))
+        makeArrow("◀", -(jsRadius-10), 0)
+        makeArrow("▶", (jsRadius-10), 0)
+
+        -- Track active joystick fingers by inputObject reference
+        -- This prevents camera swipe from stealing joystick touches
+        local jsDragging = false
+        local jsActiveTouches = {}  -- inputObject -> true, for multi-touch safety
+
+        local function updateJoystickFromInput(input)
+            local outerAbsPos = jsOuter.AbsolutePosition
+            local outerAbsSize = jsOuter.AbsoluteSize
+            local centerX = outerAbsPos.X + outerAbsSize.X / 2
+            local centerY = outerAbsPos.Y + outerAbsSize.Y / 2
+            local dx = input.Position.X - centerX
+            local dy = input.Position.Y - centerY
+            local dist = math.sqrt(dx*dx + dy*dy)
+            local maxDist = jsRadius - jsKnobRadius * 0.5
+            if dist > maxDist then
+                dx = dx / dist * maxDist
+                dy = dy / dist * maxDist
+            end
+            jsKnob.Position = UDim2.new(0.5, dx - jsKnobRadius, 0.5, dy - jsKnobRadius)
+            joystickX = dx / maxDist
+            joystickY = dy / maxDist
+            -- deadzone
+            if math.abs(joystickX) < 0.12 then joystickX = 0 end
+            if math.abs(joystickY) < 0.12 then joystickY = 0 end
+        end
+
+        local function resetJoystick()
+            jsDragging = false
+            jsActiveTouches = {}
+            joystickTouchIds = {}
+            joystickX, joystickY = 0, 0
+            TweenService:Create(jsKnob, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Position = UDim2.new(0.5, -jsKnobRadius, 0.5, -jsKnobRadius)
+            }):Play()
+        end
+
+        jsOuter.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+                jsDragging = true
+                jsActiveTouches[input] = true
+                joystickTouchIds[input] = true  -- mark globally so camera ignores this touch
+                updateJoystickFromInput(input)
             end
         end)
 
+        jsOuter.InputChanged:Connect(function(input)
+            if jsActiveTouches[input] then
+                updateJoystickFromInput(input)
+            end
+        end)
+
+        -- Also catch global InputChanged in case touch moves off the button
+        UserInputService.InputChanged:Connect(function(input)
+            if jsActiveTouches[input] then
+                updateJoystickFromInput(input)
+            end
+        end)
+
+        UserInputService.InputEnded:Connect(function(input)
+            if jsActiveTouches[input] then
+                jsActiveTouches[input] = nil
+                joystickTouchIds[input] = nil
+                if next(jsActiveTouches) == nil then
+                    resetJoystick()
+                end
+            end
+        end)
+
+        -- Freeze/unfreeze character helper
+        local savedWalkSpeed = 16
+        local function freezeCharacter()
+            local char = localPlayer.Character
+            if not char then return end
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then savedWalkSpeed = hum.WalkSpeed; hum.WalkSpeed = 0 end
+            if hrp then hrp.Anchored = true end
+        end
+        local function unfreezeCharacter()
+            local char = localPlayer.Character
+            if not char then return end
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = savedWalkSpeed end
+            if hrp then hrp.Anchored = false end
+        end
+
+        -- Re-freeze if character respawns during freecam
+        localPlayer.CharacterAdded:Connect(function(char)
+            if isFreecamActive then
+                task.wait(0.3)
+                freezeCharacter()
+            end
+        end)
+
+        camRow.MouseButton1Click:Connect(function() isFreecamActive = not isFreecamActive; setCamState(isFreecamActive); hud.Visible = (isFreecamActive and getHudState())
+            if isFreecamActive then PlayerModule:Disable(); Camera.CameraType = Enum.CameraType.Scriptable; freezeCharacter()
+            else unfreezeCharacter(); PlayerModule:Enable(); Camera.CameraType = Enum.CameraType.Custom; lockTargets = {}; isLockOn = false; autoWalkActive = false; autoWalkDirection = 0; setLockState(false); moveInputs.F, moveInputs.B = 0, 0; joystickX, joystickY = 0, 0; lockOrbitYaw, lockOrbitPitch = 0, 30; lockSmoothPosInit = false; lockSmoothDist = 20; lockUserDistOffset = 0; awFwd.BackgroundColor3, awStop.BackgroundColor3, awBack.BackgroundColor3, hud.Visible = cOff, Color3.fromRGB(50,50,50), cOff, false; refreshLockList() end end)
+        setHudState(true); hudRow.MouseButton1Click:Connect(function() local newState = not getHudState(); setHudState(newState); if isFreecamActive then hud.Visible=newState end end)
+        lockRow.MouseButton1Click:Connect(function()
+            isLockOn = not isLockOn
+            setLockState(isLockOn)
+            if isLockOn then
+                -- Sync orbit angles from current camera direction so no snap on enable
+                local camLook = Camera.CFrame.LookVector
+                lockOrbitYaw   = math.deg(math.atan2(-camLook.X, -camLook.Z))
+                lockOrbitPitch = 30
+                -- Initialize all smooth values from current camera position (no snap)
+                lockSmoothPos    = Camera.CFrame.Position
+                lockSmoothCenter = Camera.CFrame.Position
+                lockSmoothDist   = 20
+                lockUserDistOffset = 0
+                lockSmoothPosInit = true
+            else
+                lockTargets = {}
+                lockSmoothPosInit = false
+                refreshLockList()
+            end
+        end)
+
+        RunService:BindToRenderStep("SyaaaEngine", Enum.RenderPriority.Camera.Value+1, function(dt)
+            if not isFreecamActive then return end
+
+            -- rotAlpha: higher smoothValue = softer/slower rotation lerp
+            local rotAlpha = math.clamp(dt * ((101 - smoothValue) / 10), 0.01, 1)
+
+            -- FOV zoom
+            if zoomInputs.In  == 1 then targetFov = math.clamp(targetFov - 1.5, 1, 170) end
+            if zoomInputs.Out == 1 then targetFov = math.clamp(targetFov + 1.5, 1, 170) end
+            Camera.FieldOfView = Camera.FieldOfView + (targetFov - Camera.FieldOfView) * rotAlpha
+
+            -- ======= MULTI-TARGET LOCK (1-10 players) =======
+            if isLockOn and #lockTargets > 0 then
+                -- Collect valid target positions, prune dead ones
+                local positions = {}
+                local sumPos    = Vector3.zero
+                local validCount = 0
+                for i = #lockTargets, 1, -1 do
+                    local t = lockTargets[i]
+                    if not t or not t.Parent then
+                        table.remove(lockTargets, i)
+                    else
+                        local char = t.Character
+                        if char then
+                            local hrp = char:FindFirstChild("HumanoidRootPart")
+                            if hrp then
+                                table.insert(positions, hrp.Position)
+                                sumPos = sumPos + hrp.Position
+                                validCount = validCount + 1
+                            end
+                        end
+                    end
+                end
+
+                if validCount > 0 then
+                    local rawCenter = sumPos / validCount
+
+                    -- ─── SMOOTH CENTER ───
+                    -- Lerp pusat semua target supaya kalau target gerak tidak langsung snap
+                    if not lockSmoothPosInit then
+                        lockSmoothCenter = rawCenter
+                        lockSmoothPosInit = true
+                    end
+                    local centerAlpha = math.clamp(dt * 12, 0.01, 0.5)
+                    lockSmoothCenter = lockSmoothCenter:Lerp(rawCenter, centerAlpha)
+                    local centerPos = lockSmoothCenter
+
+                    -- ─── SMOOTH REQUIRED DIST ───
+                    -- Hitung dist yang dibutuhkan dari spread, lalu lerp supaya tidak loncat
+                    local maxSpread = 4
+                    for _, pos in ipairs(positions) do
+                        local d = (pos - rawCenter).Magnitude
+                        if d > maxSpread then maxSpread = d end
+                    end
+                    local fovHalfRad = math.rad(Camera.FieldOfView / 2)
+                    local rawDist = math.clamp(
+                        (maxSpread + 8) / math.max(math.tan(fovHalfRad), 0.01),
+                        8, 250
+                    )
+                    local distAlpha = math.clamp(dt * 5, 0.005, 0.2)
+                    lockSmoothDist = lockSmoothDist + (rawDist - lockSmoothDist) * distAlpha
+
+                    -- ─── INPUT ORBIT ───
+                    -- Joystick X + tombol L/R  → yaw (orbit kiri/kanan)
+                    -- Tombol UP/DOWN HUD        → pitch (sudut atas/bawah)
+                    -- Joystick Y + tombol F/B   → maju/mundur (offset jarak, tidak di-override auto-fit)
+                    local orbitSpeedH  = 90  -- deg/s yaw
+                    local orbitSpeedV  = 55  -- deg/s pitch
+                    local distSpeed    = 35  -- studs/s maju mundur
+
+                    local jx = joystickX + (moveInputs.R - moveInputs.L)
+                    local jy = joystickY + (moveInputs.F - moveInputs.B)
+                    local pitchInput = (moveInputs.U - moveInputs.D)
+
+                    lockOrbitYaw   = lockOrbitYaw + jx * orbitSpeedH * dt
+                    lockOrbitPitch = math.clamp(
+                        lockOrbitPitch + pitchInput * orbitSpeedV * dt,
+                        -70, 70
+                    )
+
+                    -- Joystick F/B = geser offset jarak (maju = mendekat, mundur = menjauh)
+                    -- Offset ini TIDAK di-override oleh auto-fit, makanya terasa
+                    lockUserDistOffset = lockUserDistOffset + jy * distSpeed * dt
+                    -- Clamp supaya tidak terlalu dekat atau terlalu jauh dari auto-fit
+                    lockUserDistOffset = math.clamp(lockUserDistOffset, -lockSmoothDist * 0.7, 150)
+
+                    local finalDist = math.clamp(lockSmoothDist + lockUserDistOffset, 4, 300)
+
+                    -- ─── BUILD DESIRED CAM POSITION ───
+                    local yr = math.rad(lockOrbitYaw)
+                    local pr = math.rad(lockOrbitPitch)
+                    local orbitDir = Vector3.new(
+                        math.sin(yr) * math.cos(pr),
+                        math.sin(pr),
+                        math.cos(yr) * math.cos(pr)
+                    )
+                    local desiredCamPos = centerPos + orbitDir * finalDist
+
+                    -- ─── FLOOR CLAMP ───
+                    local minCamY = centerPos.Y + 1.5
+                    if desiredCamPos.Y < minCamY then
+                        desiredCamPos = Vector3.new(desiredCamPos.X, minCamY, desiredCamPos.Z)
+                        if lockOrbitPitch < 5 then lockOrbitPitch = 5 end
+                    end
+
+                    -- ─── SMOOTH CAM POS (ADAPTIVE) ───
+                    -- Makin jauh desired dari posisi sekarang, makin cepat lerp-nya
+                    -- Ini yang bikin smooth di semua jarak, tidak kedut-kedut
+                    local posDiff = (desiredCamPos - lockSmoothPos).Magnitude
+                    -- Base speed 10, naik sampai 22 kalau jarak > 30 studs
+                    local adaptiveSpeed = 10 + math.clamp(posDiff / 30, 0, 1) * 12
+                    local posAlpha = math.clamp(dt * adaptiveSpeed, 0.01, 0.85)
+                    lockSmoothPos = lockSmoothPos:Lerp(desiredCamPos, posAlpha)
+
+                    -- ─── LOOK TARGET & FINAL CFRAME ───
+                    local lookTarget = centerPos + Vector3.new(0, 1.8, 0)
+                    local desiredCFrame = CFrame.lookAt(lockSmoothPos, lookTarget)
+
+                    -- Rotasi juga adaptive: makin beda angle, makin cepat
+                    local angleDiff = (Camera.CFrame.LookVector - desiredCFrame.LookVector).Magnitude
+                    local rotSpeed  = 14 + math.clamp(angleDiff / 0.5, 0, 1) * 10
+                    local smoothAlpha = math.clamp(dt * rotSpeed, 0.01, 0.85)
+                    Camera.CFrame = Camera.CFrame:Lerp(desiredCFrame, smoothAlpha)
+
+                    -- Sync freecam angles so switching back doesn't snap
+                    local currentLook = Camera.CFrame.LookVector
+                    targetYaw   = math.deg(math.atan2(-currentLook.X, -currentLook.Z))
+                    targetPitch = math.deg(math.asin(math.clamp(currentLook.Y, -1, 1)))
+                    displayYaw, displayPitch = targetYaw, targetPitch
+                end
+
+            else
+                -- ======= NORMAL FREECAM (no lock) =======
+                -- NO inertia/velocity — direct target update = crisp, not slippery
+
+                if stabilizerActive then
+                    local timeSinceSwipe = tick() - lastSwipeTime
+                    if timeSinceSwipe > STAB_RETURN_DELAY then
+                        targetYaw   = targetYaw   + (stabYaw   - targetYaw)   * math.clamp(STAB_STRENGTH, 0.01, 1)
+                        targetPitch = targetPitch + (stabPitch - targetPitch) * math.clamp(STAB_STRENGTH, 0.01, 1)
+                    end
+                end
+
+                -- Smooth display angles lerp toward target (visual only)
+                displayYaw   = displayYaw   + (targetYaw   - displayYaw)   * rotAlpha
+                displayPitch = displayPitch + (targetPitch - displayPitch) * rotAlpha
+
+                -- Movement uses targetYaw (actual look dir) so strafe feels instant
+                local moveRot = CFrame.Angles(0, math.rad(targetYaw), 0)
+                    * CFrame.Angles(math.rad(targetPitch), 0, 0)
+
+                local rawMove = Vector3.new(
+                    (moveInputs.R - moveInputs.L) + joystickX,
+                    moveInputs.U - moveInputs.D,
+                    (moveInputs.B - moveInputs.F) + joystickY
+                )
+                local mVec = rawMove
+                if mVec.Magnitude > 0 then mVec = mVec.Unit end
+
+                local nextPos = Camera.CFrame.Position + moveRot:VectorToWorldSpace(mVec * moveSpeed * dt)
+
+                -- Display rotation (smooth follow of target)
+                local dispRot = CFrame.Angles(0, math.rad(displayYaw), 0)
+                    * CFrame.Angles(math.rad(displayPitch), 0, 0)
+                Camera.CFrame = CFrame.new(nextPos) * dispRot
+            end
+        end)
+
+        -- ======= AUTO PROXIMITY LOCK =======
+        -- Setiap 0.5 detik, scan player lain yang dekat dengan target yang sudah di-lock.
+        -- Kalau ada yang dalam radius AUTO_LOCK_RADIUS → otomatis di-lock juga (smooth).
+        local AUTO_LOCK_RADIUS = 20  -- studs, jarak maksimal untuk auto-lock
+        task.spawn(function()
+            while true do
+                task.wait(0.5)
+                if not isFreecamActive or not isLockOn or not lockModeAuto or #lockTargets == 0 then continue end
+
+                -- Kumpulkan posisi semua target yang sudah di-lock
+                local lockedPositions = {}
+                for _, t in ipairs(lockTargets) do
+                    if t and t.Parent and t.Character then
+                        local hrp = t.Character:FindFirstChild("HumanoidRootPart")
+                        if hrp then
+                            table.insert(lockedPositions, hrp.Position)
+                        end
+                    end
+                end
+                if #lockedPositions == 0 then continue end
+
+                -- Hitung center dari semua yang di-lock
+                local lockCenter = Vector3.zero
+                for _, p in ipairs(lockedPositions) do lockCenter = lockCenter + p end
+                lockCenter = lockCenter / #lockedPositions
+
+                -- ─── AUTO UNLOCK: kalau target jalan terlalu jauh dari center, unlock ───
+                local AUTO_UNLOCK_RADIUS = AUTO_LOCK_RADIUS * 2.5  -- lebih longgar dari lock radius
+                local changed = false
+                for i = #lockTargets, 1, -1 do
+                    local t = lockTargets[i]
+                    if t and t.Parent and t.Character then
+                        local hrp = t.Character:FindFirstChild("HumanoidRootPart")
+                        if hrp and (hrp.Position - lockCenter).Magnitude > AUTO_UNLOCK_RADIUS then
+                            table.remove(lockTargets, i)
+                            changed = true
+                        end
+                    end
+                end
+                if changed then refreshLockList() end
+
+                -- Scan semua player lain
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p == localPlayer then continue end
+                    if isPlayerLocked(p) then continue end  -- sudah di-lock, skip
+                    if not p.Character then continue end
+                    local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+                    if not hrp then continue end
+
+                    -- Cek apakah player ini dekat dengan SALAH SATU target yang sudah di-lock
+                    local shouldAutoLock = false
+                    for _, lockedPos in ipairs(lockedPositions) do
+                        if (hrp.Position - lockedPos).Magnitude <= AUTO_LOCK_RADIUS then
+                            shouldAutoLock = true
+                            break
+                        end
+                    end
+
+                    if shouldAutoLock then
+                        addLockTarget(p)
+                        refreshLockList()
+                    end
+                end
+            end
+        end)
+
+        -- Quick-add target by clicking/tapping player in world
         UserInputService.InputBegan:Connect(function(input,gpe)
             if not gpe and isFreecamActive and isLockOn and (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1) then
                 local unitRay = Camera:ScreenPointToRay(input.Position.X,input.Position.Y)
                 local result = workspace:Raycast(unitRay.Origin,unitRay.Direction*2000)
-                if result and result.Instance then lockTarget=result.Instance end
+                if result and result.Instance then
+                    -- Find which player owns this part
+                    local hitPart = result.Instance
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= localPlayer and p.Character then
+                            if hitPart:IsDescendantOf(p.Character) then
+                                if isPlayerLocked(p) then
+                                    removeLockTarget(p)
+                                else
+                                    addLockTarget(p)
+                                end
+                                refreshLockList()
+                                break
+                            end
+                        end
+                    end
+                end
             end
         end)
 
+        -- Camera rotation via swipe — ignores any touch that belongs to the joystick
+        -- Works in both portrait and landscape orientation
         UserInputService.InputChanged:Connect(function(input)
-            if isFreecamActive and not lockTarget and (input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseMovement) then
-                local dx = input.Delta.X
-                local dy = input.Delta.Y
-                if math.abs(dx) < 0.5 and math.abs(dy) < 0.5 then return end
-                targetYaw = targetYaw - (dx * 0.3)
-                targetPitch = math.clamp(targetPitch - (dy * 0.3), -88, 88)
-                if stabilizerActive then
-                    lastSwipeTime = tick()
-                    stabYaw = targetYaw
-                    stabPitch = targetPitch
-                end
+            if not isFreecamActive then return end
+            if isLockOn and #lockTargets > 0 then return end  -- lock mode: no manual rotate
+            if input.UserInputType ~= Enum.UserInputType.Touch and
+               input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+
+            -- If this touch input is owned by the joystick, skip it
+            if joystickTouchIds[input] then return end
+            -- Also skip if input started inside the joystick area (extra safety)
+            local jsAbs = jsOuter.AbsolutePosition
+            local jsAbsSz = jsOuter.AbsoluteSize
+            local px, py = input.Position.X, input.Position.Y
+            if px >= jsAbs.X and px <= jsAbs.X + jsAbsSz.X and
+               py >= jsAbs.Y and py <= jsAbs.Y + jsAbsSz.Y then
+                return
+            end
+
+            local dx = input.Delta.X
+            local dy = input.Delta.Y
+            if math.abs(dx) < 0.5 and math.abs(dy) < 0.5 then return end
+
+            -- Sensitivity: 0.35 feels natural on both portrait and landscape
+            local sensitivity = 0.35
+            local dyaw   = -(dx * sensitivity)
+            local dpitch = -(dy * sensitivity)
+
+            -- Direct update — no velocity accumulation, no coasting after finger lift
+            targetYaw   = targetYaw   + dyaw
+            targetPitch = math.clamp(targetPitch + dpitch, -88, 88)
+
+            if stabilizerActive then
+                lastSwipeTime = tick()
+                stabYaw   = targetYaw
+                stabPitch = targetPitch
             end
         end)
     end
