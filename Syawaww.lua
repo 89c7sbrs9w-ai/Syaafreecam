@@ -2697,9 +2697,15 @@ local function runSyaaHub()
             local rotAlpha = math.clamp(dt * ((101 - smoothValue) / 10), 0.01, 1)
 
             -- FOV zoom
-            if zoomInputs.In  == 1 then targetFov = math.clamp(targetFov - 1.5, 1, 170) end
-            if zoomInputs.Out == 1 then targetFov = math.clamp(targetFov + 1.5, 1, 170) end
-            Camera.FieldOfView = Camera.FieldOfView + (targetFov - Camera.FieldOfView) * rotAlpha
+            if isLockOn and #lockTargets > 0 then
+    if zoomInputs.In  == 1 then lockUserDistOffset = math.clamp(lockUserDistOffset - 0.5, -lockSmoothDist * 0.7, 150) end
+    if zoomInputs.Out == 1 then lockUserDistOffset = math.clamp(lockUserDistOffset + 0.5, -lockSmoothDist * 0.7, 150) end
+else
+    if zoomInputs.In  == 1 then targetFov = math.clamp(targetFov - 1.5, 1, 170) end
+    if zoomInputs.Out == 1 then targetFov = math.clamp(targetFov + 1.5, 1, 170) end
+end
+Camera.FieldOfView = Camera.FieldOfView + (targetFov - Camera.FieldOfView) * rotAlpha
+
 
             -- ======= MULTI-TARGET LOCK (1-10 players) =======
             if isLockOn and #lockTargets > 0 then
