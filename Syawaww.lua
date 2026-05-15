@@ -2698,8 +2698,8 @@ local function runSyaaHub()
 
             -- FOV zoom
             if isLockOn and #lockTargets > 0 then
-    if zoomInputs.In  == 1 then lockUserDistOffset = math.clamp(lockUserDistOffset - 0.5, -lockSmoothDist * 0.7, 150) end
-    if zoomInputs.Out == 1 then lockUserDistOffset = math.clamp(lockUserDistOffset + 0.5, -lockSmoothDist * 0.7, 150) end
+    if zoomInputs.In  == 1 then lockUserDistOffset = math.clamp(lockUserDistOffset - 1.5, -lockSmoothDist * 0.7, 150) end
+    if zoomInputs.Out == 1 then lockUserDistOffset = math.clamp(lockUserDistOffset + 1.5, -lockSmoothDist * 0.7, 150) end
 else
     if zoomInputs.In  == 1 then targetFov = math.clamp(targetFov - 1.5, 1, 170) end
     if zoomInputs.Out == 1 then targetFov = math.clamp(targetFov + 1.5, 1, 170) end
