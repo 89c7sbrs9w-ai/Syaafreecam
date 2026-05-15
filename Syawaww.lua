@@ -1820,7 +1820,7 @@ local function runSyaaHub()
                 if idText == "" then
                     headImgActive = false
                     setHeadImgState(false)
-                    headImgStatusLbl.Text = "▸ ❌ ID kosong! Isi ID asset dulu bro"
+                    headImgStatusLbl.Text = "▸ ❌ ID kosong! Isi ID asset dulu"
                     headImgStatusLbl.TextColor3 = Color3.fromRGB(255, 80, 80)
                     return
                 end
