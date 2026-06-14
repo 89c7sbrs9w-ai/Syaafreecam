@@ -240,6 +240,7 @@ local function runSyaaHub()
     local isFreecamActive = false
     local lockTargets = {}            -- multi-target lock (array of Player, 1-10)
     local isLockOn = false
+    local selfLockActive = false      -- lock kamera ke diri sendiri
     local moveSpeed = 15
     local targetFov = 70
     local targetYaw, targetPitch = 0, 0
@@ -256,6 +257,7 @@ local function runSyaaHub()
     local lockSmoothDist   = 20
     -- User-controlled distance offset (joystick F/B maju mundur), terpisah dari auto-fit
     local lockUserDistOffset = 0
+    local lockVertOffset     = 0   -- UP/DN world Y offset di lock mode
     -- Auto-visibility lock: lock semua player yang keliatan di frame (no cap)
     local moveInputs = {F=0,B=0,L=0,R=0,U=0,D=0}
     local zoomInputs = {In=0,Out=0}
@@ -268,6 +270,25 @@ local function runSyaaHub()
     -- Track which touch IDs belong to joystick so camera swipe ignores them
     local joystickTouchIds = {}        -- set of active touch inputObjects on joystick
     local PlayerModule = require(localPlayer.PlayerScripts:WaitForChild("PlayerModule")):GetControls()
+
+    -- KEYBOARD INPUT MODE (WASD vs Joystick)
+    local useKeyboard = false       -- false = joystick, true = WASD keys
+
+    -- AVATAR CAMERA LOCK
+    local avatarCamLock = false     -- camera follows avatar direction
+    local avatarFollowCam = false   -- avatar walks in camera direction
+
+    -- CAMERA ROLL / TILT
+    local targetRoll  = 0           -- target roll degrees (-120 to 120)
+    local displayRoll = 0           -- smoothed display roll
+    local autoTiltActive = false    -- auto oscillate tilt
+    local autoTiltAmplitude = 30    -- max degrees for auto tilt (1-120)
+    local autoTiltSpeed  = 0.4      -- oscillation speed (cycles per sec)
+    local autoTiltPhase  = 0        -- internal phase accumulator
+    local showRollControls = false  -- show on-screen roll buttons
+    local rollSpeed = 45            -- manual roll speed deg/s
+    local rollTiltLeft  = false     -- manual tilt left held
+    local rollTiltRight = false     -- manual tilt right held
 
     -- STABILIZER VARIABLES
     local stabilizerActive = false
@@ -1325,29 +1346,435 @@ local function runSyaaHub()
         tpRefresh.MouseButton1Click:Connect(refreshTpList); task.spawn(function() task.wait(1) refreshTpList() end)
 
         makeSepHdr("3D IMAGE SPAWNER", tY, pTools); tY = tY+22
-        local imgInput = Instance.new("TextBox"); imgInput.Size = UDim2.new(0.92, 0, 0, 30); imgInput.Position = UDim2.new(0.04, 0, 0, tY); imgInput.BackgroundColor3 = Color3.fromRGB(20, 10, 30); imgInput.TextColor3 = Color3.fromRGB(255, 255, 255); imgInput.PlaceholderText = "Masukkan ID Gambar..."; imgInput.Font = Enum.Font.GothamBold; imgInput.TextSize = 11; imgInput.ZIndex = 5; imgInput.Parent = pTools; Instance.new("UICorner", imgInput); Instance.new("UIStroke", imgInput).Color = Color3.fromRGB(0,130,250)
+
+        -- ── INPUT & SPAWN ──
+        local imgInput = Instance.new("TextBox")
+        imgInput.Size = UDim2.new(0.92, 0, 0, 30); imgInput.Position = UDim2.new(0.04, 0, 0, tY)
+        imgInput.BackgroundColor3 = Color3.fromRGB(20, 10, 30); imgInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+        imgInput.PlaceholderText = "Masukkan ID Gambar..."; imgInput.Font = Enum.Font.GothamBold
+        imgInput.TextSize = 11; imgInput.ZIndex = 5; imgInput.Parent = pTools
+        Instance.new("UICorner", imgInput); Instance.new("UIStroke", imgInput).Color = Color3.fromRGB(0,130,250)
         tY = tY + 36
-        local spwBtn, saveBtn = makeBtn2("Spawn 3D", "Save (Unselect)", tY, pTools); tY = tY + 32
-        makeLbl("Daftar Gambar (Klik buat ngedit):", tY, pTools, 12); tY = tY+16
-        local imgListFrame = Instance.new("ScrollingFrame"); imgListFrame.Size = UDim2.new(0.92,0,0,70); imgListFrame.Position = UDim2.new(0.04,0,0,tY); imgListFrame.BackgroundColor3 = Color3.fromRGB(5,10,25); imgListFrame.BackgroundTransparency = 0.5; imgListFrame.ZIndex = 5; imgListFrame.Parent = pTools; imgListFrame.ScrollBarThickness = 2; imgListFrame.ScrollBarImageColor3 = Color3.fromRGB(0,155,255); imgListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y; imgListFrame.ScrollingDirection = Enum.ScrollingDirection.Y; Instance.new("UICorner",imgListFrame); Instance.new("UIStroke",imgListFrame).Color = Color3.fromRGB(20,60,140)
+
+        local spwBtn, saveBtn = makeBtn2("⊕ Spawn 3D", "💾 Simpan", tY, pTools); tY = tY + 32
+
+        -- ── PERSISTENT STORAGE via _G (bertahan selama session, bisa recover antar panel open) ──
+        -- Format: _G.SyaaImgStore = { images = {}, bundles = {} }
+        -- images: { id, name, cf = {x,y,z,rx,ry,rz}, size = {w,h}, selected = false }
+        -- bundles: { name, items = {idx...} }
+        if not _G.SyaaImgStore then
+            _G.SyaaImgStore = { images = {}, bundles = {} }
+        end
+        local store = _G.SyaaImgStore
+
+        -- Table runtime (Part objects, tidak bisa disimpan)
+        local spawnedParts = {}   -- [imgIdx] = Part
+        local spawnedImages = {}  -- mirror dari store.images untuk runtime
+        local activeImage = nil
+        local imgCount = 0
+        local listRows = {}
+
+        -- ── FUNGSI HELPER SAVE/LOAD ──
+        local function serializeCF(cf)
+            local pos = cf.Position
+            local rx, ry, rz = cf:ToEulerAnglesXYZ()
+            return {pos.X, pos.Y, pos.Z, math.deg(rx), math.deg(ry), math.deg(rz)}
+        end
+        local function deserializeCF(t)
+            return CFrame.new(t[1], t[2], t[3]) * CFrame.Angles(math.rad(t[4]), math.rad(t[5]), math.rad(t[6]))
+        end
+        local function saveToStore()
+            store.images = {}
+            for i, data in ipairs(spawnedImages) do
+                local part = spawnedParts[i]
+                local cf = part and part.Parent and serializeCF(part.CFrame) or (data.cf or {0,0,0,0,0,0})
+                local sz = part and {part.Size.X, part.Size.Y} or (data.size or {6,6})
+                table.insert(store.images, {
+                    id       = data.id,
+                    name     = data.name,
+                    cf       = cf,
+                    size     = sz,
+                    selected = data.selected or false,
+                })
+            end
+        end
+
+        -- ── SPAWN PART dari data ──
+        local function spawnPart(idx, cf, w, h)
+            local data = spawnedImages[idx]
+            if not data then return end
+            if spawnedParts[idx] and spawnedParts[idx].Parent then
+                spawnedParts[idx]:Destroy()
+            end
+            local p = Instance.new("Part")
+            p.Name = "Syaa3DImage_"..idx
+            p.Size = Vector3.new(w or 6, h or 6, 0.1)
+            p.Anchored, p.CanCollide, p.Massless = true, false, true
+            p.Color, p.Transparency = Color3.fromRGB(0,0,0), 1
+            if cf then
+                p.CFrame = cf
+            else
+                local char = localPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local fCF = hrp.CFrame * CFrame.new(0, 0, -5)
+                    p.CFrame = CFrame.lookAt(fCF.Position, hrp.Position)
+                end
+            end
+            local realUrl = "rbxthumb://type=Asset&id="..data.id.."&w=420&h=420"
+            local d1 = Instance.new("Decal"); d1.Face = Enum.NormalId.Front; d1.Texture = realUrl; d1.Parent = p
+            local d2 = Instance.new("Decal"); d2.Face = Enum.NormalId.Back;  d2.Texture = realUrl; d2.Parent = p
+            p.Parent = workspace
+            spawnedParts[idx] = p
+            return p
+        end
+
+        -- ── SECTION LABELS ──
+        local selLabel = makeLbl("Daftar Gambar (Klik = edit, ☐ = select):", tY, pTools, 12); tY = tY+16
+
+        -- ── IMG LIST FRAME ──
+        local imgListFrame = Instance.new("ScrollingFrame")
+        imgListFrame.Size = UDim2.new(0.92,0,0,90); imgListFrame.Position = UDim2.new(0.04,0,0,tY)
+        imgListFrame.BackgroundColor3 = Color3.fromRGB(5,10,25); imgListFrame.BackgroundTransparency = 0.5
+        imgListFrame.ZIndex = 5; imgListFrame.Parent = pTools
+        imgListFrame.ScrollBarThickness = 2; imgListFrame.ScrollBarImageColor3 = Color3.fromRGB(0,155,255)
+        imgListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y; imgListFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+        Instance.new("UICorner",imgListFrame); Instance.new("UIStroke",imgListFrame).Color = Color3.fromRGB(20,60,140)
         local ilLayout = Instance.new("UIListLayout",imgListFrame); ilLayout.Padding = UDim.new(0,2)
+        tY = tY + 100
+
+        -- ── BUNDLE LIST FRAME ──
+        makeLbl("📁 Bundle / Folder (Klik = bongkar/apply):", tY, pTools, 12); tY = tY+16
+        local bundleListFrame = Instance.new("ScrollingFrame")
+        bundleListFrame.Size = UDim2.new(0.92,0,0,70); bundleListFrame.Position = UDim2.new(0.04,0,0,tY)
+        bundleListFrame.BackgroundColor3 = Color3.fromRGB(5,10,25); bundleListFrame.BackgroundTransparency = 0.5
+        bundleListFrame.ZIndex = 5; bundleListFrame.Parent = pTools
+        bundleListFrame.ScrollBarThickness = 2; bundleListFrame.ScrollBarImageColor3 = Color3.fromRGB(0,155,255)
+        bundleListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y; bundleListFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+        Instance.new("UICorner",bundleListFrame); Instance.new("UIStroke",bundleListFrame).Color = Color3.fromRGB(0,100,200)
+        local bundleLayout = Instance.new("UIListLayout",bundleListFrame); bundleLayout.Padding = UDim.new(0,2)
         tY = tY + 80
-        local btnScaleUp, btnScaleDown, clrBtn = makeBtn3("Besarin (+)", "Kecilin (-)", "Hapus", tY, pTools); tY = tY + 32
+
+        -- ── NAME INPUT ──
+        local nameInput = Instance.new("TextBox")
+        nameInput.Size = UDim2.new(0.92, 0, 0, 26); nameInput.Position = UDim2.new(0.04, 0, 0, tY)
+        nameInput.BackgroundColor3 = Color3.fromRGB(10, 15, 30); nameInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+        nameInput.PlaceholderText = "Nama gambar / bundle..."; nameInput.Font = Enum.Font.Gotham
+        nameInput.TextSize = 10; nameInput.ZIndex = 5; nameInput.Parent = pTools
+        Instance.new("UICorner", nameInput); Instance.new("UIStroke", nameInput).Color = Color3.fromRGB(0,80,180)
+        tY = tY + 32
+
+        -- ── ACTION BUTTONS ROW 1: Rename, Bundle ──
+        local renameBtn, bundleBtn = makeBtn2("✏️ Rename", "📁 Bundle Terpilih", tY, pTools); tY = tY + 32
+        -- ── ACTION BUTTONS ROW 2: Scale, Hapus ──
+        local btnScaleUp, btnScaleDown, clrBtn = makeBtn3("Besarin (+)", "Kecilin (-)", "🗑️ Hapus", tY, pTools); tY = tY + 32
+        -- ── KONTROL POSISI & ROTASI ──
         makeLbl("🕹️ Kontrol Posisi & Rotasi", tY, pTools, 14); tY = tY+16
         local btnLeft, btnUp, btnRight = makeBtn3("Kiri", "Atas", "Kanan", tY, pTools); tY = tY + 32
-        local btnBack, btnDown, btnFwd = makeBtn3("Mundur", "Bawah", "Maju", tY, pTools); tY = tY + 32
-        local btnRotL, btnRotUp, btnRotR = makeBtn3("Putar Kiri", "Putar Atas", "Putar Kanan", tY, pTools); tY = tY + 32
+        local btnBack, btnDown, btnFwd  = makeBtn3("Mundur", "Bawah", "Maju", tY, pTools); tY = tY + 32
+        local btnRotL, btnRotUp, btnRotR    = makeBtn3("Putar Kiri", "Putar Atas", "Putar Kanan", tY, pTools); tY = tY + 32
         local btnTiltL, btnRotDown, btnTiltR = makeBtn3("Miring Kiri", "Putar Bawah", "Miring Kanan", tY, pTools); tY = tY + 32
-        local spawnedImages, activeImage, imgCount, listRows = {}, nil, 0, {}
-        local function refreshImgList() for _,r in pairs(listRows) do pcall(function() r:Destroy() end) end; listRows = {}
-            for i, data in ipairs(spawnedImages) do local isAct = (activeImage == data.part); local row = Instance.new("TextButton"); row.Size = UDim2.new(1,0,0,24); row.BackgroundColor3 = isAct and Color3.fromRGB(30,160,255) or Color3.fromRGB(20,60,140); row.BackgroundTransparency = 0.5; row.Text = (isAct and "◉ " or "○ ")..data.name; row.TextColor3 = Color3.fromRGB(255,255,255); row.Font = Enum.Font.GothamBold; row.TextSize = 10; row.ZIndex = 6; row.Parent = imgListFrame; Instance.new("UICorner",row); row.MouseButton1Click:Connect(function() activeImage = data.part; refreshImgList() end); table.insert(listRows, row) end end
-        spwBtn.MouseButton1Click:Connect(function() local idText = imgInput.Text:gsub("%D", ""); if idText == "" then return end; local char = localPlayer.Character; if not char or not char:FindFirstChild("HumanoidRootPart") then return end; local hrp = char.HumanoidRootPart; imgCount = imgCount + 1; local p = Instance.new("Part"); p.Name = "Syaa3DImage_"..imgCount; p.Size = Vector3.new(6, 6, 0.1); p.Anchored, p.CanCollide, p.Massless = true, false, true; p.Color, p.Transparency = Color3.fromRGB(0,0,0), 1; local frontCFrame = hrp.CFrame * CFrame.new(0, 0, -5); p.CFrame = CFrame.lookAt(frontCFrame.Position, hrp.Position); local realUrl = "rbxthumb://type=Asset&id="..idText.."&w=420&h=420"; local d1 = Instance.new("Decal"); d1.Face, d1.Texture = Enum.NormalId.Front, realUrl; d1.Parent = p; local d2 = Instance.new("Decal"); d2.Face, d2.Texture = Enum.NormalId.Back, realUrl; d2.Parent = p; p.Parent = workspace; table.insert(spawnedImages, {id = idText, part = p, name = "Gambar ID: "..string.sub(idText, 1, 5)..".."}); activeImage = p; refreshImgList() end)
-        saveBtn.MouseButton1Click:Connect(function() activeImage = nil; refreshImgList() end)
-        clrBtn.MouseButton1Click:Connect(function() if activeImage then activeImage:Destroy(); for i, data in ipairs(spawnedImages) do if data.part == activeImage then table.remove(spawnedImages, i); break end end; activeImage = nil; refreshImgList() end end)
+
+        -- ── REFRESH BUNDLE LIST ──
+        local bundleRows = {}
+        local function refreshBundleList()
+            for _, r in ipairs(bundleRows) do pcall(function() r:Destroy() end) end
+            bundleRows = {}
+            for bi, bundle in ipairs(store.bundles) do
+                local row = Instance.new("Frame")
+                row.Size = UDim2.new(1, 0, 0, 28); row.BackgroundColor3 = Color3.fromRGB(0, 80, 170)
+                row.BackgroundTransparency = 0.5; row.ZIndex = 6; row.Parent = bundleListFrame
+                Instance.new("UICorner", row).CornerRadius = UDim.new(0, 6)
+
+                local nameLbl = Instance.new("TextLabel", row)
+                nameLbl.Size = UDim2.new(1, -110, 1, 0); nameLbl.Position = UDim2.new(0, 6, 0, 0)
+                nameLbl.BackgroundTransparency = 1; nameLbl.Text = "📁 "..bundle.name.." ("..#bundle.items.." gambar)"
+                nameLbl.TextColor3 = Color3.fromRGB(200, 230, 255); nameLbl.Font = Enum.Font.GothamBold
+                nameLbl.TextSize = 9; nameLbl.TextXAlignment = Enum.TextXAlignment.Left; nameLbl.ZIndex = 7
+
+                -- Tombol Apply (spawn semua gambar dalam bundle)
+                local applyBtn = Instance.new("TextButton", row)
+                applyBtn.Size = UDim2.new(0, 50, 0, 22); applyBtn.Position = UDim2.new(1, -108, 0.5, -11)
+                applyBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80); applyBtn.BackgroundTransparency = 0.3
+                applyBtn.Text = "▶ Apply"; applyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                applyBtn.Font = Enum.Font.GothamBold; applyBtn.TextSize = 8; applyBtn.ZIndex = 7
+                Instance.new("UICorner", applyBtn)
+
+                -- Tombol Edit (unbundle → restore ke daftar individual dengan posisi tersimpan)
+                local editBtn = Instance.new("TextButton", row)
+                editBtn.Size = UDim2.new(0, 42, 0, 22); editBtn.Position = UDim2.new(1, -58, 0.5, -11)
+                editBtn.BackgroundColor3 = Color3.fromRGB(180, 120, 0); editBtn.BackgroundTransparency = 0.3
+                editBtn.Text = "✏️ Edit"; editBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                editBtn.Font = Enum.Font.GothamBold; editBtn.TextSize = 8; editBtn.ZIndex = 7
+                Instance.new("UICorner", editBtn)
+
+                -- Tombol hapus bundle
+                local delBundleBtn = Instance.new("TextButton", row)
+                delBundleBtn.Size = UDim2.new(0, 14, 0, 22); delBundleBtn.Position = UDim2.new(1, -16, 0.5, -11)
+                delBundleBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30); delBundleBtn.BackgroundTransparency = 0.3
+                delBundleBtn.Text = "✕"; delBundleBtn.TextColor3 = Color3.fromRGB(255,255,255)
+                delBundleBtn.Font = Enum.Font.GothamBold; delBundleBtn.TextSize = 9; delBundleBtn.ZIndex = 7
+                Instance.new("UICorner", delBundleBtn)
+
+                applyBtn.MouseButton1Click:Connect(function()
+                    -- Spawn semua gambar dalam bundle di posisi yang tersimpan
+                    for _, item in ipairs(bundle.items) do
+                        local cf = deserializeCF(item.cf)
+                        local p = spawnPart(nil, cf, item.size[1], item.size[2])
+                        -- Spawn as standalone (no idx tracking needed for bundle apply)
+                        if p then
+                            imgCount = imgCount + 1
+                            local newData = {id=item.id, name=item.name, cf=item.cf, size=item.size, selected=false}
+                            table.insert(spawnedImages, newData)
+                            spawnedParts[#spawnedImages] = p
+                        end
+                    end
+                    saveToStore()
+                end)
+
+                editBtn.MouseButton1Click:Connect(function()
+                    -- Unbundle: restore semua item bundle ke daftar gambar, hapus bundle
+                    for _, item in ipairs(bundle.items) do
+                        imgCount = imgCount + 1
+                        local newData = {id=item.id, name=item.name, cf=item.cf, size=item.size, selected=false}
+                        table.insert(spawnedImages, newData)
+                        local cf = deserializeCF(item.cf)
+                        spawnPart(#spawnedImages, cf, item.size[1], item.size[2])
+                    end
+                    table.remove(store.bundles, bi)
+                    saveToStore()
+                    -- Refresh both lists
+                    refreshBundleList()
+                end)
+
+                delBundleBtn.MouseButton1Click:Connect(function()
+                    table.remove(store.bundles, bi)
+                    saveToStore()
+                    refreshBundleList()
+                end)
+
+                table.insert(bundleRows, row)
+            end
+        end
+
+        -- ── REFRESH IMG LIST ──
+        local function refreshImgList()
+            for _, r in ipairs(listRows) do pcall(function() r:Destroy() end) end
+            listRows = {}
+            local selCount = 0
+            for i, data in ipairs(spawnedImages) do
+                if data.selected then selCount = selCount + 1 end
+                local isAct = (activeImage == spawnedParts[i])
+
+                local row = Instance.new("Frame")
+                row.Size = UDim2.new(1, 0, 0, 26)
+                row.BackgroundColor3 = isAct and Color3.fromRGB(30,160,255) or Color3.fromRGB(20,60,140)
+                row.BackgroundTransparency = 0.4; row.ZIndex = 6; row.Parent = imgListFrame
+                Instance.new("UICorner", row).CornerRadius = UDim.new(0, 6)
+
+                -- Checkbox select
+                local chk = Instance.new("TextButton", row)
+                chk.Size = UDim2.new(0, 22, 0, 22); chk.Position = UDim2.new(0, 2, 0.5, -11)
+                chk.BackgroundColor3 = data.selected and Color3.fromRGB(0,180,255) or Color3.fromRGB(10,20,40)
+                chk.BackgroundTransparency = 0.2
+                chk.Text = data.selected and "✓" or "☐"
+                chk.TextColor3 = Color3.fromRGB(255,255,255); chk.Font = Enum.Font.GothamBold
+                chk.TextSize = 11; chk.ZIndex = 8; chk.AutoButtonColor = false
+                Instance.new("UICorner", chk).CornerRadius = UDim.new(0,5)
+
+                -- Name label
+                local nameLbl = Instance.new("TextButton", row)
+                nameLbl.Size = UDim2.new(1, -80, 1, 0); nameLbl.Position = UDim2.new(0, 28, 0, 0)
+                nameLbl.BackgroundTransparency = 1; nameLbl.Text = (isAct and "◉ " or "○ ")..data.name
+                nameLbl.TextColor3 = Color3.fromRGB(255,255,255); nameLbl.Font = Enum.Font.GothamBold
+                nameLbl.TextSize = 9; nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+                nameLbl.ZIndex = 7; nameLbl.AutoButtonColor = false
+
+                -- Save pos button (simpan posisi sekarang ke store)
+                local savePosBtn = Instance.new("TextButton", row)
+                savePosBtn.Size = UDim2.new(0, 48, 0, 20); savePosBtn.Position = UDim2.new(1, -52, 0.5, -10)
+                savePosBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 80); savePosBtn.BackgroundTransparency = 0.3
+                savePosBtn.Text = "💾 Pos"; savePosBtn.TextColor3 = Color3.fromRGB(255,255,255)
+                savePosBtn.Font = Enum.Font.GothamBold; savePosBtn.TextSize = 8; savePosBtn.ZIndex = 8
+                Instance.new("UICorner", savePosBtn)
+
+                chk.MouseButton1Click:Connect(function()
+                    data.selected = not data.selected
+                    saveToStore()
+                    refreshImgList()
+                end)
+
+                nameLbl.MouseButton1Click:Connect(function()
+                    activeImage = spawnedParts[i]
+                    nameInput.Text = data.name
+                    saveToStore()
+                    refreshImgList()
+                end)
+
+                savePosBtn.MouseButton1Click:Connect(function()
+                    local part = spawnedParts[i]
+                    if part and part.Parent then
+                        data.cf = serializeCF(part.CFrame)
+                        data.size = {part.Size.X, part.Size.Y}
+                        saveToStore()
+                        savePosBtn.Text = "✓ OK"
+                        task.delay(1, function() pcall(function() savePosBtn.Text = "💾 Pos" end) end)
+                    end
+                end)
+
+                table.insert(listRows, row)
+            end
+            selLabel.Text = "Daftar Gambar | "..#spawnedImages.." item | "..selCount.." terpilih"
+        end
+
+        -- ── SPAWN BUTTON ──
+        spwBtn.MouseButton1Click:Connect(function()
+            local idText = imgInput.Text:gsub("%D", "")
+            if idText == "" then return end
+            imgCount = imgCount + 1
+            local autoName = "Gambar "..imgCount.." ("..string.sub(idText, 1, 6)..")"
+            local newData = {id = idText, name = autoName, cf = nil, size = {6,6}, selected = false}
+            table.insert(spawnedImages, newData)
+            local part = spawnPart(#spawnedImages)
+            activeImage = part
+            if part then newData.cf = serializeCF(part.CFrame) end
+            saveToStore()
+            refreshImgList()
+        end)
+
+        -- ── SAVE / UNSELECT BUTTON ──
+        saveBtn.MouseButton1Click:Connect(function()
+            -- Simpan semua posisi terkini ke store
+            for i, data in ipairs(spawnedImages) do
+                local part = spawnedParts[i]
+                if part and part.Parent then
+                    data.cf = serializeCF(part.CFrame)
+                    data.size = {part.Size.X, part.Size.Y}
+                end
+            end
+            saveToStore()
+            activeImage = nil
+            refreshImgList()
+            saveBtn.Text = "✅ Tersimpan!"
+            task.delay(1.5, function() pcall(function() saveBtn.Text = "💾 Simpan" end) end)
+        end)
+
+        -- ── RENAME BUTTON ──
+        renameBtn.MouseButton1Click:Connect(function()
+            local newName = nameInput.Text
+            if newName == "" then return end
+            -- Rename active atau gambar yang di-select pertama
+            for i, data in ipairs(spawnedImages) do
+                if spawnedParts[i] == activeImage or data.selected then
+                    data.name = newName
+                    break
+                end
+            end
+            saveToStore()
+            refreshImgList()
+        end)
+
+        -- ── BUNDLE BUTTON ──
+        bundleBtn.MouseButton1Click:Connect(function()
+            local bundleName = nameInput.Text
+            if bundleName == "" then bundleName = "Bundle ".. (#store.bundles + 1) end
+            local items = {}
+            local toRemove = {}
+            for i, data in ipairs(spawnedImages) do
+                if data.selected then
+                    local part = spawnedParts[i]
+                    if part and part.Parent then
+                        data.cf = serializeCF(part.CFrame)
+                        data.size = {part.Size.X, part.Size.Y}
+                    end
+                    table.insert(items, {
+                        id   = data.id,
+                        name = data.name,
+                        cf   = data.cf or {0,0,0,0,0,0},
+                        size = data.size or {6,6},
+                    })
+                    -- Destroy part dari workspace
+                    if part and part.Parent then part:Destroy() end
+                    table.insert(toRemove, i)
+                end
+            end
+            if #items == 0 then return end
+            -- Hapus dari spawnedImages (reverse order)
+            for j = #toRemove, 1, -1 do
+                local idx = toRemove[j]
+                table.remove(spawnedImages, idx)
+                table.remove(spawnedParts, idx)
+            end
+            -- Tambah bundle ke store
+            table.insert(store.bundles, {name = bundleName, items = items})
+            saveToStore()
+            activeImage = nil
+            nameInput.Text = ""
+            refreshImgList()
+            refreshBundleList()
+        end)
+
+        -- ── HAPUS BUTTON ──
+        clrBtn.MouseButton1Click:Connect(function()
+            if activeImage then
+                for i, data in ipairs(spawnedImages) do
+                    if spawnedParts[i] == activeImage then
+                        pcall(function() activeImage:Destroy() end)
+                        table.remove(spawnedImages, i)
+                        table.remove(spawnedParts, i)
+                        activeImage = nil
+                        break
+                    end
+                end
+            else
+                -- Hapus semua yang selected
+                local toRemove = {}
+                for i, data in ipairs(spawnedImages) do
+                    if data.selected then
+                        pcall(function() if spawnedParts[i] then spawnedParts[i]:Destroy() end end)
+                        table.insert(toRemove, i)
+                    end
+                end
+                for j = #toRemove, 1, -1 do
+                    table.remove(spawnedImages, toRemove[j])
+                    table.remove(spawnedParts, toRemove[j])
+                end
+            end
+            saveToStore()
+            refreshImgList()
+        end)
+
+        -- ── SCALE & MOVE ──
         btnScaleUp.MouseButton1Click:Connect(function() if activeImage then activeImage.Size = activeImage.Size + Vector3.new(0.5, 0.5, 0) end end)
         btnScaleDown.MouseButton1Click:Connect(function() if activeImage then activeImage.Size = Vector3.new(math.max(0.5, activeImage.Size.X - 0.5), math.max(0.5, activeImage.Size.Y - 0.5), 0.1) end end)
         local function mod3D(cf) if activeImage then activeImage.CFrame = activeImage.CFrame * cf end end
-        btnLeft.MouseButton1Click:Connect(function() mod3D(CFrame.new(0.5, 0, 0)) end); btnRight.MouseButton1Click:Connect(function() mod3D(CFrame.new(-0.5, 0, 0)) end); btnUp.MouseButton1Click:Connect(function() mod3D(CFrame.new(0, 0.5, 0)) end); btnDown.MouseButton1Click:Connect(function() mod3D(CFrame.new(0, -0.5, 0)) end); btnFwd.MouseButton1Click:Connect(function() mod3D(CFrame.new(0, 0, 0.5)) end); btnBack.MouseButton1Click:Connect(function() mod3D(CFrame.new(0, 0, -0.5)) end); btnRotL.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0, math.rad(15), 0)) end); btnRotR.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0, math.rad(-15), 0)) end); btnTiltL.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0, 0, math.rad(15))) end); btnTiltR.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0, 0, math.rad(-15))) end); btnRotUp.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(math.rad(15), 0, 0)) end); btnRotDown.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(math.rad(-15), 0, 0)) end)
+        btnLeft.MouseButton1Click:Connect(function() mod3D(CFrame.new(0.5,0,0)) end)
+        btnRight.MouseButton1Click:Connect(function() mod3D(CFrame.new(-0.5,0,0)) end)
+        btnUp.MouseButton1Click:Connect(function() mod3D(CFrame.new(0,0.5,0)) end)
+        btnDown.MouseButton1Click:Connect(function() mod3D(CFrame.new(0,-0.5,0)) end)
+        btnFwd.MouseButton1Click:Connect(function() mod3D(CFrame.new(0,0,0.5)) end)
+        btnBack.MouseButton1Click:Connect(function() mod3D(CFrame.new(0,0,-0.5)) end)
+        btnRotL.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0,math.rad(15),0)) end)
+        btnRotR.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0,math.rad(-15),0)) end)
+        btnTiltL.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0,0,math.rad(15))) end)
+        btnTiltR.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(0,0,math.rad(-15))) end)
+        btnRotUp.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(math.rad(15),0,0)) end)
+        btnRotDown.MouseButton1Click:Connect(function() mod3D(CFrame.Angles(math.rad(-15),0,0)) end)
+
+        -- ── LOAD DATA FROM STORE (restore session jika ada) ──
+        task.spawn(function()
+            task.wait(0.5)
+            for i, data in ipairs(store.images) do
+                imgCount = imgCount + 1
+                local newData = {id=data.id, name=data.name, cf=data.cf, size=data.size, selected=false}
+                table.insert(spawnedImages, newData)
+                local cf = data.cf and deserializeCF(data.cf) or nil
+                local sz = data.size or {6,6}
+                spawnPart(#spawnedImages, cf, sz[1], sz[2])
+            end
+            refreshImgList()
+            refreshBundleList()
+        end)
         
         -- SPY CAM
         local spyActive = false
@@ -2120,8 +2547,34 @@ local function runSyaaHub()
     -- ==========================================
     local function buildFreecamPanel()
         local Y = 2
+        -- Pre-declare agar closure bisa reference sebelum objek dibuat
+        local tiltFrame        -- akan diisi di bagian HUD
+        local updateInputModeUI  -- akan diisi di bagian HUD
+        local jsOuter          -- akan diisi di bagian joystick
         local camRow, setCamState, getCamState = makeIosRow("Camera", Y, pFC); Y = Y+36
         local hudRow, setHudState, getHudState = makeIosRow("Show HUD", Y, pFC); Y = Y+36
+
+        -- ── INPUT MODE: JOYSTICK / WASD TOMBOL ──
+        makeSepHdr("🎮 INPUT MODE GERAK", Y, pFC); Y = Y+22
+        local jsRow, setJsState = makeIosRow("Mode Joystick", Y, pFC); Y = Y+36
+        setJsState(true)  -- default joystick
+        local inputModeLbl = makeLbl("▸ Joystick aktif (kiri bawah layar)", Y, pFC, 14, Color3.fromRGB(50,185,255)); Y = Y+20
+
+        jsRow.MouseButton1Click:Connect(function()
+            useKeyboard = not useKeyboard
+            setJsState(not useKeyboard)
+            moveInputs.F=0; moveInputs.B=0; moveInputs.L=0; moveInputs.R=0
+            joystickX=0; joystickY=0
+            if useKeyboard then
+                inputModeLbl.Text = "▸ Tombol WASD aktif (kiri bawah layar)"
+                inputModeLbl.TextColor3 = Color3.fromRGB(255,210,50)
+            else
+                inputModeLbl.Text = "▸ Joystick aktif (kiri bawah layar)"
+                inputModeLbl.TextColor3 = Color3.fromRGB(50,185,255)
+            end
+            if updateInputModeUI then updateInputModeUI() end
+        end)
+
         local lockRow, setLockState, getLockState = makeIosRow("Lock Target (1-10 player)", Y, pFC); Y = Y+36
 
         -- LOCK SMOOTH SPEED SLIDER
@@ -2168,6 +2621,9 @@ local function runSyaaHub()
         local lockClearBtn = Instance.new("TextButton"); lockClearBtn.Text = "🗑️ Clear All"; lockClearBtn.Size = UDim2.new(0.44,0,0,26); lockClearBtn.Position = UDim2.new(0.52,0,0,Y); lockClearBtn.BackgroundColor3 = Color3.fromRGB(180,30,30); lockClearBtn.BackgroundTransparency = 0.4; lockClearBtn.TextColor3 = Color3.fromRGB(255,255,255); lockClearBtn.Font = Enum.Font.GothamBold; lockClearBtn.TextSize = 10; lockClearBtn.ZIndex = 5; lockClearBtn.Parent = pFC; Instance.new("UICorner",lockClearBtn).CornerRadius = UDim.new(0,6)
         Y = Y+32
 
+        -- Tombol Lock Self (lock ke diri sendiri)
+        local lockSelfRow, setLockSelfState, getLockSelfState = makeIosRow("🎯 Lock Kamera ke Diri Sendiri", Y, pFC); Y = Y+36
+
         local lockListFrame = Instance.new("ScrollingFrame"); lockListFrame.Size = UDim2.new(0.92,0,0,110); lockListFrame.Position = UDim2.new(0.04,0,0,Y); lockListFrame.BackgroundColor3 = Color3.fromRGB(5,10,25); lockListFrame.BackgroundTransparency = 0.4; lockListFrame.ZIndex = 5; lockListFrame.Parent = pFC; lockListFrame.ScrollBarThickness = 2; lockListFrame.ScrollBarImageColor3 = Color3.fromRGB(0,155,255); lockListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y; lockListFrame.ScrollingDirection = Enum.ScrollingDirection.Y; Instance.new("UICorner",lockListFrame); Instance.new("UIStroke",lockListFrame).Color = Color3.fromRGB(0,130,250)
         local lockListLayout = Instance.new("UIListLayout",lockListFrame); lockListLayout.Padding = UDim.new(0,3); lockListLayout.SortOrder = Enum.SortOrder.Name
         Y = Y+120
@@ -2191,11 +2647,12 @@ local function runSyaaHub()
 
             if lockModeAuto then
                 lockInfoLbl.Text = #lockTargets > 0
-                    and ("▸ ⚡ AUTO — 🔒 " .. #lockTargets .. " player terkunci")
+                    and ("▸ ⚡ AUTO — 🔒 " .. #lockTargets .. " target terkunci")
                     or  "▸ ⚡ AUTO — mencari player di frame..."
                 lockInfoLbl.TextColor3 = #lockTargets > 0 and Color3.fromRGB(0,220,110) or Color3.fromRGB(50,185,255)
-                -- Di auto mode, list tetap tampil tapi read-only (cuma info siapa yang ke-lock)
+                -- Di auto mode, list tetap tampil tapi read-only
                 local others = {}
+                if selfLockActive then table.insert(others, localPlayer) end  -- self di atas
                 for _, p in ipairs(Players:GetPlayers()) do if p ~= localPlayer then table.insert(others, p) end end
                 if #others == 0 then
                     local el = Instance.new("TextLabel"); el.Size = UDim2.new(1,0,0,28); el.BackgroundTransparency = 1; el.Text = "Cuma lu doang di server 🗿"; el.TextColor3 = Color3.fromRGB(100,100,100); el.Font = Enum.Font.Gotham; el.TextSize = 10; el.ZIndex = 6; el.Parent = lockListFrame; table.insert(lockPlayerRows, el); return
@@ -2219,10 +2676,11 @@ local function runSyaaHub()
             else
                 -- MANUAL MODE — bisa tap ava untuk lock/unlock
                 lockInfoLbl.Text = #lockTargets > 0
-                    and ("▸ 👆 MANUAL — 🔒 " .. #lockTargets .. " player terkunci")
+                    and ("▸ 👆 MANUAL — 🔒 " .. #lockTargets .. " target terkunci")
                     or  "▸ 👆 MANUAL — tap ava untuk lock/unlock"
                 lockInfoLbl.TextColor3 = #lockTargets > 0 and Color3.fromRGB(255,200,0) or Color3.fromRGB(50,185,255)
                 local others = {}
+                if selfLockActive then table.insert(others, localPlayer) end  -- self di atas
                 for _, p in ipairs(Players:GetPlayers()) do if p ~= localPlayer then table.insert(others, p) end end
                 if #others == 0 then
                     local el = Instance.new("TextLabel"); el.Size = UDim2.new(1,0,0,28); el.BackgroundTransparency = 1; el.Text = "Cuma lu doang di server 🗿"; el.TextColor3 = Color3.fromRGB(100,100,100); el.Font = Enum.Font.Gotham; el.TextSize = 10; el.ZIndex = 6; el.Parent = lockListFrame; table.insert(lockPlayerRows, el); return
@@ -2286,7 +2744,24 @@ local function runSyaaHub()
         end)
 
         lockRefreshBtn.MouseButton1Click:Connect(refreshLockList)
-        lockClearBtn.MouseButton1Click:Connect(function() lockTargets = {}; refreshLockList() end)
+        lockClearBtn.MouseButton1Click:Connect(function()
+            lockTargets = {}
+            -- Kalau self lock aktif, tetap pertahankan self di lockTargets
+            if selfLockActive then addLockTarget(localPlayer) end
+            refreshLockList()
+        end)
+
+        -- ── SELF LOCK HANDLER ──
+        lockSelfRow.MouseButton1Click:Connect(function()
+            selfLockActive = not selfLockActive
+            setLockSelfState(selfLockActive)
+            if selfLockActive then
+                addLockTarget(localPlayer)
+            else
+                removeLockTarget(localPlayer)
+            end
+            refreshLockList()
+        end)
         Players.PlayerRemoving:Connect(function(p) removeLockTarget(p); task.wait(0.1); refreshLockList() end)
         updateTabVisual()
         task.spawn(function() task.wait(1); refreshLockList() end)
@@ -2331,7 +2806,7 @@ local function runSyaaHub()
             visCheckAccum = 0
             local listChanged = false
             for _, p in ipairs(Players:GetPlayers()) do
-                if p == localPlayer then continue end
+                if p == localPlayer then continue end  -- self dikelola via selfLockActive
                 local visible = isPlayerVisibleInCamera(p)
                 local locked  = isPlayerLocked(p)
                 if visible and not locked then
@@ -2339,6 +2814,10 @@ local function runSyaaHub()
                 elseif not visible and locked then
                     removeLockTarget(p); listChanged = true
                 end
+            end
+            -- Pastikan self tetap terkunci kalau selfLockActive on
+            if selfLockActive and not isPlayerLocked(localPlayer) then
+                addLockTarget(localPlayer); listChanged = true
             end
             if listChanged then refreshLockList() end
         end)
@@ -2441,6 +2920,122 @@ local function runSyaaHub()
         local stabRow, setStabState, getStabState = makeIosRow("Stabilizer", Y, pFC); Y = Y+36
         local stabInfoLbl = makeLbl("▸ Stabil saat lompat di tangga/obstacle", Y, pFC, 14, Color3.fromRGB(50, 185, 255)); Y = Y+20
 
+        -- ==========================================
+        -- CAMERA LOCK (ngikutin avatar)
+        -- ==========================================
+        makeSepHdr("📷 CAMERA LOCK", Y, pFC); Y = Y+22
+        local camLockRow, setCamLockState, getCamLockState = makeIosRow("Camera Lock (ngikutin avatar)", Y, pFC); Y = Y+36
+        local camLockInfoLbl = makeLbl("▸ Camera arah otomatis ngikutin arah avatar", Y, pFC, 14, Color3.fromRGB(50,185,255)); Y = Y+20
+
+        local followCamRow, setFollowCamState, getFollowCamState = makeIosRow("Follow Walk (jalan searah camera)", Y, pFC); Y = Y+36
+        local followCamInfoLbl = makeLbl("▸ Karakter jalan ke arah camera ngeliatin", Y, pFC, 14, Color3.fromRGB(50,185,255)); Y = Y+20
+
+        camLockRow.MouseButton1Click:Connect(function()
+            avatarCamLock = not avatarCamLock
+            setCamLockState(avatarCamLock)
+            if avatarCamLock then
+                camLockInfoLbl.Text = "▸ AKTIF 🔒 Camera ngikutin avatar"
+                camLockInfoLbl.TextColor3 = Color3.fromRGB(0,200,100)
+            else
+                camLockInfoLbl.Text = "▸ Camera arah otomatis ngikutin arah avatar"
+                camLockInfoLbl.TextColor3 = Color3.fromRGB(50,185,255)
+            end
+        end)
+
+        followCamRow.MouseButton1Click:Connect(function()
+            avatarFollowCam = not avatarFollowCam
+            setFollowCamState(avatarFollowCam)
+            if avatarFollowCam then
+                followCamInfoLbl.Text = "▸ AKTIF 🏃 Karakter jalan ke arah camera"
+                followCamInfoLbl.TextColor3 = Color3.fromRGB(0,200,100)
+                -- Unfreeze karakter biar bisa gerak
+                if isFreecamActive then unfreezeCharacter() end
+            else
+                followCamInfoLbl.Text = "▸ Karakter jalan ke arah camera ngeliatin"
+                followCamInfoLbl.TextColor3 = Color3.fromRGB(50,185,255)
+                if isFreecamActive then freezeCharacter() end
+            end
+        end)
+
+        -- ==========================================
+        -- KAMERA MIRING / ROLL
+        -- ==========================================
+        makeSepHdr("🌀 KAMERA TILT / ROLL", Y, pFC); Y = Y+22
+        local rollShowRow, setRollShowState = makeIosRow("Tampilkan Tombol Roll di HUD", Y, pFC); Y = Y+36
+        rollShowRow.MouseButton1Click:Connect(function()
+            showRollControls = not showRollControls
+            setRollShowState(showRollControls)
+            if tiltFrame then tiltFrame.Visible = (isFreecamActive and showRollControls) end
+        end)
+
+        local autoTiltRow, setAutoTiltState = makeIosRow("Auto Tilt (otomatis miring smooth)", Y, pFC); Y = Y+36
+        local autoTiltInfoLbl = makeLbl("▸ Camera miring kanan-kiri otomatis bolak-balik", Y, pFC, 14, Color3.fromRGB(50,185,255)); Y = Y+20
+        autoTiltInfoLbl.TextWrapped = true
+
+        autoTiltRow.MouseButton1Click:Connect(function()
+            autoTiltActive = not autoTiltActive
+            setAutoTiltState(autoTiltActive)
+            if autoTiltActive then
+                autoTiltPhase = 0
+                autoTiltInfoLbl.Text = "▸ AKTIF 🌀 Auto tilt smooth nyala"
+                autoTiltInfoLbl.TextColor3 = Color3.fromRGB(0,200,100)
+            else
+                autoTiltInfoLbl.Text = "▸ Camera miring kanan-kiri otomatis bolak-balik"
+                autoTiltInfoLbl.TextColor3 = Color3.fromRGB(50,185,255)
+            end
+        end)
+
+        -- Slider: Auto Tilt Amplitude (max degrees)
+        local tiltAmpLab = makeLbl("Auto Tilt Amplitude: 30°", Y, pFC, 14); Y = Y+16
+        local tiltAmpBg = Instance.new("Frame"); tiltAmpBg.Size = UDim2.new(0.88,0,0,4); tiltAmpBg.Position = UDim2.new(0.06,0,0,Y); tiltAmpBg.BackgroundColor3 = Color3.fromRGB(15,25,50); tiltAmpBg.ZIndex = 5; tiltAmpBg.Parent = pFC; Instance.new("UICorner",tiltAmpBg)
+        local tiltAmpFill = Instance.new("Frame"); tiltAmpFill.Size = UDim2.new(30/180,0,1,0); tiltAmpFill.BackgroundColor3 = Color3.fromRGB(255,160,0); tiltAmpFill.BorderSizePixel = 0; tiltAmpFill.ZIndex = 6; tiltAmpFill.Parent = tiltAmpBg; Instance.new("UICorner",tiltAmpFill)
+        local tiltAmpKnob = Instance.new("TextButton"); tiltAmpKnob.Size = UDim2.new(0,14,0,14); tiltAmpKnob.Position = UDim2.new(30/180,-7,0.5,-7); tiltAmpKnob.Text = ""; tiltAmpKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); tiltAmpKnob.ZIndex = 7; tiltAmpKnob.Parent = tiltAmpBg; Instance.new("UICorner",tiltAmpKnob).CornerRadius = UDim.new(1,0)
+        Y = Y+18; local tiltAmpSld = false
+        tiltAmpKnob.MouseButton1Down:Connect(function() tiltAmpSld=true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then tiltAmpSld=false end end)
+        UserInputService.InputChanged:Connect(function(i)
+            if tiltAmpSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X-tiltAmpBg.AbsolutePosition.X)/tiltAmpBg.AbsoluteSize.X,0,1)
+                tiltAmpFill.Size = UDim2.new(pos,0,1,0); tiltAmpKnob.Position = UDim2.new(pos,-7,0.5,-7)
+                autoTiltAmplitude = math.max(1, math.floor(pos * 180))
+                tiltAmpLab.Text = "Auto Tilt Amplitude: " .. autoTiltAmplitude .. "°"
+            end
+        end)
+
+        -- Slider: Auto Tilt Speed
+        local tiltSpdLab = makeLbl("Auto Tilt Speed: 0.4", Y, pFC, 14); Y = Y+16
+        local tiltSpdBg = Instance.new("Frame"); tiltSpdBg.Size = UDim2.new(0.88,0,0,4); tiltSpdBg.Position = UDim2.new(0.06,0,0,Y); tiltSpdBg.BackgroundColor3 = Color3.fromRGB(15,25,50); tiltSpdBg.ZIndex = 5; tiltSpdBg.Parent = pFC; Instance.new("UICorner",tiltSpdBg)
+        local tiltSpdFill = Instance.new("Frame"); tiltSpdFill.Size = UDim2.new(0.4/2,0,1,0); tiltSpdFill.BackgroundColor3 = Color3.fromRGB(255,160,0); tiltSpdFill.BorderSizePixel = 0; tiltSpdFill.ZIndex = 6; tiltSpdFill.Parent = tiltSpdBg; Instance.new("UICorner",tiltSpdFill)
+        local tiltSpdKnob = Instance.new("TextButton"); tiltSpdKnob.Size = UDim2.new(0,14,0,14); tiltSpdKnob.Position = UDim2.new(0.4/2,-7,0.5,-7); tiltSpdKnob.Text = ""; tiltSpdKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); tiltSpdKnob.ZIndex = 7; tiltSpdKnob.Parent = tiltSpdBg; Instance.new("UICorner",tiltSpdKnob).CornerRadius = UDim.new(1,0)
+        Y = Y+18; local tiltSpdSld = false
+        tiltSpdKnob.MouseButton1Down:Connect(function() tiltSpdSld=true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then tiltSpdSld=false end end)
+        UserInputService.InputChanged:Connect(function(i)
+            if tiltSpdSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X-tiltSpdBg.AbsolutePosition.X)/tiltSpdBg.AbsoluteSize.X,0,1)
+                tiltSpdFill.Size = UDim2.new(pos,0,1,0); tiltSpdKnob.Position = UDim2.new(pos,-7,0.5,-7)
+                autoTiltSpeed = math.max(0.05, pos * 2)
+                tiltSpdLab.Text = "Auto Tilt Speed: " .. string.format("%.2f", autoTiltSpeed)
+            end
+        end)
+
+        -- Slider: Manual Roll Speed
+        local rollSpdLab = makeLbl("Manual Roll Speed: 45°/s", Y, pFC, 14); Y = Y+16
+        local rollSpdBg = Instance.new("Frame"); rollSpdBg.Size = UDim2.new(0.88,0,0,4); rollSpdBg.Position = UDim2.new(0.06,0,0,Y); rollSpdBg.BackgroundColor3 = Color3.fromRGB(15,25,50); rollSpdBg.ZIndex = 5; rollSpdBg.Parent = pFC; Instance.new("UICorner",rollSpdBg)
+        local rollSpdFill = Instance.new("Frame"); rollSpdFill.Size = UDim2.new(45/360,0,1,0); rollSpdFill.BackgroundColor3 = Color3.fromRGB(255,160,0); rollSpdFill.BorderSizePixel = 0; rollSpdFill.ZIndex = 6; rollSpdFill.Parent = rollSpdBg; Instance.new("UICorner",rollSpdFill)
+        local rollSpdKnob = Instance.new("TextButton"); rollSpdKnob.Size = UDim2.new(0,14,0,14); rollSpdKnob.Position = UDim2.new(45/360,-7,0.5,-7); rollSpdKnob.Text = ""; rollSpdKnob.BackgroundColor3 = Color3.fromRGB(255,255,255); rollSpdKnob.ZIndex = 7; rollSpdKnob.Parent = rollSpdBg; Instance.new("UICorner",rollSpdKnob).CornerRadius = UDim.new(1,0)
+        Y = Y+18; local rollSpdSld = false
+        rollSpdKnob.MouseButton1Down:Connect(function() rollSpdSld=true end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then rollSpdSld=false end end)
+        UserInputService.InputChanged:Connect(function(i)
+            if rollSpdSld and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then
+                local pos = math.clamp((i.Position.X-rollSpdBg.AbsolutePosition.X)/rollSpdBg.AbsoluteSize.X,0,1)
+                rollSpdFill.Size = UDim2.new(pos,0,1,0); rollSpdKnob.Position = UDim2.new(pos,-7,0.5,-7)
+                rollSpeed = math.max(5, math.floor(pos * 360))
+                rollSpdLab.Text = "Manual Roll Speed: " .. rollSpeed .. "°/s"
+            end
+        end)
+
         local stabStrLab = makeLbl("Stabilizer Strength: 0.15", Y, pFC, 14); Y = Y+16
         local stabStrBg = Instance.new("Frame"); stabStrBg.Size = UDim2.new(0.88,0,0,4); stabStrBg.Position = UDim2.new(0.06,0,0,Y); stabStrBg.BackgroundColor3 = Color3.fromRGB(15,25,50); stabStrBg.ZIndex = 5; stabStrBg.Parent = pFC; Instance.new("UICorner",stabStrBg)
         local stabStrFill = Instance.new("Frame"); stabStrFill.Size = UDim2.new(0.15,0,1,0); stabStrFill.BackgroundColor3 = Color3.fromRGB(0,155,255); stabStrFill.BorderSizePixel = 0; stabStrFill.ZIndex = 6; stabStrFill.Parent = stabStrBg; Instance.new("UICorner",stabStrFill)
@@ -2516,17 +3111,220 @@ local function runSyaaHub()
 
         local bPadFC = Instance.new("Frame"); bPadFC.Size = UDim2.new(1,0,0,20); bPadFC.Position = UDim2.new(0,0,0,Y); bPadFC.BackgroundTransparency = 1; bPadFC.Parent = pFC
 
-        local hud = Instance.new("Frame"); hud.Size, hud.BackgroundTransparency, hud.Visible, hud.Parent = UDim2.new(1,0,1,0), 1, false, screenGui
-        local function bHUD(t,p,k,type) local b = Instance.new("TextButton"); b.Text, b.Size, b.Position, b.BackgroundColor3, b.BackgroundTransparency, b.TextColor3, b.Font, b.Parent = t, UDim2.new(0,50,0,50), p, Color3.fromRGB(10,20,45), 0.3, Color3.fromRGB(50,185,255), Enum.Font.GothamBold, hud; Instance.new("UICorner",b).CornerRadius = UDim.new(1,0)
-            b.InputBegan:Connect(function() if type=="m" then moveInputs[k]=1 else zoomInputs[k]=1 end end); b.InputEnded:Connect(function() if type=="m" then moveInputs[k]=0 else zoomInputs[k]=0 end end) end
-        bHUD("UP",UDim2.new(1,-140,1,-150),"U","m"); bHUD("DN",UDim2.new(1,-140,1,-80),"D","m"); bHUD("+",UDim2.new(1,-70,1,-150),"In","z"); bHUD("-",UDim2.new(1,-70,1,-80),"Out","z")
+        -- ==========================================
+        -- HUD FREECAM — UP/DN + ZOOM + WASD + TILT
+        -- Responsive: portrait & landscape, mobile priority
+        -- ==========================================
+        local hud = Instance.new("Frame")
+        hud.Size = UDim2.new(1,0,1,0)
+        hud.BackgroundTransparency = 1
+        hud.Visible = false
+        hud.Parent = screenGui
+
+        -- Helper: buat tombol HUD generik
+        local function makeHudBtn(parent, txt, sz, pos, bgAlpha)
+            local b = Instance.new("TextButton")
+            b.Size = sz or UDim2.new(0,52,0,52)
+            b.Position = pos
+            b.BackgroundColor3 = Color3.fromRGB(10,20,45)
+            b.BackgroundTransparency = bgAlpha or 0.3
+            b.TextColor3 = Color3.fromRGB(50,185,255)
+            b.Font = Enum.Font.GothamBold
+            b.TextSize = 14
+            b.Text = txt
+            b.ZIndex = 12
+            b.Parent = parent
+            Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
+            local stroke = Instance.new("UIStroke", b)
+            stroke.Color = Color3.fromRGB(0,130,250)
+            stroke.Thickness = 1.5
+            stroke.Transparency = 0.4
+            return b, stroke
+        end
+
+        -- ── UP / DN (naik turun posisi kamera) ──
+        local hudUp = makeHudBtn(hud, "▲", UDim2.new(0,52,0,52), UDim2.new(1,-120,1,-160))
+        local hudDn = makeHudBtn(hud, "▼", UDim2.new(0,52,0,52), UDim2.new(1,-120,1,-90))
+        hudUp.InputBegan:Connect(function() moveInputs.U=1 end); hudUp.InputEnded:Connect(function() moveInputs.U=0 end)
+        hudDn.InputBegan:Connect(function() moveInputs.D=1 end); hudDn.InputEnded:Connect(function() moveInputs.D=0 end)
+
+        -- ── ZOOM + / - ──
+        local hudZoomIn  = makeHudBtn(hud, "+", UDim2.new(0,52,0,52), UDim2.new(1,-60,1,-160))
+        local hudZoomOut = makeHudBtn(hud, "−", UDim2.new(0,52,0,52), UDim2.new(1,-60,1,-90))
+        hudZoomIn.TextSize = 20
+        hudZoomOut.TextSize = 20
+        hudZoomIn.InputBegan:Connect(function() zoomInputs.In=1 end);  hudZoomIn.InputEnded:Connect(function() zoomInputs.In=0 end)
+        hudZoomOut.InputBegan:Connect(function() zoomInputs.Out=1 end); hudZoomOut.InputEnded:Connect(function() zoomInputs.Out=0 end)
+
+        -- ── TOMBOL MODE: JOYSTICK ⇄ WASD ──
+        -- Posisi: pojok kiri atas area HUD, di atas joystick/WASD
+        local modeToggleBtn = makeHudBtn(hud, "🕹️", UDim2.new(0,44,0,44), UDim2.new(0,25,1,-210), 0.35)
+        modeToggleBtn.TextSize = 18
+        modeToggleBtn.ZIndex = 15
+
+        -- ── WASD ON-SCREEN BUTTONS ──
+        -- Cross layout, mirip joystick tapi 4 tombol terpisah
+        -- Ukuran adaptive: 52px tiap tombol, jarak 56px antar center
+        local wBtn  = makeHudBtn(hud, "W", UDim2.new(0,52,0,52), UDim2.new(0, 81, 1, -155))  -- atas
+        local aBtn  = makeHudBtn(hud, "A", UDim2.new(0,52,0,52), UDim2.new(0, 25, 1,  -98))  -- kiri
+        local sBtn  = makeHudBtn(hud, "S", UDim2.new(0,52,0,52), UDim2.new(0, 81, 1,  -98))  -- bawah tengah
+        local dBtn  = makeHudBtn(hud, "D", UDim2.new(0,52,0,52), UDim2.new(0,137, 1,  -98))  -- kanan
+
+        -- Warna beda biar keliatan jelas
+        for _, bb in ipairs({wBtn, aBtn, sBtn, dBtn}) do
+            bb.TextColor3 = Color3.fromRGB(255,255,255)
+            bb.BackgroundColor3 = Color3.fromRGB(5,18,40)
+            bb.BackgroundTransparency = 0.25
+            bb.TextSize = 16
+        end
+        wBtn.InputBegan:Connect(function() moveInputs.F=1 end); wBtn.InputEnded:Connect(function() moveInputs.F=0 end)
+        sBtn.InputBegan:Connect(function() moveInputs.B=1 end); sBtn.InputEnded:Connect(function() moveInputs.B=0 end)
+        aBtn.InputBegan:Connect(function() moveInputs.L=1 end); aBtn.InputEnded:Connect(function() moveInputs.L=0 end)
+        dBtn.InputBegan:Connect(function() moveInputs.R=1 end); dBtn.InputEnded:Connect(function() moveInputs.R=0 end)
+
+        -- Awalnya sembunyi (joystick aktif by default)
+        wBtn.Visible = false; aBtn.Visible = false; sBtn.Visible = false; dBtn.Visible = false
+
+        -- Fungsi update tombol mode
+        updateInputModeUI = function()
+            if useKeyboard then
+                modeToggleBtn.Text = "⌨"
+                modeToggleBtn.TextColor3 = Color3.fromRGB(255, 210, 50)
+                -- Show WASD, hide joystick
+                jsOuter.Visible = false
+                wBtn.Visible = true; aBtn.Visible = true; sBtn.Visible = true; dBtn.Visible = true
+            else
+                modeToggleBtn.Text = "🕹️"
+                modeToggleBtn.TextColor3 = Color3.fromRGB(50, 185, 255)
+                -- Show joystick, hide WASD
+                jsOuter.Visible = true
+                wBtn.Visible = false; aBtn.Visible = false; sBtn.Visible = false; dBtn.Visible = false
+            end
+        end
+
+        modeToggleBtn.MouseButton1Click:Connect(function()
+            useKeyboard = not useKeyboard
+            -- Reset semua movement saat switch
+            moveInputs.F=0; moveInputs.B=0; moveInputs.L=0; moveInputs.R=0
+            joystickX=0; joystickY=0
+            updateInputModeUI()
+        end)
+
+        -- ── KEYBOARD PC SUPPORT (WASD, berlaku saat useKeyboard=true ATAU selalu) ──
+        -- Support keyboard di PC: WASD bisa dipakai kapanpun freecam aktif
+        UserInputService.InputBegan:Connect(function(input, gpe)
+            if not isFreecamActive then return end
+            if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+            local kc = input.KeyCode
+            if kc == Enum.KeyCode.W then moveInputs.F = 1
+            elseif kc == Enum.KeyCode.S then moveInputs.B = 1
+            elseif kc == Enum.KeyCode.A then moveInputs.L = 1
+            elseif kc == Enum.KeyCode.D then moveInputs.R = 1
+            elseif kc == Enum.KeyCode.Q then rollTiltLeft  = true
+            elseif kc == Enum.KeyCode.E then rollTiltRight = true
+            elseif kc == Enum.KeyCode.R then targetRoll = 0  -- reset tilt
+            end
+        end)
+        UserInputService.InputEnded:Connect(function(input)
+            if not isFreecamActive then return end
+            if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+            local kc = input.KeyCode
+            if kc == Enum.KeyCode.W then moveInputs.F = 0
+            elseif kc == Enum.KeyCode.S then moveInputs.B = 0
+            elseif kc == Enum.KeyCode.A then moveInputs.L = 0
+            elseif kc == Enum.KeyCode.D then moveInputs.R = 0
+            elseif kc == Enum.KeyCode.Q then rollTiltLeft  = false
+            elseif kc == Enum.KeyCode.E then rollTiltRight = false
+            end
+        end)
+
+        -- ── TILT / ROLL CONTROLS ──
+        -- Frame container buat tilt buttons (muncul kalau showRollControls=true)
+        tiltFrame = Instance.new("Frame")
+        tiltFrame.BackgroundTransparency = 1
+        tiltFrame.ZIndex = 12
+        tiltFrame.Visible = false
+        tiltFrame.Parent = hud
+
+        -- Setup tiltFrame size awal
+        local function applyTiltFrameSize()
+            local screenSize = screenGui.AbsoluteSize
+            local isPortrait = screenSize.Y > screenSize.X
+            if isPortrait then
+                tiltFrame.Size = UDim2.new(0, 200, 0, 50)
+                tiltFrame.AnchorPoint = Vector2.new(0.5, 1)
+                tiltFrame.Position = UDim2.new(0.5, 0, 1, -240)
+            else
+                tiltFrame.Size = UDim2.new(0, 160, 0, 42)
+                tiltFrame.AnchorPoint = Vector2.new(0.5, 1)
+                tiltFrame.Position = UDim2.new(0.5, 0, 1, -320)
+            end
+        end
+        applyTiltFrameSize()
+        
+        local tiltL = makeHudBtn(tiltFrame, "◀ Tilt", UDim2.new(0,72,0,48), UDim2.new(0,0,0,5), 0.25)
+        tiltL.TextSize = 12
+        tiltL.TextColor3 = Color3.fromRGB(255,180,50)
+
+        local tiltReset = makeHudBtn(tiltFrame, "⊙", UDim2.new(0,60,0,48), UDim2.new(0,76,0,5), 0.25)
+        tiltReset.TextSize = 20
+        tiltReset.TextColor3 = Color3.fromRGB(200,200,200)
+
+        local tiltR = makeHudBtn(tiltFrame, "Tilt ▶", UDim2.new(0,72,0,48), UDim2.new(0,140,0,5), 0.25)
+        tiltR.TextSize = 12
+        tiltR.TextColor3 = Color3.fromRGB(255,180,50)
+        
+        -- Monitor screen resize dan update button proportions
+        local screenResizeConn = screenGui:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+            applyTiltFrameSize()
+            -- Rescale buttons proportional ke frame
+            local fw = tiltFrame.AbsoluteSize.X
+            local fh = tiltFrame.AbsoluteSize.Y
+            if fw > 0 and fh > 0 then
+                local btnW = math.max(fw * 0.35, 48)
+                local btnH = math.max(fh * 0.8, 38)
+                local spX = (fw - btnW * 3 - 6) / 4
+                tiltL.Size = UDim2.new(0, btnW, 0, btnH)
+                tiltL.Position = UDim2.new(0, spX, 1, -btnH - 4)  -- ke bawah
+                tiltReset.Size = UDim2.new(0, btnW * 0.85, 0, btnH)
+                tiltReset.Position = UDim2.new(0, spX * 2 + btnW + 2, 1, -btnH - 4)  -- ke bawah
+                tiltR.Size = UDim2.new(0, btnW, 0, btnH)
+                tiltR.Position = UDim2.new(0, spX * 3 + btnW * 1.85 + 4, 1, -btnH - 4)  -- ke bawah
+            end
+        end)
+
+        tiltL.InputBegan:Connect(function() rollTiltLeft=true end);  tiltL.InputEnded:Connect(function() rollTiltLeft=false end)
+        tiltR.InputBegan:Connect(function() rollTiltRight=true end); tiltR.InputEnded:Connect(function() rollTiltRight=false end)
+        tiltReset.MouseButton1Click:Connect(function()
+            targetRoll = 0
+            autoTiltPhase = 0
+        end)
+
+        -- Label tilt angle (display di atas tilt buttons)
+        local tiltAngleLbl = Instance.new("TextLabel")
+        tiltAngleLbl.Size = UDim2.new(1,0,0,16)
+        tiltAngleLbl.Position = UDim2.new(0,0,0,-18)
+        tiltAngleLbl.BackgroundTransparency = 1
+        tiltAngleLbl.TextColor3 = Color3.fromRGB(255,220,80)
+        tiltAngleLbl.Font = Enum.Font.GothamBold
+        tiltAngleLbl.TextSize = 11
+        tiltAngleLbl.ZIndex = 13
+        tiltAngleLbl.Text = "Roll: 0°"
+        tiltAngleLbl.Parent = tiltFrame
+
+        -- Update label setiap frame
+        RunService.RenderStepped:Connect(function()
+            if tiltFrame.Visible then
+                tiltAngleLbl.Text = string.format("Roll: %.0f°", displayRoll)
+            end
+        end)
 
         -- ==========================================
         -- VIRTUAL JOYSTICK (replaces WASD buttons)
         -- ==========================================
         local jsRadius = 55
         local jsKnobRadius = 22
-        local jsOuter = Instance.new("Frame")
+        jsOuter = Instance.new("Frame")
         jsOuter.Name = "FreecamJoystick"
         jsOuter.Size = UDim2.new(0, jsRadius*2, 0, jsRadius*2)
         jsOuter.Position = UDim2.new(0, 25, 1, -(jsRadius*2) - 30)
@@ -2666,8 +3464,25 @@ local function runSyaaHub()
         end)
 
         camRow.MouseButton1Click:Connect(function() isFreecamActive = not isFreecamActive; setCamState(isFreecamActive); hud.Visible = (isFreecamActive and getHudState())
-            if isFreecamActive then PlayerModule:Disable(); Camera.CameraType = Enum.CameraType.Scriptable; freezeCharacter()
-            else unfreezeCharacter(); PlayerModule:Enable(); Camera.CameraType = Enum.CameraType.Custom; lockTargets = {}; isLockOn = false; autoWalkActive = false; autoWalkDirection = 0; setLockState(false); moveInputs.F, moveInputs.B = 0, 0; joystickX, joystickY = 0, 0; lockOrbitYaw, lockOrbitPitch = 0, 30; lockSmoothPosInit = false; lockSmoothDist = 20; lockUserDistOffset = 0; awFwd.BackgroundColor3, awStop.BackgroundColor3, awBack.BackgroundColor3, hud.Visible = cOff, Color3.fromRGB(50,50,50), cOff, false; refreshLockList() end end)
+            if isFreecamActive then
+                PlayerModule:Disable(); Camera.CameraType = Enum.CameraType.Scriptable
+                if not avatarFollowCam then freezeCharacter() end
+                if tiltFrame then tiltFrame.Visible = showRollControls end
+                updateInputModeUI()
+            else
+                if not avatarFollowCam then unfreezeCharacter() end
+                PlayerModule:Enable(); Camera.CameraType = Enum.CameraType.Custom
+                lockTargets = {}; isLockOn = false; autoWalkActive = false; autoWalkDirection = 0
+                setLockState(false); moveInputs.F=0; moveInputs.B=0; moveInputs.L=0; moveInputs.R=0
+                joystickX=0; joystickY=0; lockOrbitYaw=0; lockOrbitPitch=30
+                lockSmoothPosInit=false; lockSmoothDist=20; lockUserDistOffset=0; lockVertOffset=0
+                rollTiltLeft=false; rollTiltRight=false
+                awFwd.BackgroundColor3=cOff; awStop.BackgroundColor3=Color3.fromRGB(50,50,50); awBack.BackgroundColor3=cOff
+                hud.Visible=false
+                if tiltFrame then tiltFrame.Visible=false end
+                refreshLockList()
+            end
+        end)
         setHudState(true); hudRow.MouseButton1Click:Connect(function() local newState = not getHudState(); setHudState(newState); if isFreecamActive then hud.Visible=newState end end)
         lockRow.MouseButton1Click:Connect(function()
             isLockOn = not isLockOn
@@ -2682,6 +3497,7 @@ local function runSyaaHub()
                 lockSmoothCenter = Camera.CFrame.Position
                 lockSmoothDist   = 20
                 lockUserDistOffset = 0
+                lockVertOffset     = 0
                 lockSmoothPosInit = true
             else
                 lockTargets = {}
@@ -2696,15 +3512,36 @@ local function runSyaaHub()
             -- rotAlpha: higher smoothValue = softer/slower rotation lerp
             local rotAlpha = math.clamp(dt * ((101 - smoothValue) / 10), 0.01, 1)
 
-            -- FOV zoom
-            if isLockOn and #lockTargets > 0 then
-    if zoomInputs.In  == 1 then lockUserDistOffset = math.clamp(lockUserDistOffset - 1.5, -lockSmoothDist * 0.7, 150) end
-    if zoomInputs.Out == 1 then lockUserDistOffset = math.clamp(lockUserDistOffset + 1.5, -lockSmoothDist * 0.7, 150) end
-else
-    if zoomInputs.In  == 1 then targetFov = math.clamp(targetFov - 1.5, 1, 170) end
-    if zoomInputs.Out == 1 then targetFov = math.clamp(targetFov + 1.5, 1, 170) end
-end
-Camera.FieldOfView = Camera.FieldOfView + (targetFov - Camera.FieldOfView) * rotAlpha
+            -- ZOOM (smooth FOV change, bukan maju mundur)
+            local zoomRate = 55 -- degrees per second
+            -- Zoom +/- SELALU ubah FOV (di mode apapun)
+            if zoomInputs.In  == 1 then targetFov = math.clamp(targetFov - zoomRate * dt, 1, 170) end
+            if zoomInputs.Out == 1 then targetFov = math.clamp(targetFov + zoomRate * dt, 1, 170) end
+            -- FOV lerp smooth tersendiri (alpha lebih halus dari rotAlpha)
+            local fovAlpha = math.clamp(dt * 10, 0.01, 0.7)
+            Camera.FieldOfView = Camera.FieldOfView + (targetFov - Camera.FieldOfView) * fovAlpha
+
+            -- ── TILT / ROLL update (berlaku di semua mode, termasuk lock) ──
+            local hasManualRollInput = (rollTiltLeft or rollTiltRight)
+            
+            if autoTiltActive and not hasManualRollInput then
+                -- Auto tilt aktif HANYA kalau tidak ada manual input
+                autoTiltPhase = autoTiltPhase + dt * autoTiltSpeed * math.pi * 2
+                targetRoll = math.sin(autoTiltPhase) * autoTiltAmplitude
+            elseif hasManualRollInput then
+                -- Manual input: update targetRoll langsung, auto-tilt pause (resumable)
+                if rollTiltLeft  then targetRoll = targetRoll - rollSpeed * dt end
+                if rollTiltRight then targetRoll = targetRoll + rollSpeed * dt end
+            end
+            -- Smooth roll — lebih cepat lerp saat ada manual input biar responsive
+            local rollLerpAlpha = hasManualRollInput 
+                and math.clamp(dt * 20, 0.05, 0.95)  -- cepat saat manual
+                or  rotAlpha  -- normal speed saat auto/idle
+            local rollDiff = targetRoll - displayRoll
+            -- Normalize angle difference biar tidak jump across 360°
+            while rollDiff > 180 do rollDiff = rollDiff - 360 end
+            while rollDiff < -180 do rollDiff = rollDiff + 360 end
+            displayRoll = displayRoll + rollDiff * rollLerpAlpha
 
 
             -- ======= MULTI-TARGET LOCK (1-10 players) =======
@@ -2744,15 +3581,15 @@ Camera.FieldOfView = Camera.FieldOfView + (targetFov - Camera.FieldOfView) * rot
                     local centerPos = lockSmoothCenter
 
                     -- ─── SMOOTH REQUIRED DIST ───
-                    -- Hitung dist yang dibutuhkan dari spread, lalu lerp supaya tidak loncat
+                    -- Pakai FOV nominal tetap (70°) biar zoom FOV tidak ganggu jarak kamera
                     local maxSpread = 4
                     for _, pos in ipairs(positions) do
                         local d = (pos - rawCenter).Magnitude
                         if d > maxSpread then maxSpread = d end
                     end
-                    local fovHalfRad = math.rad(Camera.FieldOfView / 2)
+                    local nominalFovHalfRad = math.rad(70 / 2)  -- tetap, tidak berubah saat zoom
                     local rawDist = math.clamp(
-                        (maxSpread + 8) / math.max(math.tan(fovHalfRad), 0.01),
+                        (maxSpread + 8) / math.max(math.tan(nominalFovHalfRad), 0.01),
                         8, 250
                     )
                     local distAlpha = math.clamp(dt * 5, 0.005, 0.2)
@@ -2771,16 +3608,14 @@ Camera.FieldOfView = Camera.FieldOfView + (targetFov - Camera.FieldOfView) * rot
                     local pitchInput = (moveInputs.U - moveInputs.D)
 
                     lockOrbitYaw   = lockOrbitYaw + jx * orbitSpeedH * dt
-                    lockOrbitPitch = math.clamp(
-                        lockOrbitPitch + pitchInput * orbitSpeedV * dt,
-                        -70, 70
-                    )
+                    lockOrbitPitch = lockOrbitPitch + pitchInput * orbitSpeedV * dt
 
-                    -- Joystick F/B = geser offset jarak (maju = mendekat, mundur = menjauh)
-                    -- Offset ini TIDAK di-override oleh auto-fit, makanya terasa
+                    -- Joystick F/B = geser jarak
                     lockUserDistOffset = lockUserDistOffset + jy * distSpeed * dt
-                    -- Clamp supaya tidak terlalu dekat atau terlalu jauh dari auto-fit
                     lockUserDistOffset = math.clamp(lockUserDistOffset, -lockSmoothDist * 0.7, 150)
+
+                    -- UP/DN = geser kamera naik/turun di world Y (bukan orbit pitch)
+                    lockVertOffset = lockVertOffset + (moveInputs.U - moveInputs.D) * moveSpeed * dt
 
                     local finalDist = math.clamp(lockSmoothDist + lockUserDistOffset, 4, 300)
 
@@ -2792,29 +3627,28 @@ Camera.FieldOfView = Camera.FieldOfView + (targetFov - Camera.FieldOfView) * rot
                         math.sin(pr),
                         math.cos(yr) * math.cos(pr)
                     )
-                    local desiredCamPos = centerPos + orbitDir * finalDist
+                    -- Tambah vertical offset ke posisi kamera (world Y)
+                    local desiredCamPos = centerPos + orbitDir * finalDist + Vector3.new(0, lockVertOffset, 0)
 
-                    -- ─── FLOOR CLAMP ───
-                    local minCamY = centerPos.Y + 1.5
-                    if desiredCamPos.Y < minCamY then
-                        desiredCamPos = Vector3.new(desiredCamPos.X, minCamY, desiredCamPos.Z)
-                        if lockOrbitPitch < 5 then lockOrbitPitch = 5 end
-                    end
+                    -- ─── FLOOR CLAMP dihapus: kamera bebas turun/naik full 360 ───
 
                     -- ─── SMOOTH CAM POS (ADAPTIVE) ───
-                    -- Makin jauh desired dari posisi sekarang, makin cepat lerp-nya
-                    -- Ini yang bikin smooth di semua jarak, tidak kedut-kedut
                     local posDiff = (desiredCamPos - lockSmoothPos).Magnitude
-                    -- Base speed 10, naik sampai 22 kalau jarak > 30 studs
                     local adaptiveSpeed = 10 + math.clamp(posDiff / 30, 0, 1) * 12
                     local posAlpha = math.clamp(dt * adaptiveSpeed, 0.01, 0.85)
                     lockSmoothPos = lockSmoothPos:Lerp(desiredCamPos, posAlpha)
 
-                    -- ─── LOOK TARGET & FINAL CFRAME ───
+                    -- ─── LOOK TARGET: selalu ngarah ke target (FIX kamera "mau lepas") ───
+                    -- lookAt = kamera pasti ngelock ke target, bukan rotate bebas
                     local lookTarget = centerPos + Vector3.new(0, 1.8, 0)
                     local desiredCFrame = CFrame.lookAt(lockSmoothPos, lookTarget)
 
-                    -- Rotasi juga adaptive: makin beda angle, makin cepat
+                    -- Roll applied AFTER lookAt agar tidak rusak arah look
+                    if displayRoll ~= 0 then
+                        desiredCFrame = desiredCFrame * CFrame.Angles(0, 0, math.rad(displayRoll))
+                    end
+
+                    -- Lerp smooth
                     local angleDiff = (Camera.CFrame.LookVector - desiredCFrame.LookVector).Magnitude
                     local rotSpeed  = 14 + math.clamp(angleDiff / 0.5, 0, 1) * 10
                     local smoothAlpha = math.clamp(dt * rotSpeed, 0.01, 0.85)
@@ -2831,6 +3665,25 @@ Camera.FieldOfView = Camera.FieldOfView + (targetFov - Camera.FieldOfView) * rot
                 -- ======= NORMAL FREECAM (no lock) =======
                 -- NO inertia/velocity — direct target update = crisp, not slippery
 
+                -- ── AVATAR CAM LOCK: camera ngikutin arah avatar ──
+                if avatarCamLock then
+                    local char = localPlayer.Character
+                    if char then
+                        local hrp = char:FindFirstChild("HumanoidRootPart")
+                        if hrp then
+                            local fwd = hrp.CFrame.LookVector
+                            local desiredYaw = math.deg(math.atan2(-fwd.X, -fwd.Z))
+                            -- Lerp smooth ke arah avatar
+                            local diff = desiredYaw - targetYaw
+                            -- Normalize biar tidak muter jauh
+                            while diff > 180  do diff = diff - 360 end
+                            while diff < -180 do diff = diff + 360 end
+                            local lockAlpha = math.clamp(dt * 8, 0.01, 0.5)
+                            targetYaw = targetYaw + diff * lockAlpha
+                        end
+                    end
+                end
+
                 if stabilizerActive then
                     local timeSinceSwipe = tick() - lastSwipeTime
                     if timeSinceSwipe > STAB_RETURN_DELAY then
@@ -2838,6 +3691,9 @@ Camera.FieldOfView = Camera.FieldOfView + (targetFov - Camera.FieldOfView) * rot
                         targetPitch = targetPitch + (stabPitch - targetPitch) * math.clamp(STAB_STRENGTH, 0.01, 1)
                     end
                 end
+
+                -- ── AUTO TILT / MANUAL TILT — sudah diupdate di atas (berlaku semua mode) ──
+                displayRoll = displayRoll  -- no-op, sudah sync dari blok atas
 
                 -- Smooth display angles lerp toward target (visual only)
                 displayYaw   = displayYaw   + (targetYaw   - displayYaw)   * rotAlpha
@@ -2847,19 +3703,42 @@ Camera.FieldOfView = Camera.FieldOfView + (targetFov - Camera.FieldOfView) * rot
                 local moveRot = CFrame.Angles(0, math.rad(targetYaw), 0)
                     * CFrame.Angles(math.rad(targetPitch), 0, 0)
 
-                local rawMove = Vector3.new(
+                -- ── AVATAR FOLLOW CAM: karakter jalan searah camera ──
+                local charMoveVec = Vector3.new(0, 0, 0)
+                if avatarFollowCam then
+                    local char = localPlayer.Character
+                    if char then
+                        local hrp = char:FindFirstChild("HumanoidRootPart")
+                        local hum = char:FindFirstChildOfClass("Humanoid")
+                        if hrp and hum and hum.WalkSpeed > 0 then
+                            local camFwd = Camera.CFrame.LookVector
+                            local flat = Vector3.new(camFwd.X, 0, camFwd.Z)
+                            if flat.Magnitude > 0.01 then
+                                hrp.CFrame = CFrame.lookAt(hrp.Position, hrp.Position + flat.Unit)
+                            end
+                        end
+                    end
+                end
+
+                -- Pisah horizontal (XZ relative kamera) vs vertical (world Y murni)
+                local udInput = moveInputs.U - moveInputs.D
+                local rawMoveXZ = Vector3.new(
                     (moveInputs.R - moveInputs.L) + joystickX,
-                    moveInputs.U - moveInputs.D,
+                    0,
                     (moveInputs.B - moveInputs.F) + joystickY
                 )
-                local mVec = rawMove
+                local mVec = rawMoveXZ
                 if mVec.Magnitude > 0 then mVec = mVec.Unit end
 
-                local nextPos = Camera.CFrame.Position + moveRot:VectorToWorldSpace(mVec * moveSpeed * dt)
+                -- XZ gerak relatif arah kamera, Y selalu world up/down
+                local nextPos = Camera.CFrame.Position
+                    + moveRot:VectorToWorldSpace(mVec * moveSpeed * dt)
+                    + Vector3.new(0, udInput * moveSpeed * dt, 0)
 
-                -- Display rotation (smooth follow of target)
+                -- Display rotation (smooth follow of target) + ROLL
                 local dispRot = CFrame.Angles(0, math.rad(displayYaw), 0)
                     * CFrame.Angles(math.rad(displayPitch), 0, 0)
+                    * CFrame.Angles(0, 0, math.rad(displayRoll))
                 Camera.CFrame = CFrame.new(nextPos) * dispRot
             end
         end)
@@ -2985,7 +3864,7 @@ Camera.FieldOfView = Camera.FieldOfView + (targetFov - Camera.FieldOfView) * rot
 
             -- Direct update — no velocity accumulation, no coasting after finger lift
             targetYaw   = targetYaw   + dyaw
-            targetPitch = math.clamp(targetPitch + dpitch, -88, 88)
+            targetPitch = targetPitch + dpitch
 
             if stabilizerActive then
                 lastSwipeTime = tick()
