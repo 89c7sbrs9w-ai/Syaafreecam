@@ -113,14 +113,14 @@ local function startLoading(callback)
             iconLbl.Font = Enum.Font.GothamBold; iconLbl.ZIndex = 5; iconLbl.Parent = updFrame
 
             local updTitle = Instance.new("TextLabel")
-            updTitle.Text = "SYAA HUB V9.1"; updTitle.Size = UDim2.new(1, -55, 0, 22)
+            updTitle.Text = "SYAA HUB V9.2"; updTitle.Size = UDim2.new(1, -55, 0, 22)
             updTitle.Position = UDim2.new(0, 55, 0, 10)
             updTitle.BackgroundTransparency = 1; updTitle.TextColor3 = Color3.fromRGB(0, 185, 255)
             updTitle.Font = Enum.Font.GothamBold; updTitle.TextSize = 13
             updTitle.TextXAlignment = Enum.TextXAlignment.Left; updTitle.ZIndex = 5; updTitle.Parent = updFrame
 
             local updDesc = Instance.new("TextLabel")
-            updDesc.Text = "fitur baru Mode Good🛡️"; updDesc.Size = UDim2.new(1, -60, 0, 28)
+            updDesc.Text = "perbaikan fitur freecam"; updDesc.Size = UDim2.new(1, -60, 0, 28)
             updDesc.Position = UDim2.new(0, 55, 0, 34)
             updDesc.BackgroundTransparency = 1; updDesc.TextColor3 = Color3.fromRGB(200, 200, 200)
             updDesc.Font = Enum.Font.Gotham; updDesc.TextSize = 10
